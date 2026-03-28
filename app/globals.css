@@ -1,0 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 112 38% 40%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 112 38% 40%;
+    --radius: 0.5rem;
+
+    --color-primary: #4A8C3F;
+    --color-primary-dark: #2d5a24;
+    --color-accent: #8B1A1A;
+    --color-highlight: #CC2020;
+    --color-surface: #F0F7EF;
+    --color-text: #1a1a1a;
+    --color-text-muted: #6b7280;
+    --color-border: #e5e7eb;
+  }
+
+  * { @apply border-border; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply text-foreground font-sans antialiased;
+    background-color: #f0f0ee;
+    background-image: url('/fondo.jpeg');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3 { @apply font-serif; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    background-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(74,140,63,0.25);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
+    box-shadow: 0 4px 14px rgba(74,140,63,0.35);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active:not(:disabled) { transform: translateY(0); }
+
+  .btn-outline {
+    @apply border-2 font-semibold px-6 py-3 rounded-lg transition-all duration-200 inline-flex items-center justify-center gap-2;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+  .btn-outline:hover {
+    background-color: var(--color-primary);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .btn-back {
+    @apply inline-flex items-center gap-2 text-sm font-medium transition-all duration-200 px-3 py-2 rounded-lg;
+    color: var(--color-text-muted);
+  }
+  .btn-back:hover { color: var(--color-primary); background: rgba(74,140,63,0.08); }
+
+  .card {
+    @apply rounded-xl p-6;
+    background: rgba(255,255,255,0.97);
+    border: 1px solid rgba(229,231,235,0.8);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  }
+
+  .input-field {
+    @apply w-full border rounded-lg px-4 py-3 text-sm focus:outline-none transition-all;
+    border-color: var(--color-border);
+    background: #fff;
+  }
+  .input-field:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(74,140,63,0.12);
+  }
+
+  .input-label { @apply block text-sm font-medium mb-1.5; color: #374151; }
+
+  .section-container { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16; }
+
+  .nav-link {
+    @apply text-sm font-medium px-3 py-2 rounded-lg transition-all duration-150;
+    color: var(--color-text);
+  }
+  .nav-link:hover { background: rgba(74,140,63,0.1); color: var(--color-primary); }
+  .nav-link.active { color: var(--color-primary); background: rgba(74,140,63,0.1); font-weight: 600; }
+
+  .nav-link-mobile {
+    @apply text-base font-medium px-4 py-3 rounded-xl transition-all duration-150 flex items-center gap-3;
+    color: var(--color-text);
+    border: 1px solid transparent;
+  }
+  .nav-link-mobile:hover {
+    background: var(--color-surface);
+    border-color: rgba(74,140,63,0.2);
+    color: var(--color-primary);
+  }
+}
