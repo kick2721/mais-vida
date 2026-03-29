@@ -23,6 +23,7 @@ function RegisterForm() {
     referral_code: searchParams.get(REFERRAL.urlParam) || '',
   })
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -37,6 +38,10 @@ function RegisterForm() {
 
     startTransition(async () => {
       const supabase = createBrowserSupabaseClient()
+
+      // Cerrar sesión previa si existe (evita conflictos de middleware)
+      await supabase.auth.signOut()
+
       const { error: authError } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
@@ -51,13 +56,50 @@ function RegisterForm() {
         },
       })
       if (authError) {
-        setError(authError.message === 'User already registered'
-          ? 'Este email já está registado.' : 'Erro ao criar conta. Tente novamente.')
+        if (authError.message === 'User already registered') {
+          setError('Este email já está registado. Tente entrar na sua conta.')
+        } else {
+          setError('Erro ao criar conta: ' + authError.message)
+        }
         return
       }
-      if (isAffiliate) router.push('/affiliate/dashboard')
-      else router.push('/comprar')
+      // Mostrar pantalla de éxito en lugar de redirigir directo
+      setSuccess(true)
     })
+  }
+
+  // Pantalla de éxito post-registro
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-10"
+        style={{ background: 'rgba(240,247,239,0.6)' }}>
+        <div className="w-full max-w-md">
+          <div className="flex justify-center mb-8"><Logo size="lg" href="/" /></div>
+          <div className="card text-center py-8">
+            <div className="text-5xl mb-4">{isAffiliate ? '🤝' : '✅'}</div>
+            <h2 className="font-display text-xl font-bold text-gray-900 mb-2">
+              Conta criada com sucesso!
+            </h2>
+            <p className="text-sm mb-2" style={{ color: 'var(--color-text-muted)' }}>
+              Enviámos um email de confirmação para <strong>{form.email}</strong>.
+            </p>
+            <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
+              Confirme o seu email e depois entre na sua conta.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Link href="/login" className="btn-primary text-center">
+                Entrar na conta →
+              </Link>
+              {!isAffiliate && (
+                <Link href="/comprar" className="btn-outline text-sm text-center">
+                  Comprar cartão sem conta
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
