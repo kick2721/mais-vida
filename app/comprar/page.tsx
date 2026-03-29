@@ -9,12 +9,20 @@ import { MEMBERSHIP, BANK, REFERRAL, BUSINESS } from '@/lib/constants'
 
 function ComprarForm() {
   const searchParams = useSearchParams()
+
+  // Leer ref da URL ou da cookie (guardada quando entrou pelo link do afiliado)
+  const getRefFromCookie = () => {
+    if (typeof document === 'undefined') return ''
+    const match = document.cookie.match(new RegExp('(?:^|; )' + REFERRAL.urlParam + '=([^;]*)'))
+    return match ? decodeURIComponent(match[1]) : ''
+  }
+
   const [form, setForm] = useState({
     full_name: '',
     email: '',
     phone: '',
     national_id: '',
-    referral_code: searchParams.get(REFERRAL.urlParam) || '',
+    referral_code: searchParams.get(REFERRAL.urlParam) || getRefFromCookie(),
   })
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState('')
