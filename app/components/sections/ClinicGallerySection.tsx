@@ -7,16 +7,16 @@ import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 
 const PHOTOS = [
-  { src: '/clinica-1.jpg',  caption: 'Recepção' },
-  { src: '/clinica-10.jpg', caption: 'Hall de entrada' },
-  { src: '/clinica-8.jpg',  caption: 'Sala de espera' },
-  { src: '/clinica-9.jpg',  caption: 'Sala de espera' },
-  { src: '/clinica-2.jpg',  caption: 'Consultório' },
-  { src: '/clinica-3.jpg',  caption: 'Sala de observação' },
-  { src: '/clinica-4.jpg',  caption: 'Sala de espera 2º piso' },
-  { src: '/clinica-5.jpg',  caption: 'Laboratório' },
-  { src: '/clinica-6.jpg',  caption: 'Área pediátrica' },
-  { src: '/clinica-7.jpg',  caption: 'Interior da clínica' },
+  { src: '/clinica-1.jpg',  caption: 'Receção' },
+  { src: '/clinica-10.jpg', caption: 'Consultório' },
+  { src: '/clinica-8.jpg',  caption: 'Área de espera do laboratório' },
+  { src: '/clinica-9.jpg',  caption: 'Sala de observação' },
+  { src: '/clinica-2.jpg',  caption: 'Área de espera da receção' },
+  { src: '/clinica-3.jpg',  caption: 'Área de espera da receção' },
+  { src: '/clinica-4.jpg',  caption: 'Hall de entrada' },
+  { src: '/clinica-5.jpg',  caption: 'Área de recreação infantil' },
+  { src: '/clinica-6.jpg',  caption: 'Área de recreação infantil' },
+  { src: '/clinica-7.jpg',  caption: 'Laboratório' },
 ]
 
 export default function ClinicGallerySection() {
