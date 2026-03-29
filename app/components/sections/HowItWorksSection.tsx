@@ -16,8 +16,8 @@ const STEPS = [
   },
   {
     number: '03',
-    title: 'Confirmação em 24h',
-    description: 'A nossa equipa valida o pagamento e activa a sua membresía em até 24 horas úteis.',
+    title: 'Confirmação em 48h',
+    description: 'A nossa equipa valida o pagamento e activa a sua membresía em até 48 horas úteis.',
   },
   {
     number: '04',
