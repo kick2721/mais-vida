@@ -51,7 +51,7 @@ export default function BenefitsSection() {
                 <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                   {b.type === 'percentage'
                     ? `${b.discount}% de desconto`
-                    : `Preço fixo: ${b.discount.toLocaleString('pt-AO')} Kz (normal: ${'originalPrice' in b ? b.originalPrice.toLocaleString('pt-AO') : ''} Kz)`}
+                    : `Preço fixo: ${b.discount.toLocaleString('pt-AO')} Kz`}
                 </p>
               </div>
             </div>
