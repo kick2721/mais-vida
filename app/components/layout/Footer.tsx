@@ -8,7 +8,7 @@ export default function Footer() {
   return (
     <footer className="border-t mt-20" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
       <div className="section-container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
 
           <div className="flex flex-col gap-4">
             <Logo size="lg" clickable={false} />
@@ -35,21 +35,6 @@ export default function Footer() {
             ))}
           </div>
 
-          <div className="flex flex-col gap-3">
-            <p className="font-semibold text-sm" style={{ color: 'var(--color-primary)' }}>Contacto</p>
-            <a href={`tel:${BUSINESS.phone.main}`} className="text-sm hover:opacity-70 transition-opacity" style={{ color: 'var(--color-text-muted)' }}>
-              📞 {BUSINESS.phone.main}
-            </a>
-            <a href={`https://wa.me/${BUSINESS.phone.whatsapp}`} target="_blank" rel="noopener noreferrer" className="text-sm hover:opacity-70 transition-opacity" style={{ color: 'var(--color-text-muted)' }}>
-              💬 WhatsApp
-            </a>
-            <a href={`mailto:${BUSINESS.email.info}`} className="text-sm hover:opacity-70 transition-opacity" style={{ color: 'var(--color-text-muted)' }}>
-              ✉️ {BUSINESS.email.info}
-            </a>
-            <a href={`https://instagram.com/${BUSINESS.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-sm hover:opacity-70 transition-opacity" style={{ color: 'var(--color-text-muted)' }}>
-              📸 {BUSINESS.instagram}
-            </a>
-          </div>
         </div>
 
         <div className="mt-10 pt-6 border-t flex flex-col md:flex-row items-center justify-between gap-2" style={{ borderColor: 'var(--color-border)' }}>
