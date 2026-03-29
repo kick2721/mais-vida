@@ -6,7 +6,7 @@ import { createServerClient } from '@supabase/ssr'
 const ROLE_ROUTES: Record<string, string[]> = {
   admin: ['/admin'],
   affiliate: ['/affiliate'],
-  customer: ['/dashboard'],
+  // cliente e afiliado podem ambos aceder ao dashboard de cliente
 }
 
 const AUTH_ROUTES = ['/dashboard', '/affiliate', '/admin']
