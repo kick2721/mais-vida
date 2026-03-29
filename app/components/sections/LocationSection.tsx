@@ -122,6 +122,26 @@ export default function LocationSection() {
               </div>
             </div>
 
+            <div className="card">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl mt-0.5">📸</span>
+                <div>
+                  <p className="font-semibold text-sm mb-1" style={{ color: 'var(--color-text)' }}>
+                    Instagram
+                  </p>
+                  <a
+                    href={`https://instagram.com/${BUSINESS.instagram.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm hover:opacity-70 transition-opacity block"
+                    style={{ color: 'var(--color-primary)' }}
+                  >
+                    {BUSINESS.instagram}
+                  </a>
+                </div>
+              </div>
+            </div>
+
             {/* Botón abrir en Google Maps */}
             <a
               href="https://www.google.com/maps/place/%2BVida+Centro+de+Diagn%C3%B3stico+e+Especialidades/data=!4m2!3m1!1s0x0:0x9c5815d98dc97f48"
