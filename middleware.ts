@@ -10,7 +10,10 @@ const ROLE_ROUTES: Record<string, string[]> = {
 }
 
 const AUTH_ROUTES = ['/dashboard', '/affiliate', '/admin']
-const GUEST_ONLY_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password']
+const GUEST_ONLY_ROUTES = ['/login', '/forgot-password', '/reset-password']
+
+// Rutas que son siempre públicas aunque haya sesión activa
+const ALWAYS_PUBLIC = ['/register', '/comprar', '/']
 
 const REDIRECT_MAP: Record<string, string> = {
   admin: '/admin/dashboard',
@@ -44,6 +47,11 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+
+  // Rutas siempre públicas — nunca redirigir aunque haya sesión
+  if (ALWAYS_PUBLIC.some(route => pathname === route || pathname.startsWith(route + '?'))) {
+    return response
+  }
 
   // ── 1. Rotas guest-only: redirecionar se já logado ──────────────────
   if (GUEST_ONLY_ROUTES.some(route => pathname.startsWith(route))) {
