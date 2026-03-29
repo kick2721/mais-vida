@@ -68,7 +68,7 @@ function ComprarForm() {
             </p>
             <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
               A nossa equipa irá verificar o pagamento e enviar o seu cartão por{' '}
-              <strong>WhatsApp</strong> em até <strong>24 horas úteis</strong>.
+              <strong>WhatsApp</strong> em até <strong>48 horas úteis</strong>.
             </p>
             <Link href="/" className="btn-outline text-sm">Voltar ao início</Link>
           </div>
