@@ -1,4 +1,3 @@
-// lib/constants.ts  ← ACTUALIZADO — telefone único + whatsapp único
 export const BUSINESS = {
   name: '+Vida',
   fullName: '+Vida — Centro de Diagnóstico e Especialidades',
@@ -83,16 +82,10 @@ export function validateAngolaBi(bi: string): { valid: boolean; error?: string }
   }
   const normalized = bi.replace(/\s/g, '').toUpperCase()
   if (normalized.length !== BI_ANGOLA.length) {
-    return {
-      valid: false,
-      error: `O BI deve ter ${BI_ANGOLA.length} caracteres (ex: ${BI_ANGOLA.example}).`,
-    }
+    return { valid: false, error: `O BI deve ter ${BI_ANGOLA.length} caracteres (ex: ${BI_ANGOLA.example}).` }
   }
   if (!BI_ANGOLA.pattern.test(normalized)) {
-    return {
-      valid: false,
-      error: `Formato inválido. Use o formato: ${BI_ANGOLA.patternDisplay} (9 números + 2 letras + 3 números).`,
-    }
+    return { valid: false, error: `Formato inválido. Use o formato: ${BI_ANGOLA.patternDisplay}.` }
   }
   return { valid: true }
 }
