@@ -32,6 +32,7 @@ export default function HeroSection() {
       <div className="section-container relative z-10 py-20 md:py-28">
         <div className="flex flex-col md:flex-row items-center gap-12 md:gap-16">
 
+          {/* ── Texto izquierda ── */}
           <div className="flex-1 text-center md:text-left">
             <span
               className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full"
@@ -74,46 +75,51 @@ export default function HeroSection() {
             </p>
           </div>
 
-          {/* Tarjetas DESKTOP */}
-          <div className="flex-shrink-0 hidden md:flex items-center justify-center">
-            <div className="relative flex flex-col gap-5" style={{ width: 380 }}>
+          {/* ── Tarjetas DESKTOP ── */}
+          <div className="flex-shrink-0 hidden md:flex flex-col items-end justify-center gap-1">
+            <div className="flex flex-col gap-5" style={{ width: 380 }}>
+
               <div className="card-frente rounded-2xl overflow-hidden">
                 <Image
                   src="/cartao-frente.png"
                   alt="Cartão de Membro +Vida — Frente"
                   width={380}
-                  height={240}
+                  height={252}
                   style={{ width: '100%', height: 'auto', display: 'block' }}
                   priority
                 />
               </div>
+
               <div className="card-verso rounded-2xl overflow-hidden">
                 <Image
                   src="/cartao-verso.png"
                   alt="Cartão de Membro +Vida — Verso"
                   width={380}
-                  height={240}
+                  height={252}
                   style={{ width: '100%', height: 'auto', display: 'block' }}
                   priority
                 />
               </div>
-              <div
-                className="absolute -bottom-3 -right-3 px-4 py-2 rounded-full text-xs font-bold text-white shadow-lg"
-                style={{ background: 'var(--color-primary)', zIndex: 10 }}
-              >
-                ✓ Cartão oficial
-              </div>
+
+            </div>
+
+            {/* Badge debajo, sin tapar nada */}
+            <div
+              className="px-4 py-2 rounded-full text-xs font-bold text-white shadow-lg mt-2"
+              style={{ background: 'var(--color-primary)' }}
+            >
+              ✓ Cartão oficial
             </div>
           </div>
 
-          {/* Tarjetas MOBILE */}
+          {/* ── Tarjetas MOBILE ── */}
           <div className="md:hidden w-full max-w-sm mx-auto flex flex-col gap-4">
             <div className="rounded-2xl overflow-hidden shadow-xl" style={{ transform: 'rotate(-1deg)' }}>
               <Image
                 src="/cartao-frente.png"
                 alt="Cartão de Membro +Vida — Frente"
                 width={340}
-                height={215}
+                height={225}
                 style={{ width: '100%', height: 'auto', display: 'block' }}
                 priority
               />
@@ -123,7 +129,7 @@ export default function HeroSection() {
                 src="/cartao-verso.png"
                 alt="Cartão de Membro +Vida — Verso"
                 width={340}
-                height={215}
+                height={225}
                 style={{ width: '100%', height: 'auto', display: 'block' }}
               />
             </div>
