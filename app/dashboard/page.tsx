@@ -7,6 +7,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { logoutUser } from '@/lib/actions'
 import Logo from '@/app/components/ui/Logo'
 import { MEMBERSHIP, BUSINESS } from '@/lib/constants'
+import BecomeAffiliateButton from './BecomeAffiliateButton'
 
 export default async function CustomerDashboardPage() {
   const supabase = await createServerSupabaseClient()
@@ -152,6 +153,25 @@ export default async function CustomerDashboardPage() {
 
           </div>
         )}
+
+        {/* Tornar-me Afiliado */}
+        <div className="mt-8 max-w-2xl">
+          <div className="card border-2" style={{ borderColor: 'rgba(74,140,63,0.25)', background: 'rgba(240,247,239,0.8)' }}>
+            <div className="flex items-start gap-4 flex-wrap">
+              <div className="text-3xl">🤝</div>
+              <div className="flex-1">
+                <h3 className="font-display font-bold text-gray-900 mb-1">
+                  Quer ganhar dinheiro a recomendar?
+                </h3>
+                <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
+                  Torne-se afiliado e ganhe <strong style={{ color: 'var(--color-primary)' }}>250 Kz</strong> por cada Cartão +Vida vendido através do seu link. 
+                  A sua membresía actual não é afectada.
+                </p>
+                <BecomeAffiliateButton />
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Contacto */}
         <div className="mt-10">
