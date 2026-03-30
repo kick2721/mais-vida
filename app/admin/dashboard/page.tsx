@@ -9,6 +9,7 @@ import AdminSalesTable from './AdminSalesTable'
 import AdminAffiliatesTable from './AdminAffiliatesTable'
 import IssueCardButton from './IssueCardButton'
 import AdminCommissionsActions from './AdminCommissionsActions'
+import AdminApplicationsTable from './AdminApplicationsTable'
 import Logo from '@/app/components/ui/Logo'
 
 export default async function AdminDashboardPage({
@@ -111,11 +112,23 @@ export default async function AdminDashboardPage({
     .order('created_at', { ascending: false })
     .limit(50)
 
+  // ─── APPLICATIONS DATA ───────────────────────────────────────
+  const { data: applications } = await supabase
+    .from('affiliate_applications')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  const { count: pendingApplications } = await supabase
+    .from('affiliate_applications')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending')
+
   const kpis = [
     { label: 'Vendas Totais', value: totalSales || 0, sub: `${pendingSales} pendentes`, color: 'var(--color-primary)', icon: '💳' },
     { label: 'Confirmadas', value: confirmedSales || 0, sub: 'receita validada', color: '#166534', icon: '✅' },
     { label: 'Afiliados Activos', value: totalAffiliates || 0, sub: 'na plataforma', color: '#1e40af', icon: '👥' },
     { label: 'Cartões Pendentes', value: pendingCards || 0, sub: 'para emitir', color: '#d97706', icon: '🪪' },
+    { label: 'Candidaturas', value: pendingApplications || 0, sub: 'pendentes de análise', color: '#7c3aed', icon: '📋' },
   ]
 
   return (
@@ -170,6 +183,7 @@ export default async function AdminDashboardPage({
             { key: 'cards', label: '🪪 Cartões' },
             { key: 'affiliates', label: '👥 Afiliados' },
             { key: 'commissions', label: '💰 Comissões' },
+            { key: 'applications', label: '📋 Candidaturas' },
           ].map(tab => (
             <a
               key={tab.key}
@@ -205,6 +219,11 @@ export default async function AdminDashboardPage({
         {/* Commissions Tab */}
         {activeTab === 'commissions' && (
           <AdminCommissionsSection commissions={commissions || []} adminId={user.id} />
+        )}
+
+        {/* Applications Tab */}
+        {activeTab === 'applications' && (
+          <AdminApplicationsTable applications={(applications as any[]) || []} />
         )}
       </div>
     </div>
