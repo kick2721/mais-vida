@@ -1,0 +1,186 @@
+'use client'
+
+// app/admin/dashboard/AdminApplicationsTable.tsx
+// Gestão de candidaturas de afiliados — aprovar ou rejeitar
+
+import { useState, useTransition } from 'react'
+import { approveApplication, rejectApplication } from '@/lib/admin-actions'
+
+interface Application {
+  id: string
+  full_name: string
+  phone: string
+  national_id: string
+  occupation: string | null
+  network_size: string | null
+  motivation: string
+  status: 'pending' | 'approved' | 'rejected'
+  reject_reason: string | null
+  created_at: string
+}
+
+export default function AdminApplicationsTable({ applications }: { applications: Application[] }) {
+  const pending = applications.filter(a => a.status === 'pending')
+  const reviewed = applications.filter(a => a.status !== 'pending')
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-display text-lg font-bold text-gray-900">
+          Candidaturas a Afiliado ({applications.length})
+        </h2>
+        {pending.length > 0 && (
+          <span className="text-sm text-yellow-700 bg-yellow-50 px-3 py-1 rounded-full font-medium">
+            {pending.length} pendentes de análise
+          </span>
+        )}
+      </div>
+
+      {pending.length > 0 && (
+        <div className="mb-8">
+          <h3 className="font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wide">
+            ⏳ Pendentes de análise
+          </h3>
+          <div className="space-y-4">
+            {pending.map(app => (
+              <ApplicationCard key={app.id} application={app} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {reviewed.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wide">
+            Já analisadas
+          </h3>
+          <div className="space-y-3">
+            {reviewed.map(app => (
+              <ApplicationCard key={app.id} application={app} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {applications.length === 0 && (
+        <div className="card text-center py-10">
+          <p className="text-4xl mb-3">📋</p>
+          <p className="text-gray-500 text-sm">Ainda não há candidaturas submetidas.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ApplicationCard({ application: app }: { application: Application }) {
+  const [isPending, startTransition] = useTransition()
+  const [status, setStatus] = useState(app.status)
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+
+  const handleApprove = () => {
+    if (!confirm(`Aprovar candidatura de ${app.full_name}?\n\nIsto irá criar uma conta de afiliado — deverá depois criar as credenciais de acesso para a pessoa.`)) return
+    startTransition(async () => {
+      const result = await approveApplication(app.id)
+      if (result.success) setStatus('approved')
+      else alert(result.error || 'Erro ao aprovar.')
+    })
+  }
+
+  const handleReject = () => {
+    startTransition(async () => {
+      const result = await rejectApplication(app.id, rejectReason)
+      if (result.success) { setStatus('rejected'); setShowRejectModal(false) }
+      else alert(result.error || 'Erro ao rejeitar.')
+    })
+  }
+
+  const statusBadge = {
+    pending:  { label: '⏳ Pendente', color: '#92400e', bg: '#fef3c7' },
+    approved: { label: '✅ Aprovada', color: '#166534', bg: '#dcfce7' },
+    rejected: { label: '✗ Rejeitada', color: '#991b1b', bg: '#fee2e2' },
+  }[status]
+
+  return (
+    <div className="card">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <p className="font-semibold text-gray-800">{app.full_name}</p>
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+              style={{ background: statusBadge.bg, color: statusBadge.color }}>
+              {statusBadge.label}
+            </span>
+          </div>
+          <div className="flex gap-4 flex-wrap text-xs text-gray-500">
+            <span>📞 {app.phone}</span>
+            <span>🪪 {app.national_id}</span>
+            {app.occupation && <span>💼 {app.occupation}</span>}
+            {app.network_size && <span>👥 {app.network_size}</span>}
+            <span>📅 {new Date(app.created_at).toLocaleDateString('pt-AO')}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Motivação */}
+      <div className="rounded-xl p-3 mb-4"
+        style={{ background: 'var(--color-surface)', borderLeft: '3px solid var(--color-primary)' }}>
+        <p className="text-xs font-semibold text-gray-600 mb-1">Motivação:</p>
+        <p className="text-sm text-gray-700 leading-relaxed">{app.motivation}</p>
+      </div>
+
+      {app.reject_reason && (
+        <div className="rounded-xl p-3 mb-4 bg-red-50 border border-red-100">
+          <p className="text-xs font-semibold text-red-700 mb-1">Motivo de rejeição:</p>
+          <p className="text-sm text-red-600">{app.reject_reason}</p>
+        </div>
+      )}
+
+      {/* Acções */}
+      {status === 'pending' && (
+        <div className="flex gap-2 pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+          <button onClick={handleApprove} disabled={isPending}
+            className="btn-primary text-sm py-2 px-4 disabled:opacity-50">
+            {isPending ? '...' : '✅ Aprovar'}
+          </button>
+          <button onClick={() => setShowRejectModal(true)} disabled={isPending}
+            className="btn-outline text-sm py-2 px-4 border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50">
+            Rejeitar
+          </button>
+        </div>
+      )}
+
+      {/* Modal rejeição */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.5)' }}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+            <h3 className="font-display text-lg font-bold text-gray-900 mb-3">
+              Rejeitar candidatura
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Indique o motivo da rejeição (opcional — para referência interna):
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={e => setRejectReason(e.target.value)}
+              rows={3}
+              className="input-field resize-none mb-4"
+              placeholder="Ex: Perfil não adequado ao programa..."
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setShowRejectModal(false)}
+                className="flex-1 btn-outline text-sm py-2">
+                Cancelar
+              </button>
+              <button onClick={handleReject} disabled={isPending}
+                className="flex-1 text-sm py-2 px-4 rounded-xl font-semibold bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50">
+                {isPending ? '...' : 'Confirmar rejeição'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
