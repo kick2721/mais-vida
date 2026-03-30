@@ -14,6 +14,10 @@ interface Application {
   occupation: string | null
   network_size: string | null
   motivation: string
+  instagram: string | null
+  facebook: string | null
+  tiktok: string | null
+  other_social: string | null
   status: 'pending' | 'approved' | 'rejected'
   reject_reason: string | null
   created_at: string
@@ -128,6 +132,36 @@ function ApplicationCard({ application: app }: { application: Application }) {
         <p className="text-xs font-semibold text-gray-600 mb-1">Motivação:</p>
         <p className="text-sm text-gray-700 leading-relaxed">{app.motivation}</p>
       </div>
+
+      {/* Redes sociais */}
+      {(app.instagram || app.facebook || app.tiktok || app.other_social) && (
+        <div className="rounded-xl p-3 mb-4 border" style={{ borderColor: 'var(--color-border)' }}>
+          <p className="text-xs font-semibold text-gray-600 mb-2">Redes sociais:</p>
+          <div className="flex flex-wrap gap-3">
+            {app.instagram && (
+              <a href={`https://instagram.com/${app.instagram}`} target="_blank" rel="noopener noreferrer"
+                className="text-xs flex items-center gap-1 underline" style={{ color: 'var(--color-primary)' }}>
+                📸 instagram.com/{app.instagram}
+              </a>
+            )}
+            {app.facebook && (
+              <a href={`https://facebook.com/${app.facebook}`} target="_blank" rel="noopener noreferrer"
+                className="text-xs flex items-center gap-1 underline" style={{ color: 'var(--color-primary)' }}>
+                👤 facebook.com/{app.facebook}
+              </a>
+            )}
+            {app.tiktok && (
+              <a href={`https://tiktok.com/@${app.tiktok}`} target="_blank" rel="noopener noreferrer"
+                className="text-xs flex items-center gap-1 underline" style={{ color: 'var(--color-primary)' }}>
+                🎵 tiktok.com/@{app.tiktok}
+              </a>
+            )}
+            {app.other_social && (
+              <span className="text-xs text-gray-600">🔗 {app.other_social}</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {app.reject_reason && (
         <div className="rounded-xl p-3 mb-4 bg-red-50 border border-red-100">
