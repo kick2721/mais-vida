@@ -34,6 +34,10 @@ export default function AffiliateCandidaturePage() {
     occupation: '',
     network_size: '',
     motivation: '',
+    instagram: '',
+    facebook: '',
+    tiktok: '',
+    other_social: '',
   })
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -67,6 +71,10 @@ export default function AffiliateCandidaturePage() {
           occupation: form.occupation || null,
           network_size: form.network_size || null,
           motivation: form.motivation,
+          instagram: form.instagram || null,
+          facebook: form.facebook || null,
+          tiktok: form.tiktok || null,
+          other_social: form.other_social || null,
         })
 
       if (dbError) {
@@ -222,11 +230,63 @@ export default function AffiliateCandidaturePage() {
 
             <div className="border-t" style={{ borderColor: 'var(--color-border)' }} />
 
+            {/* Redes sociais */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest mb-1"
+                style={{ color: 'var(--color-primary)' }}>
+                3. Redes sociais
+              </p>
+              <p className="text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>
+                Partilhe os seus perfis para que possamos avaliar melhor a sua presença digital.
+                Pelo menos uma rede social é recomendada.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className="input-label">Instagram</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
+                      style={{ color: 'var(--color-text-muted)' }}>instagram.com/</span>
+                    <input type="text" value={form.instagram} onChange={set('instagram')}
+                      className="input-field pl-28" placeholder="o_seu_usuario"
+                      disabled={isPending} />
+                  </div>
+                </div>
+                <div>
+                  <label className="input-label">Facebook</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
+                      style={{ color: 'var(--color-text-muted)' }}>facebook.com/</span>
+                    <input type="text" value={form.facebook} onChange={set('facebook')}
+                      className="input-field pl-28" placeholder="o_seu_usuario"
+                      disabled={isPending} />
+                  </div>
+                </div>
+                <div>
+                  <label className="input-label">TikTok</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
+                      style={{ color: 'var(--color-text-muted)' }}>tiktok.com/@</span>
+                    <input type="text" value={form.tiktok} onChange={set('tiktok')}
+                      className="input-field pl-28" placeholder="o_seu_usuario"
+                      disabled={isPending} />
+                  </div>
+                </div>
+                <div>
+                  <label className="input-label">Outra rede ou canal</label>
+                  <input type="text" value={form.other_social} onChange={set('other_social')}
+                    className="input-field" placeholder="Ex: YouTube, LinkedIn, WhatsApp Business..."
+                    disabled={isPending} />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t" style={{ borderColor: 'var(--color-border)' }} />
+
             {/* Motivação */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-4"
                 style={{ color: 'var(--color-primary)' }}>
-                3. Motivação
+                4. Motivação
               </p>
               <div>
                 <label className="input-label">
