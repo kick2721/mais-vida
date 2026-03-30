@@ -12,8 +12,8 @@ const FAQS = [
     a: `O ${MEMBERSHIP.name} custa ${MEMBERSHIP.price.toLocaleString('pt-AO')} Kz por ano. Com um único pagamento anual, toda a sua família tem acesso imediato aos descontos em todas as especialidades da clínica.`,
   },
   {
-    q: 'O cartão cobre toda a família?',
-    a: 'Sim. O cartão é familiar — cobre o titular e os seus dependentes. Basta apresentar o cartão (físico ou digital) em qualquer serviço da clínica para usufruir dos descontos.',
+    q: 'O cartão é individual ou familiar?',
+    a: 'O cartão é individual — cada pessoa tem o seu próprio cartão. Para cobrir toda a família, cada membro deve adquirir o seu cartão separadamente.',
   },
   {
     q: 'Como funciona o pagamento?',
