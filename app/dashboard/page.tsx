@@ -90,7 +90,7 @@ export default async function CustomerDashboardPage() {
               Ainda não tem {MEMBERSHIP.name}
             </h2>
             <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
-              Adquira o seu cartão e comece a poupar em saúde para toda a família.
+              Adquira o seu cartão e comece a poupar em saúde.
             </p>
             <Link href="/comprar" className="btn-primary">
               Obter {MEMBERSHIP.name}
