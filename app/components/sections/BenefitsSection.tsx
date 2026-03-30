@@ -23,7 +23,7 @@ export default function BenefitsSection() {
             Benefícios do {MEMBERSHIP.name}
           </h2>
           <p className="text-base max-w-xl mx-auto" style={{ color: 'var(--color-text-muted)' }}>
-            Com um único cartão anual, toda a família acede a descontos em todas as
+            Com um único cartão anual, acede a descontos em todas as
             especialidades da clínica.
           </p>
         </div>
