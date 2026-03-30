@@ -236,3 +236,50 @@ export async function payCommission(commissionId: string) {
   revalidatePath('/admin/dashboard')
   return { success: true }
 }
+
+// ─── APROVAR CANDIDATURA DE AFILIADO ────────────────────────────────────────
+export async function approveApplication(applicationId: string) {
+  const supabase = await createServerSupabaseClient()
+
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', (await supabase.auth.getUser()).data.user?.id || '').single()
+  if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
+
+  const { error } = await supabase
+    .from('affiliate_applications')
+    .update({
+      status: 'approved',
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', applicationId)
+    .eq('status', 'pending')
+
+  if (error) return { error: 'Erro ao aprovar: ' + error.message }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// ─── REJEITAR CANDIDATURA DE AFILIADO ───────────────────────────────────────
+export async function rejectApplication(applicationId: string, reason?: string) {
+  const supabase = await createServerSupabaseClient()
+
+  const { data: profile } = await supabase
+    .from('profiles').select('role').eq('id', (await supabase.auth.getUser()).data.user?.id || '').single()
+  if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
+
+  const { error } = await supabase
+    .from('affiliate_applications')
+    .update({
+      status: 'rejected',
+      reject_reason: reason || null,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', applicationId)
+    .eq('status', 'pending')
+
+  if (error) return { error: 'Erro ao rejeitar: ' + error.message }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
