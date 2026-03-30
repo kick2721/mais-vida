@@ -54,7 +54,7 @@ export default function HeroSection() {
               style={{ color: 'var(--color-text-muted)' }}
             >
               {BUSINESS.tagline}. Aceda a consultas, exames e muito mais com descontos
-              exclusivos para toda a família.
+              exclusivos em consultas, exames e muito mais.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
