@@ -6,10 +6,12 @@ import { usePathname } from 'next/navigation'
 import Logo from '@/app/components/ui/Logo'
 
 const NAV_LINKS = [
-  { href: '/',              label: 'Início' },
-  { href: '/#beneficios',   label: 'Benefícios' },
-  { href: '/#como-funciona',label: 'Como Funciona' },
-  { href: '/#afiliados',    label: 'Afiliados' },
+  { href: '/',               label: 'Início' },
+  { href: '/#beneficios',    label: 'Benefícios' },
+  { href: '/#como-funciona', label: 'Como Funciona' },
+  { href: '/#afiliados',     label: 'Afiliados' },
+  { href: '/#faq',           label: 'FAQ' },
+  { href: '/#contacto',      label: 'Contacto' },
 ]
 
 export default function Navbar() {
