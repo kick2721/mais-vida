@@ -31,14 +31,17 @@ export default function AffiliatesSection() {
 
             {/* CTA claramente separado */}
             <div className="p-5 rounded-2xl border-2 inline-block" style={{ borderColor: 'rgba(74,140,63,0.25)', background: 'rgba(240,247,239,0.8)' }}>
-              <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text)' }}>
+              <p className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
                 Quero tornar-me afiliado:
               </p>
-              <Link href="/register?role=affiliate" className="btn-primary text-base py-3 px-8 block text-center">
-                Registar como Afiliado →
+              <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
+                Preencha o formulário de candidatura. A nossa equipa analisa e aprova manualmente.
+              </p>
+              <Link href="/afiliado-candidatura" className="btn-primary text-base py-3 px-8 block text-center">
+                Candidatar-me como Afiliado →
               </Link>
               <p className="mt-3 text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>
-                Já tens conta?{' '}
+                Já foi aprovado?{' '}
                 <Link href="/login" style={{ color: 'var(--color-primary)' }}>Entrar no painel</Link>
               </p>
             </div>
