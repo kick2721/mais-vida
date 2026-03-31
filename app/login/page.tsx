@@ -139,8 +139,8 @@ export default function LoginPage() {
             </p>
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
               Quer ser afiliado?{' '}
-              <Link href="/register?role=affiliate" style={{ color: 'var(--color-primary)' }}>
-                Registar como afiliado
+              <Link href="/afiliado-candidatura" style={{ color: 'var(--color-primary)' }}>
+                Submeter candidatura
               </Link>
             </p>
           </div>
