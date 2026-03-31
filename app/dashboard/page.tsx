@@ -7,7 +7,6 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { logoutUser } from '@/lib/actions'
 import Logo from '@/app/components/ui/Logo'
 import { MEMBERSHIP, BUSINESS } from '@/lib/constants'
-import BecomeAffiliateButton from './BecomeAffiliateButton'
 
 export default async function CustomerDashboardPage() {
   const supabase = await createServerSupabaseClient()
@@ -165,9 +164,11 @@ export default async function CustomerDashboardPage() {
                 </h3>
                 <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
                   Torne-se afiliado e ganhe <strong style={{ color: 'var(--color-primary)' }}>250 Kz</strong> por cada Cartão +Vida vendido através do seu link. 
-                  A sua membresía actual não é afectada.
+                  A adesão ao programa está sujeita a aprovação pela nossa equipa.
                 </p>
-                <BecomeAffiliateButton />
+                <Link href="/afiliado-candidatura" className="btn-primary text-sm py-2 px-5 inline-flex">
+                  🤝 Submeter candidatura →
+                </Link>
               </div>
             </div>
           </div>
