@@ -2,16 +2,13 @@
 
 import { useState, useTransition, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase-client'
 import Logo from '@/app/components/ui/Logo'
 import { REFERRAL } from '@/lib/constants'
 
 function RegisterForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const role = 'customer'
-  const isAffiliate = false
 
   const [form, setForm] = useState({
     name: '',
@@ -38,8 +35,6 @@ function RegisterForm() {
 
     startTransition(async () => {
       const supabase = createBrowserSupabaseClient()
-
-      // Cerrar sesión previa si existe (evita conflictos de middleware)
       await supabase.auth.signOut()
 
       const { error: authError } = await supabase.auth.signUp({
@@ -49,7 +44,7 @@ function RegisterForm() {
           data: {
             full_name: form.name,
             phone: form.phone,
-            role,
+            role: 'customer',
             national_id: form.national_id,
             referral_code: form.referral_code || null,
           },
@@ -63,12 +58,10 @@ function RegisterForm() {
         }
         return
       }
-      // Mostrar pantalla de éxito en lugar de redirigir directo
       setSuccess(true)
     })
   }
 
-  // Pantalla de éxito post-registro
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 py-10"
@@ -76,25 +69,23 @@ function RegisterForm() {
         <div className="w-full max-w-md">
           <div className="flex justify-center mb-8"><Logo size="lg" href="/" /></div>
           <div className="card text-center py-8">
-            <div className="text-5xl mb-4">{isAffiliate ? '🤝' : '✅'}</div>
+            <div className="text-5xl mb-4">✅</div>
             <h2 className="font-display text-xl font-bold text-gray-900 mb-2">
               Conta criada com sucesso!
             </h2>
             <p className="text-sm mb-2" style={{ color: 'var(--color-text-muted)' }}>
-              Enviámos um email de confirmação para <strong>{form.email}</strong>.
+              A sua conta foi criada para o email <strong>{form.email}</strong>.
             </p>
             <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
-              Confirme o seu email e depois entre na sua conta.
+              Entre na sua conta ou adquira já o seu cartão.
             </p>
             <div className="flex flex-col gap-3">
               <Link href="/login" className="btn-primary text-center">
                 Entrar na conta →
               </Link>
-              {!isAffiliate && (
-                <Link href="/comprar" className="btn-outline text-sm text-center">
-                  Comprar cartão sem conta
-                </Link>
-              )}
+              <Link href="/comprar" className="btn-outline text-sm text-center">
+                Comprar cartão sem conta
+              </Link>
             </div>
           </div>
         </div>
@@ -107,7 +98,6 @@ function RegisterForm() {
       style={{ background: 'rgba(240,247,239,0.6)' }}>
       <div className="w-full max-w-md">
 
-        {/* Botão voltar */}
         <Link href="/" className="btn-back mb-6 inline-flex">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -120,35 +110,31 @@ function RegisterForm() {
         </div>
 
         <div className="card">
-          {/* Header — contexto claro da jornada */}
           <div className="text-center mb-6 pb-5 border-b" style={{ borderColor: 'var(--color-border)' }}>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
-              style={{ background: isAffiliate ? 'rgba(139,26,26,0.08)' : 'rgba(74,140,63,0.08)' }}>
-              <span className="text-lg">{isAffiliate ? '🤝' : '💳'}</span>
+              style={{ background: 'rgba(74,140,63,0.08)' }}>
+              <span className="text-lg">💳</span>
               <span className="text-xs font-bold uppercase tracking-widest"
-                style={{ color: isAffiliate ? 'var(--color-accent)' : 'var(--color-primary)' }}>
-                {isAffiliate ? 'Registo de Afiliado' : 'Registo de Cliente'}
+                style={{ color: 'var(--color-primary)' }}>
+                Registo de Cliente
               </span>
             </div>
             <h2 className="font-display text-xl font-bold text-gray-900 mb-1">
-              {isAffiliate ? 'Torna-te Afiliado' : 'Cria a tua conta'}
+              Cria a tua conta
             </h2>
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              {isAffiliate
-                ? 'Regista-te e começa a ganhar 250 Kz por cada cartão vendido.'
-                : 'Regista-te para adquirir o teu Cartão +Vida.'}
+              Regista-te para adquirir o teu Cartão +Vida.
             </p>
           </div>
 
-          {/* Aviso de jornada errada */}
           <div className="rounded-xl p-3 mb-5 flex items-start gap-3"
             style={{ background: 'rgba(74,140,63,0.06)', border: '1px solid rgba(74,140,63,0.15)' }}>
-            <span className="text-base mt-0.5">{isAffiliate ? '💡' : '💡'}</span>
+            <span className="text-base mt-0.5">💡</span>
             <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              {isAffiliate
-                ? <>Quer comprar um cartão?{' '}<Link href="/comprar" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Clique aqui →</Link></>
-                <>Quer ser afiliado e ganhar comissões?{' '}<Link href="/afiliado-candidatura" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Candidatar-me aqui →</Link></>
-              }
+              Quer ser afiliado e ganhar comissões?{' '}
+              <Link href="/afiliado-candidatura" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                Candidatar-me aqui →
+              </Link>
             </p>
           </div>
 
@@ -179,15 +165,13 @@ function RegisterForm() {
                 Aceita BI angolano ou passaporte de qualquer país.
               </p>
             </div>
-            {!isAffiliate && (
-              <div>
-                <label className="input-label" htmlFor="referral_code">
-                  Código de afiliado <span style={{ color: 'var(--color-text-muted)' }}>(opcional)</span>
-                </label>
-                <input id="referral_code" type="text" value={form.referral_code} onChange={set('referral_code')}
-                  className="input-field font-mono" placeholder="VIDA-XXXXXX" disabled={isPending} />
-              </div>
-            )}
+            <div>
+              <label className="input-label" htmlFor="referral_code">
+                Código de afiliado <span style={{ color: 'var(--color-text-muted)' }}>(opcional)</span>
+              </label>
+              <input id="referral_code" type="text" value={form.referral_code} onChange={set('referral_code')}
+                className="input-field font-mono" placeholder="VIDA-XXXXXX" disabled={isPending} />
+            </div>
             <div>
               <label className="input-label" htmlFor="password">Palavra-passe</label>
               <input id="password" type="password" autoComplete="new-password" required
@@ -208,7 +192,7 @@ function RegisterForm() {
             )}
 
             <button type="submit" disabled={isPending} className="btn-primary w-full">
-              {isPending ? 'A criar conta...' : isAffiliate ? 'Criar conta de Afiliado' : 'Criar conta de Cliente'}
+              {isPending ? 'A criar conta...' : 'Criar conta de Cliente'}
             </button>
           </form>
 
