@@ -10,8 +10,8 @@ import { REFERRAL } from '@/lib/constants'
 function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const role = searchParams.get('role') === 'affiliate' ? 'affiliate' : 'customer'
-  const isAffiliate = role === 'affiliate'
+  const role = 'customer'
+  const isAffiliate = false
 
   const [form, setForm] = useState({
     name: '',
@@ -147,7 +147,7 @@ function RegisterForm() {
             <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
               {isAffiliate
                 ? <>Quer comprar um cartão?{' '}<Link href="/comprar" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Clique aqui →</Link></>
-                : <>Quer ser afiliado e ganhar comissões?{' '}<Link href="/register?role=affiliate" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Registe-se aqui →</Link></>
+                <>Quer ser afiliado e ganhar comissões?{' '}<Link href="/afiliado-candidatura" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Candidatar-me aqui →</Link></>
               }
             </p>
           </div>
