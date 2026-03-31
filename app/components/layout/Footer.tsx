@@ -27,7 +27,7 @@ export default function Footer() {
               { href: '/#beneficios', label: 'Benefícios' },
               { href: '/#como-funciona', label: 'Como Funciona' },
               { href: '/comprar', label: `Obter ${MEMBERSHIP.name}` },
-              { href: '/register?role=affiliate', label: 'Tornar-me Afiliado' },
+              { href: '/afiliado-candidatura', label: 'Tornar-me Afiliado' },
             ].map(link => (
               <Link key={link.href} href={link.href} className="text-sm hover:opacity-70 transition-opacity" style={{ color: 'var(--color-text-muted)' }}>
                 {link.label}
