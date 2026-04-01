@@ -16,6 +16,16 @@ interface ApplicationResult {
   created_at: string
 }
 
+// Normaliza o telefone: remove espaços, traços e parênteses para comparação
+function normalizePhone(value: string) {
+  return value.replace(/[\s\-().]/g, '').toLowerCase()
+}
+
+// Normaliza o BI: remove espaços e converte para maiúsculas
+function normalizeId(value: string) {
+  return value.replace(/\s/g, '').toUpperCase()
+}
+
 export default function CandidaturaEstadoPage() {
   const [phone, setPhone] = useState('')
   const [nationalId, setNationalId] = useState('')
@@ -37,21 +47,36 @@ export default function CandidaturaEstadoPage() {
 
     startTransition(async () => {
       const supabase = createBrowserSupabaseClient()
+
+      // Busca por BI (ilike = case-insensitive), sem .single() para não dar erro se não encontrar
       const { data, error: dbError } = await supabase
         .from('affiliate_applications')
-        .select('full_name, phone, status, reject_reason, created_at')
-        .eq('phone', phone.trim())
-        .eq('national_id', nationalId.trim())
+        .select('full_name, phone, status, reject_reason, created_at, national_id')
+        .ilike('national_id', normalizeId(nationalId.trim()))
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
 
-      if (dbError || !data) {
+      if (dbError) {
+        setError('Erro ao consultar. Tente novamente.')
+        return
+      }
+
+      if (!data || data.length === 0) {
         setNotFound(true)
         return
       }
 
-      setResult(data as ApplicationResult)
+      // Filtra localmente pelo telefone normalizado (ignora espaços/traços)
+      const phoneNorm = normalizePhone(phone.trim())
+      const match = data.find(
+        (row) => normalizePhone(row.phone) === phoneNorm
+      )
+
+      if (!match) {
+        setNotFound(true)
+        return
+      }
+
+      setResult(match as ApplicationResult)
     })
   }
 
@@ -97,7 +122,6 @@ export default function CandidaturaEstadoPage() {
           <Logo size="lg" href="/" />
         </div>
 
-        {/* Cabeçalho */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
             style={{ background: 'rgba(22,101,52,0.08)' }}>
@@ -111,11 +135,10 @@ export default function CandidaturaEstadoPage() {
             Consultar a minha candidatura
           </h1>
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            Introduza os seus dados para verificar o estado da sua candidatura a afiliado.
+            Introduza os mesmos dados que usou ao candidatar-se.
           </p>
         </div>
 
-        {/* Formulário de pesquisa */}
         {!result && (
           <div className="card">
             <form onSubmit={handleSearch} className="space-y-4">
@@ -132,6 +155,9 @@ export default function CandidaturaEstadoPage() {
                   placeholder="+244 9XX XXX XXX"
                   disabled={isPending}
                 />
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                  Com ou sem espaços — ex: +244923456789 ou +244 923 456 789
+                </p>
               </div>
               <div>
                 <label className="input-label">
@@ -157,8 +183,9 @@ export default function CandidaturaEstadoPage() {
 
               {notFound && (
                 <div className="rounded-xl p-3 bg-yellow-50 border border-yellow-200">
-                  <p className="text-sm text-yellow-800">
-                    Não encontrámos nenhuma candidatura com esses dados. Verifique se os dados introduzidos coincidem com os da candidatura.
+                  <p className="text-sm text-yellow-800 font-medium mb-1">Candidatura não encontrada</p>
+                  <p className="text-xs text-yellow-700">
+                    Verifique se o telefone e o BI são exactamente os que usou ao preencher o formulário.
                   </p>
                 </div>
               )}
@@ -174,12 +201,10 @@ export default function CandidaturaEstadoPage() {
           </div>
         )}
 
-        {/* Resultado */}
         {result && (() => {
           const cfg = statusConfig[result.status]
           return (
             <div className="space-y-4">
-              {/* Card de estado */}
               <div
                 className="card border-2"
                 style={{ borderColor: cfg.border, background: cfg.bg }}
@@ -194,7 +219,6 @@ export default function CandidaturaEstadoPage() {
                   </p>
                 </div>
 
-                {/* Detalhe rejeição */}
                 {result.status === 'rejected' && result.reject_reason && (
                   <div className="rounded-xl p-3 bg-red-50 border border-red-200 mt-3">
                     <p className="text-xs font-semibold text-red-700 mb-1">Observação:</p>
@@ -203,7 +227,6 @@ export default function CandidaturaEstadoPage() {
                 )}
               </div>
 
-              {/* Dados da candidatura */}
               <div className="card">
                 <p className="text-xs font-bold uppercase tracking-widest mb-3"
                   style={{ color: 'var(--color-primary)' }}>
@@ -229,7 +252,6 @@ export default function CandidaturaEstadoPage() {
                 </div>
               </div>
 
-              {/* Acções pós-resultado */}
               {result.status === 'approved' && (
                 <Link href="/login" className="btn-primary w-full text-center block">
                   Entrar no painel de afiliado →
@@ -246,13 +268,18 @@ export default function CandidaturaEstadoPage() {
           )
         })()}
 
-        {/* Link para candidatura */}
         {!result && (
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
               Ainda não se candidatou?{' '}
               <Link href="/afiliado-candidatura" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
                 Candidatar-me agora →
+              </Link>
+            </p>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              Já foi aprovado?{' '}
+              <Link href="/login" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                Entrar no painel →
               </Link>
             </p>
           </div>
