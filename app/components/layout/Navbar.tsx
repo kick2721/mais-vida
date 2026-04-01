@@ -61,46 +61,56 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Hambúrguer mobile */}
+            {/* Hambúrguer mobile — 3 rayas simples y centradas */}
             <button
               onClick={() => setOpen(true)}
-              className="md:hidden flex flex-col justify-center items-center w-10 h-10 rounded-xl gap-1.5"
-              style={{ background: 'rgba(74,140,63,0.08)' }}
+              className="md:hidden flex flex-col justify-center items-center w-10 h-10 rounded-xl"
+              style={{ background: 'rgba(74,140,63,0.08)', gap: '5px' }}
               aria-label="Abrir menu"
             >
-              <span className="block w-5 h-0.5 rounded-full" style={{ background: 'var(--color-primary)' }} />
-              <span className="block w-5 h-0.5 rounded-full" style={{ background: 'var(--color-primary)' }} />
-              <span className="block w-3.5 h-0.5 rounded-full self-start ml-[5px]" style={{ background: 'var(--color-primary)' }} />
+              <span style={{ display: 'block', width: '20px', height: '2px', borderRadius: '2px', background: 'var(--color-primary)' }} />
+              <span style={{ display: 'block', width: '20px', height: '2px', borderRadius: '2px', background: 'var(--color-primary)' }} />
+              <span style={{ display: 'block', width: '20px', height: '2px', borderRadius: '2px', background: 'var(--color-primary)' }} />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Side panel mobile */}
+      {/* Side panel — fixed al viewport, nunca se desplaza con la página */}
       {open && (
-        <div className="fixed inset-0 z-50 md:hidden" style={{ pointerEvents: 'all' }}>
-
+        <>
           {/* Backdrop */}
           <div
-            className="absolute inset-0"
-            style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(3px)' }}
             onClick={() => setOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9998,
+              background: 'rgba(0,0,0,0.45)',
+              backdropFilter: 'blur(3px)',
+            }}
           />
 
-          {/* Painel — scroll interno completo */}
+          {/* Panel */}
           <div
-            className="absolute top-0 right-0 h-full flex flex-col"
             style={{
+              position: 'fixed',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 9999,
               width: '80%',
               maxWidth: '320px',
               background: '#fff',
               boxShadow: '-8px 0 40px rgba(0,0,0,0.18)',
+              display: 'flex',
+              flexDirection: 'column',
               overflowY: 'auto',
               WebkitOverflowScrolling: 'touch',
             }}
           >
-            {/* Cabecera: solo el botón X */}
-            <div className="flex items-center justify-end px-4 pt-4 pb-2">
+            {/* Botón cerrar */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 16px 8px' }}>
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Fechar menu"
@@ -113,9 +123,9 @@ export default function Navbar() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  flexShrink: 0,
                   border: 'none',
                   cursor: 'pointer',
+                  flexShrink: 0,
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -125,9 +135,8 @@ export default function Navbar() {
             </div>
 
             {/* Navegación */}
-            <nav className="flex flex-col px-4 pb-2">
-              <p className="text-xs font-semibold uppercase tracking-widest px-3 mb-2"
-                style={{ color: 'var(--color-text-muted)' }}>
+            <nav style={{ display: 'flex', flexDirection: 'column', padding: '0 16px 8px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-text-muted)', padding: '0 12px', marginBottom: '8px' }}>
                 Navegação
               </p>
               {NAV_LINKS.map(link => (
@@ -143,38 +152,42 @@ export default function Navbar() {
             </nav>
 
             {/* Divisor */}
-            <div className="mx-4 mt-3 mb-4" style={{ height: '1px', background: 'var(--color-border)' }} />
+            <div style={{ height: '1px', background: 'var(--color-border)', margin: '12px 16px 16px' }} />
 
             {/* CTAs */}
-            <div className="px-4 pb-8 flex flex-col gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest px-3 mb-1"
-                style={{ color: 'var(--color-text-muted)' }}>
+            <div style={{ padding: '0 16px 40px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-text-muted)', padding: '0 12px', marginBottom: '4px' }}>
                 Acesso rápido
               </p>
 
               <Link href="/candidatura-estado" onClick={() => setOpen(false)}
-                className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors"
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 500,
                   color: 'var(--color-primary)',
                   background: 'rgba(74,140,63,0.07)',
                   border: '1px solid rgba(74,140,63,0.18)',
+                  textDecoration: 'none',
                 }}>
                 <span>🔍</span>
                 Ver estado da candidatura
               </Link>
 
-              <Link href="/login" onClick={() => setOpen(false)}
-                className="btn-outline py-3.5 text-sm text-center w-full">
+              <Link href="/login" onClick={() => setOpen(false)} className="btn-outline text-sm text-center w-full" style={{ paddingTop: '14px', paddingBottom: '14px' }}>
                 Entrar
               </Link>
 
-              <Link href="/comprar" onClick={() => setOpen(false)}
-                className="btn-primary py-3.5 text-sm text-center w-full">
+              <Link href="/comprar" onClick={() => setOpen(false)} className="btn-primary text-sm text-center w-full" style={{ paddingTop: '14px', paddingBottom: '14px' }}>
                 Obter Cartão
               </Link>
             </div>
           </div>
-        </div>
+        </>
       )}
     </>
   )
