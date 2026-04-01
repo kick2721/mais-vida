@@ -64,3 +64,49 @@ export async function becomeAffiliate() {
   // Redirigir ao painel de afiliado
   redirect('/affiliate/dashboard')
 }
+
+// ─── CONSULTA PÚBLICA DE CANDIDATURA ─────────────────────────────────────────
+// Usa o cliente admin para bypassar RLS — a página é pública mas a query é segura
+// porque só devolve dados se o utilizador souber o telefone E o BI exactos
+export async function consultarCandidatura(phone: string, nationalId: string) {
+  if (!phone || !nationalId) return { error: 'Dados em falta.' }
+
+  // Remove tudo que não seja dígito para comparar telefones
+  const digitsOnly = (v: string) => v.replace(/\D/g, '')
+  // Normaliza BI: sem espaços, maiúsculas
+  const normalizeId = (v: string) => v.replace(/\s/g, '').toUpperCase()
+
+  try {
+    const supabase = await createServerSupabaseAdminClient()
+
+    const { data, error } = await supabase
+      .from('affiliate_applications')
+      .select('full_name, phone, status, reject_reason, created_at, national_id')
+      .order('created_at', { ascending: false })
+
+    if (error) return { error: 'Erro ao consultar. Tente novamente.' }
+    if (!data || data.length === 0) return { notFound: true }
+
+    const phoneDigits = digitsOnly(phone.trim())
+    const idNorm = normalizeId(nationalId.trim())
+
+    const match = data.find(row =>
+      digitsOnly(row.phone) === phoneDigits &&
+      normalizeId(row.national_id) === idNorm
+    )
+
+    if (!match) return { notFound: true }
+
+    return {
+      result: {
+        full_name: match.full_name,
+        phone: match.phone,
+        status: match.status as 'pending' | 'approved' | 'rejected',
+        reject_reason: match.reject_reason,
+        created_at: match.created_at,
+      }
+    }
+  } catch {
+    return { error: 'Erro inesperado. Tente novamente.' }
+  }
+}
