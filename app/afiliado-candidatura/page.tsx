@@ -100,10 +100,13 @@ export default function AffiliateCandidaturePage() {
             <p className="text-sm mb-2" style={{ color: 'var(--color-text-muted)' }}>
               Recebemos a sua candidatura com sucesso.
             </p>
-            <p className="text-sm mb-8" style={{ color: 'var(--color-text-muted)' }}>
+            <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
               A nossa equipa irá analisá-la e entrar em contacto pelo número <strong>{form.phone}</strong> em breve.
             </p>
-            <Link href="/" className="btn-outline text-sm">
+            <Link href="/candidatura-estado" className="btn-primary text-sm block mb-3">
+              Consultar estado da candidatura →
+            </Link>
+            <Link href="/" className="btn-outline text-sm block">
               Voltar ao início
             </Link>
           </div>
@@ -325,11 +328,17 @@ export default function AffiliateCandidaturePage() {
         </div>
 
         {/* Já é afiliado? */}
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-2">
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
             Já foi aprovado?{' '}
             <Link href="/login" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
               Entrar no painel →
+            </Link>
+          </p>
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            Já se candidatou?{' '}
+            <Link href="/candidatura-estado" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+              Ver estado da candidatura →
             </Link>
           </p>
         </div>
