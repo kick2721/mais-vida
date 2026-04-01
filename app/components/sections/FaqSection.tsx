@@ -9,7 +9,7 @@ import { MEMBERSHIP, COMMISSION, BUSINESS } from '@/lib/constants'
 const FAQS = [
   {
     q: `Quanto custa o ${MEMBERSHIP.name}?`,
-    a: `O ${MEMBERSHIP.name} custa ${MEMBERSHIP.price.toLocaleString('pt-AO')} Kz por ano. Com um único pagamento anual, toda a sua família tem acesso imediato aos descontos em todas as especialidades da clínica.`,
+    a: `O ${MEMBERSHIP.name} custa ${MEMBERSHIP.price.toLocaleString('pt-AO')} Kz por ano por pessoa. Com um único pagamento anual, tem acesso imediato aos descontos em todas as especialidades da clínica.`,
   },
   {
     q: 'O cartão é individual ou familiar?',
@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: 'Tenho dúvidas — como posso contactar a clínica?',
-    a: `Pode contactar-nos pelo WhatsApp ${BUSINESS.phone.main}, por telefone ${BUSINESS.phone.secondary} ou por email ${BUSINESS.email.info}. Estamos disponíveis em dias úteis.`,
+    a: `Pode contactar-nos pelo WhatsApp ou por chamada telefónica para o ${BUSINESS.phone.main}, ou por email ${BUSINESS.email.info}. Estamos disponíveis em dias úteis.`,
   },
 ]
 
