@@ -2,11 +2,12 @@
 
 // app/candidatura-estado/page.tsx
 // Página pública para o candidato consultar o estado da sua candidatura a afiliado
+// A pesquisa usa uma Server Action para bypassar RLS do Supabase com segurança
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import Logo from '@/app/components/ui/Logo'
-import { createBrowserSupabaseClient } from '@/lib/supabase-client'
+import { consultarCandidatura } from '@/lib/actions'
 
 interface ApplicationResult {
   full_name: string
@@ -14,16 +15,6 @@ interface ApplicationResult {
   status: 'pending' | 'approved' | 'rejected'
   reject_reason: string | null
   created_at: string
-}
-
-// Remove tudo que não seja dígito para comparar telefones
-function digitsOnly(value: string) {
-  return value.replace(/\D/g, '')
-}
-
-// Normaliza o BI: sem espaços, maiúsculas
-function normalizeId(value: string) {
-  return value.replace(/\s/g, '').toUpperCase()
 }
 
 export default function CandidaturaEstadoPage() {
@@ -46,39 +37,11 @@ export default function CandidaturaEstadoPage() {
     }
 
     startTransition(async () => {
-      const supabase = createBrowserSupabaseClient()
+      const res = await consultarCandidatura(phone.trim(), nationalId.trim())
 
-      // Busca todas as candidaturas — filtramos localmente para tolerância de formato
-      const { data, error: dbError } = await supabase
-        .from('affiliate_applications')
-        .select('full_name, phone, status, reject_reason, created_at, national_id')
-        .order('created_at', { ascending: false })
-
-      if (dbError) {
-        setError('Erro ao consultar. Tente novamente.')
-        return
-      }
-
-      if (!data || data.length === 0) {
-        setNotFound(true)
-        return
-      }
-
-      const phoneDigits = digitsOnly(phone.trim())
-      const idNorm = normalizeId(nationalId.trim())
-
-      // Compara só os dígitos do telefone e o BI normalizado
-      const match = data.find(row =>
-        digitsOnly(row.phone) === phoneDigits &&
-        normalizeId(row.national_id) === idNorm
-      )
-
-      if (!match) {
-        setNotFound(true)
-        return
-      }
-
-      setResult(match as ApplicationResult)
+      if (res.error) { setError(res.error); return }
+      if (res.notFound) { setNotFound(true); return }
+      if (res.result) setResult(res.result)
     })
   }
 
@@ -204,10 +167,7 @@ export default function CandidaturaEstadoPage() {
           const cfg = statusConfig[result.status]
           return (
             <div className="space-y-4">
-              <div
-                className="card border-2"
-                style={{ borderColor: cfg.border, background: cfg.bg }}
-              >
+              <div className="card border-2" style={{ borderColor: cfg.border, background: cfg.bg }}>
                 <div className="text-center mb-4">
                   <div className="text-5xl mb-3">{cfg.icon}</div>
                   <h2 className="font-display text-xl font-bold mb-1" style={{ color: cfg.color }}>
