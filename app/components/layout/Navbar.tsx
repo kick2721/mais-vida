@@ -54,6 +54,10 @@ export default function Navbar() {
 
             {/* CTAs desktop */}
             <div className="hidden md:flex items-center gap-3">
+              <Link href="/candidatura-estado" className="text-sm font-medium transition-colors"
+                style={{ color: 'var(--color-text-muted)' }}>
+                Ver candidatura
+              </Link>
               <Link href="/login" className="btn-outline text-sm py-2 px-4">
                 Entrar
               </Link>
@@ -125,6 +129,11 @@ export default function Navbar() {
 
             {/* CTAs no fundo do drawer */}
             <div className="p-4 border-t flex flex-col gap-3" style={{ borderColor: 'var(--color-border)' }}>
+              <Link href="/candidatura-estado" onClick={() => setOpen(false)}
+                className="text-sm font-medium text-center py-2 rounded-xl transition-colors"
+                style={{ color: 'var(--color-primary)', background: 'rgba(74,140,63,0.08)' }}>
+                🔍 Ver estado da candidatura
+              </Link>
               <Link href="/login" onClick={() => setOpen(false)} className="btn-outline text-center w-full">
                 Entrar
               </Link>
