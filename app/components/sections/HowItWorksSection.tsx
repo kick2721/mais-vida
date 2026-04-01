@@ -1,7 +1,7 @@
 // app/components/sections/HowItWorksSection.tsx
 // Como funciona — passos de compra e activação
 
-import { MEMBERSHIP, BANK } from '@/lib/constants'
+import { MEMBERSHIP } from '@/lib/constants'
 
 const STEPS = [
   {
@@ -83,43 +83,17 @@ export default function HowItWorksSection() {
           ))}
         </div>
 
-        {/* Caixa de dados bancários */}
-        {/* ⚠️ PENDENTE: BANK.bankName deve ser actualizado quando confirmado com a clínica */}
-        <div
-          className="card max-w-lg mx-auto text-center border-2"
-          style={{ borderColor: 'var(--color-primary)' }}
-        >
-          <p
-            className="font-semibold text-sm uppercase tracking-wider mb-4"
-            style={{ color: 'var(--color-primary)' }}
+        {/* CTA para obter o cartão */}
+        <div className="text-center mt-2">
+          <a
+            href="/comprar"
+            className="btn-primary inline-block text-base px-8 py-3"
           >
-            Dados para transferência
+            Obter o meu Cartão +Vida →
+          </a>
+          <p className="text-xs mt-3" style={{ color: 'var(--color-text-muted)' }}>
+            Os dados de pagamento são fornecidos após preencher o formulário de registo.
           </p>
-          <div className="space-y-2 text-sm" style={{ color: 'var(--color-text)' }}>
-            <div className="flex justify-between gap-4">
-              <span style={{ color: 'var(--color-text-muted)' }}>Banco</span>
-              {/* PENDENTE: substituir 'Banco' pelo nome real */}
-              <span className="font-medium">{BANK.bankName}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span style={{ color: 'var(--color-text-muted)' }}>Titular</span>
-              <span className="font-medium">{BANK.accountHolder}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span style={{ color: 'var(--color-text-muted)' }}>IBAN</span>
-              <span className="font-mono font-semibold">{BANK.iban}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span style={{ color: 'var(--color-text-muted)' }}>Referência</span>
-              <span className="font-medium text-right">{BANK.reference}</span>
-            </div>
-            <div
-              className="pt-3 mt-3 border-t text-lg font-bold"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-primary)' }}
-            >
-              {MEMBERSHIP.price.toLocaleString('pt-AO')} {MEMBERSHIP.currencySymbol}
-            </div>
-          </div>
         </div>
 
       </div>
