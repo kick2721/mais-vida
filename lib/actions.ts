@@ -66,8 +66,7 @@ export async function becomeAffiliate() {
 }
 
 // ─── CONSULTA PÚBLICA DE CANDIDATURA ─────────────────────────────────────────
-// Usa o cliente admin para bypassar RLS — a página é pública mas a query é segura
-// porque só devolve dados se o utilizador souber o telefone E o BI exactos
+// Usa o cliente normal do servidor — RLS permite leitura anon via política criada
 export async function consultarCandidatura(phone: string, nationalId: string) {
   if (!phone || !nationalId) return { error: 'Dados em falta.' }
 
@@ -77,7 +76,7 @@ export async function consultarCandidatura(phone: string, nationalId: string) {
   const normalizeId = (v: string) => v.replace(/\s/g, '').toUpperCase()
 
   try {
-    const supabase = await createServerSupabaseAdminClient()
+    const supabase = await createServerSupabaseClient()
 
     const { data, error } = await supabase
       .from('affiliate_applications')
