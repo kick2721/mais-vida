@@ -106,7 +106,7 @@ export default function ContactSection() {
                   <div>
                     <label className="input-label">Telefone / WhatsApp</label>
                     <input type="tel" required value={form.phone} onChange={set('phone')}
-                      className="input-field" placeholder="+244 9XX XXX XXX" disabled={isPending} />
+                      className="input-field" placeholder="9XX XXX XXX" disabled={isPending} />
                   </div>
                   <div>
                     <label className="input-label">
