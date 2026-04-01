@@ -54,8 +54,7 @@ export default function Navbar() {
 
             {/* CTAs desktop */}
             <div className="hidden md:flex items-center gap-3">
-              <Link href="/candidatura-estado" className="text-sm font-medium transition-colors"
-                style={{ color: 'var(--color-text-muted)' }}>
+              <Link href="/candidatura-estado" className="btn-outline text-sm py-2 px-4">
                 Ver candidatura
               </Link>
               <Link href="/login" className="btn-outline text-sm py-2 px-4">
@@ -144,6 +143,28 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* Barra CTA sticky no fundo — apenas mobile */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden"
+        style={{
+          background: 'rgba(255,255,255,0.97)',
+          backdropFilter: 'blur(10px)',
+          borderTop: '1px solid rgba(74,140,63,0.15)',
+          boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
+          padding: '10px 16px',
+          paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
+        }}>
+        <div className="flex items-center gap-2">
+          <Link href="/login"
+            className="btn-outline text-sm py-2.5 px-4 flex-1 text-center">
+            Entrar
+          </Link>
+          <Link href="/comprar"
+            className="btn-primary text-sm py-2.5 px-4 flex-[2] text-center">
+            Obter Cartão
+          </Link>
+        </div>
+      </div>
     </>
   )
 }
