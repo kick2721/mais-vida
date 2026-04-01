@@ -156,7 +156,7 @@ function ComprarForm() {
             <div>
               <label className="input-label" htmlFor="phone">Telefone (WhatsApp)</label>
               <input id="phone" type="tel" required value={form.phone} onChange={set('phone')}
-                className="input-field" placeholder="+244 9XX XXX XXX" disabled={isPending} />
+                className="input-field" placeholder="9XX XXX XXX" disabled={isPending} />
               <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
                 Enviaremos o seu cartão para este número de WhatsApp.
               </p>
