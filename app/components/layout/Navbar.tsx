@@ -65,17 +65,10 @@ export default function Navbar() {
             onClick={() => setOpen(false)}
             aria-label="Fechar menu"
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              background: 'rgba(74,140,63,0.1)',
-              color: 'var(--color-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: 'none',
-              cursor: 'pointer',
-              flexShrink: 0,
+              width: '40px', height: '40px', borderRadius: '50%',
+              background: 'rgba(74,140,63,0.1)', color: 'var(--color-primary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: 'none', cursor: 'pointer', flexShrink: 0,
             }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -142,20 +135,24 @@ export default function Navbar() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-20">
 
+            {/* Logo */}
             <Logo size="sm" className="md:hidden" />
             <Logo size="md" className="hidden md:inline-flex" />
 
-            {/* Nav desktop */}
+            {/* Nav desktop — sin cambios */}
             <nav className="hidden md:flex items-center gap-1">
               {NAV_LINKS.map(link => (
-                <Link key={link.href} href={link.href}
-                  className={`nav-link ${pathname === link.href ? 'active' : ''}`}>
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`nav-link ${pathname === link.href ? 'active' : ''}`}
+                >
                   {link.label}
                 </Link>
               ))}
             </nav>
 
-            {/* CTAs desktop */}
+            {/* CTAs desktop — "Ver candidatura" ahora es btn-outline */}
             <div className="hidden md:flex items-center gap-3">
               <Link href="/candidatura-estado" className="btn-outline text-sm py-2 px-4">
                 Ver candidatura
@@ -168,35 +165,29 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Hambúrguer mobile */}
+            {/* Hambúrguer mobile — solo visible en mobile */}
             <button
-              onClick={() => setOpen(true)}
-              className="md:hidden"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: 'rgba(74,140,63,0.08)',
-                border: 'none',
-                cursor: 'pointer',
-                gap: '5px',
-              }}
-              aria-label="Abrir menu"
+              onClick={() => setOpen(!open)}
+              className="md:hidden flex flex-col justify-center items-center w-11 h-11 rounded-xl transition-colors"
+              style={{ background: open ? 'rgba(74,140,63,0.1)' : 'transparent' }}
+              aria-label={open ? 'Fechar menu' : 'Abrir menu'}
             >
-              <span style={{ display: 'block', width: '20px', height: '2px', borderRadius: '2px', background: 'var(--color-primary)' }} />
-              <span style={{ display: 'block', width: '20px', height: '2px', borderRadius: '2px', background: 'var(--color-primary)' }} />
-              <span style={{ display: 'block', width: '20px', height: '2px', borderRadius: '2px', background: 'var(--color-primary)' }} />
+              <span className="block w-5 h-0.5 transition-all duration-250"
+                style={{ background: 'var(--color-primary)', transform: open ? 'rotate(45deg) translateY(6px)' : 'none' }} />
+              <span className="block w-5 h-0.5 mt-1.5 transition-all duration-250"
+                style={{ background: 'var(--color-primary)', opacity: open ? 0 : 1 }} />
+              <span className="block w-5 h-0.5 mt-1.5 transition-all duration-250"
+                style={{ background: 'var(--color-primary)', transform: open ? 'rotate(-45deg) translateY(-6px)' : 'none' }} />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Portal — montado directamente en document.body */}
-      {mounted && open && createPortal(panel, document.body)}
+      {/* Portal mobile — solo se monta en cliente, solo visible en mobile */}
+      {mounted && open && createPortal(
+        <div className="md:hidden">{panel}</div>,
+        document.body
+      )}
     </>
   )
 }
