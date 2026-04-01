@@ -16,12 +16,12 @@ interface ApplicationResult {
   created_at: string
 }
 
-// Normaliza o telefone: remove espaços, traços e parênteses para comparação
-function normalizePhone(value: string) {
-  return value.replace(/[\s\-().]/g, '').toLowerCase()
+// Remove tudo que não seja dígito para comparar telefones
+function digitsOnly(value: string) {
+  return value.replace(/\D/g, '')
 }
 
-// Normaliza o BI: remove espaços e converte para maiúsculas
+// Normaliza o BI: sem espaços, maiúsculas
 function normalizeId(value: string) {
   return value.replace(/\s/g, '').toUpperCase()
 }
@@ -48,11 +48,10 @@ export default function CandidaturaEstadoPage() {
     startTransition(async () => {
       const supabase = createBrowserSupabaseClient()
 
-      // Busca por BI (ilike = case-insensitive), sem .single() para não dar erro se não encontrar
+      // Busca todas as candidaturas — filtramos localmente para tolerância de formato
       const { data, error: dbError } = await supabase
         .from('affiliate_applications')
         .select('full_name, phone, status, reject_reason, created_at, national_id')
-        .ilike('national_id', normalizeId(nationalId.trim()))
         .order('created_at', { ascending: false })
 
       if (dbError) {
@@ -65,10 +64,13 @@ export default function CandidaturaEstadoPage() {
         return
       }
 
-      // Filtra localmente pelo telefone normalizado (ignora espaços/traços)
-      const phoneNorm = normalizePhone(phone.trim())
-      const match = data.find(
-        (row) => normalizePhone(row.phone) === phoneNorm
+      const phoneDigits = digitsOnly(phone.trim())
+      const idNorm = normalizeId(nationalId.trim())
+
+      // Compara só os dígitos do telefone e o BI normalizado
+      const match = data.find(row =>
+        digitsOnly(row.phone) === phoneDigits &&
+        normalizeId(row.national_id) === idNorm
       )
 
       if (!match) {
@@ -84,7 +86,7 @@ export default function CandidaturaEstadoPage() {
     pending: {
       icon: '⏳',
       label: 'Em análise',
-      description: 'A sua candidatura foi recebida e está a ser analisada pela nossa equipa. Entraremos em contacto pelo WhatsApp em breve.',
+      description: 'A sua candidatura foi recebida e está a ser analisada pela nossa equipa. Entraremos em contacto brevemente.',
       color: '#92400e',
       bg: '#fef9c3',
       border: '#fde68a',
@@ -92,7 +94,7 @@ export default function CandidaturaEstadoPage() {
     approved: {
       icon: '✅',
       label: 'Aprovada!',
-      description: 'Parabéns! A sua candidatura foi aprovada. A nossa equipa irá entrar em contacto pelo WhatsApp para lhe enviar as credenciais de acesso ao painel de afiliado.',
+      description: 'Parabéns! A sua candidatura foi aprovada. A nossa equipa irá entrar em contacto para lhe enviar as credenciais de acesso ao painel de afiliado.',
       color: '#166534',
       bg: '#dcfce7',
       border: '#86efac',
@@ -144,7 +146,7 @@ export default function CandidaturaEstadoPage() {
             <form onSubmit={handleSearch} className="space-y-4">
               <div>
                 <label className="input-label">
-                  Telefone / WhatsApp <span className="text-red-500">*</span>
+                  Telefone <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
@@ -152,12 +154,9 @@ export default function CandidaturaEstadoPage() {
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   className="input-field"
-                  placeholder="+244 9XX XXX XXX"
+                  placeholder="9XX XXX XXX"
                   disabled={isPending}
                 />
-                <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                  Com ou sem espaços — ex: +244923456789 ou +244 923 456 789
-                </p>
               </div>
               <div>
                 <label className="input-label">
@@ -185,7 +184,7 @@ export default function CandidaturaEstadoPage() {
                 <div className="rounded-xl p-3 bg-yellow-50 border border-yellow-200">
                   <p className="text-sm text-yellow-800 font-medium mb-1">Candidatura não encontrada</p>
                   <p className="text-xs text-yellow-700">
-                    Verifique se o telefone e o BI são exactamente os que usou ao preencher o formulário.
+                    Verifique se o telefone e o BI são os mesmos que usou ao preencher o formulário.
                   </p>
                 </div>
               )}
