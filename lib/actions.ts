@@ -72,6 +72,11 @@ export async function consultarCandidatura(identifier: string) {
 
   const digitsOnly  = (v: string) => v.replace(/\D/g, '')
   const normalizeId = (v: string) => v.replace(/\s/g, '').toUpperCase()
+  const normalizePhone = (v: string) => {
+    const d = digitsOnly(v)
+    if (d.startsWith('244') && d.length === 12) return d.slice(3)
+    return d
+  }
 
   try {
     const supabase = await createServerSupabaseClient()
@@ -85,7 +90,7 @@ export async function consultarCandidatura(identifier: string) {
     if (!data || data.length === 0) return { notFound: true }
 
     const val         = identifier.trim()
-    const phoneDigits = digitsOnly(val)
+    const phoneDigits = normalizePhone(val)
     const idNorm      = normalizeId(val)
     const emailNorm   = val.toLowerCase()
 
@@ -94,7 +99,7 @@ export async function consultarCandidatura(identifier: string) {
         return row.email.toLowerCase() === emailNorm
       }
       if (phoneDigits.length >= 7 && row.phone) {
-        if (digitsOnly(row.phone) === phoneDigits) return true
+        if (normalizePhone(row.phone) === phoneDigits) return true
       }
       if (idNorm.length >= 5 && row.national_id) {
         if (normalizeId(row.national_id) === idNorm) return true
@@ -118,6 +123,37 @@ export async function consultarCandidatura(identifier: string) {
   }
 }
 
+// ─── CONSULTAR CANDIDATURA COM SENHA (página candidatura-estado) ──────────────
+// Se aprovado e tem conta, faz login. Senão mostra estado.
+export async function consultarCandidaturaComSenha(identifier: string, password: string) {
+  if (!identifier || identifier.trim().length < 3) return { error: 'Dados em falta.' }
+  if (!password) return { error: 'Introduza a sua palavra-passe.' }
+
+  // Primeiro consultar o estado da candidatura
+  const consultaRes = await consultarCandidatura(identifier)
+
+  if (consultaRes.error) return { error: consultaRes.error }
+  if (consultaRes.notFound) return { notFound: true }
+
+  const result = consultaRes.result!
+
+  // Se não aprovado, devolver apenas o estado (sem tentar login)
+  if (result.status !== 'approved') {
+    return { result }
+  }
+
+  // Se aprovado — tentar login para redirecionar ao painel
+  const resolved = await resolveLoginIdentifier(identifier.trim())
+  if (resolved.error || !resolved.email) {
+    // Aprovado mas conta ainda não criada — mostrar estado aprovado sem login
+    return { result, noAccount: true }
+  }
+
+  // Tem conta — devolver email para o cliente fazer login
+  return { result, email: resolved.email }
+}
+
+
 // ─── RESOLVER EMAIL POR TELEFONE / BI (para login flexível) ──────────────────
 // Busca em profiles (fonte primária) e user_metadata (fallback) para os três identificadores
 export async function resolveLoginIdentifier(identifier: string): Promise<{ email?: string; error?: string }> {
@@ -137,8 +173,14 @@ export async function resolveLoginIdentifier(identifier: string): Promise<{ emai
 
     const digitsOnly  = (v: string) => v.replace(/\D/g, '')
     const normalizeId = (v: string) => v.replace(/\s/g, '').toUpperCase()
+    // Normaliza telefone angolano: remove prefixo 244 para comparar só os 9 dígitos locais
+    const normalizePhone = (v: string) => {
+      const d = digitsOnly(v)
+      if (d.startsWith('244') && d.length === 12) return d.slice(3)
+      return d
+    }
 
-    const phoneVal = digitsOnly(val)
+    const phoneVal = normalizePhone(val)
     const idNorm   = normalizeId(val)
 
     // ── Buscar em profiles (fonte primária — phone e national_id sincronizados) ──
@@ -149,7 +191,7 @@ export async function resolveLoginIdentifier(identifier: string): Promise<{ emai
     // Por telefone em profiles
     if (phoneVal.length >= 7) {
       const matchPhone = allProfiles?.find(p =>
-        p.phone && digitsOnly(p.phone) === phoneVal
+        p.phone && normalizePhone(p.phone) === phoneVal
       )
       if (matchPhone) {
         const { data: authData } = await supabase.auth.admin.getUserById(matchPhone.id)
@@ -173,7 +215,7 @@ export async function resolveLoginIdentifier(identifier: string): Promise<{ emai
 
     if (phoneVal.length >= 7) {
       const matchMeta = users?.find(u =>
-        u.user_metadata?.phone && digitsOnly(u.user_metadata.phone) === phoneVal
+        u.user_metadata?.phone && normalizePhone(u.user_metadata.phone) === phoneVal
       )
       if (matchMeta?.email) return { email: matchMeta.email }
     }
