@@ -1,13 +1,14 @@
 'use client'
 
 // app/forgot-password/page.tsx
-// Reset de password via email — Supabase Auth
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { createBrowserSupabaseClient } from '@/lib/supabase-client'
 import { BUSINESS } from '@/lib/constants'
 import Logo from '@/app/components/ui/Logo'
+import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
+import BtnSpinner from '@/app/components/ui/BtnSpinner'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -46,13 +47,14 @@ export default function ForgotPasswordPage() {
       className="min-h-screen flex items-center justify-center px-4"
       style={{ background: 'rgba(240,247,239,0.6)' }}
     >
-      <div className="w-full max-w-md">
+      {isPending && <LoadingOverlay message="A enviar link de recuperação…" />}
 
+      <div className="w-full max-w-md">
         <Link href="/login" className="btn-back mb-6 inline-flex">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           Voltar ao login
         </Link>
-        {/* Logo oficial */}
+
         <div className="flex justify-center mb-8">
           <Logo size="lg" href="/" />
         </div>
@@ -69,9 +71,7 @@ export default function ForgotPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="input-label" htmlFor="email">
-                    Email
-                  </label>
+                  <label className="input-label" htmlFor="email">Email</label>
                   <input
                     id="email"
                     type="email"
@@ -91,21 +91,16 @@ export default function ForgotPasswordPage() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="btn-primary w-full disabled:opacity-50"
-                >
-                  {isPending ? 'A enviar...' : 'Enviar link de recuperação'}
+                <button type="submit" disabled={isPending}
+                  className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
+                  {isPending ? <><BtnSpinner />A enviar…</> : 'Enviar link de recuperação'}
                 </button>
               </form>
             </>
           ) : (
             <div className="text-center py-4">
               <div className="text-5xl mb-4">📧</div>
-              <h2 className="font-display text-xl font-bold text-gray-900 mb-2">
-                Email enviado!
-              </h2>
+              <h2 className="font-display text-xl font-bold text-gray-900 mb-2">Email enviado!</h2>
               <p className="text-gray-500 text-sm mb-2">
                 Se o email <strong>{email}</strong> estiver registado, receberá um link para redefinir a palavra-passe.
               </p>
@@ -122,11 +117,7 @@ export default function ForgotPasswordPage() {
           )}
 
           <div className="mt-6 pt-4 border-t text-center" style={{ borderColor: 'var(--color-border)' }}>
-            <Link
-              href="/login"
-              className="text-sm"
-              style={{ color: 'var(--color-primary)' }}
-            >
+            <Link href="/login" className="text-sm" style={{ color: 'var(--color-primary)' }}>
               ← Voltar ao login
             </Link>
           </div>
