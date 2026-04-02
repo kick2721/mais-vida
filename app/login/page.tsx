@@ -39,9 +39,9 @@ export default function LoginPage() {
         .eq('id', data.user.id)
         .single()
 
-      if (profile?.role === 'admin')     router.push('/admin/dashboard')
+      if (profile?.role === 'admin')          router.push('/admin/dashboard')
       else if (profile?.role === 'affiliate') router.push('/affiliate/dashboard')
-      else router.push('/dashboard')
+      else                                    router.push('/dashboard')
     })
   }
 
@@ -50,6 +50,44 @@ export default function LoginPage() {
       className="min-h-screen flex items-center justify-center px-4"
       style={{ background: 'rgba(240,247,239,0.6)' }}
     >
+      {/* ── Overlay de carregamento ── */}
+      {isPending && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4"
+          style={{ background: 'rgba(240,247,239,0.85)', backdropFilter: 'blur(4px)' }}
+        >
+          {/* Spinner */}
+          <svg
+            className="animate-spin"
+            width="48"
+            height="48"
+            viewBox="0 0 48 48"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="24" cy="24" r="20"
+              stroke="var(--color-primary)"
+              strokeOpacity="0.2"
+              strokeWidth="4"
+            />
+            <path
+              d="M44 24c0-11.046-8.954-20-20-20"
+              stroke="var(--color-primary)"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+          </svg>
+
+          <p
+            className="text-sm font-medium"
+            style={{ color: 'var(--color-primary)' }}
+          >
+            A verificar credenciais…
+          </p>
+        </div>
+      )}
+
       <div className="w-full max-w-md">
 
         {/* Botão voltar */}
@@ -121,9 +159,22 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="btn-primary w-full disabled:opacity-50"
+              className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isPending ? 'A entrar...' : 'Entrar'}
+              {isPending ? (
+                <>
+                  <svg
+                    className="animate-spin"
+                    width="16" height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                  >
+                    <circle cx="8" cy="8" r="6" stroke="white" strokeOpacity="0.3" strokeWidth="2"/>
+                    <path d="M14 8A6 6 0 0 0 8 2" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  A entrar…
+                </>
+              ) : 'Entrar'}
             </button>
           </form>
 
