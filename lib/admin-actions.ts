@@ -245,12 +245,84 @@ export async function approveApplication(applicationId: string) {
     .from('profiles').select('role').eq('id', (await supabase.auth.getUser()).data.user?.id || '').single()
   if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
 
+  // Buscar dados da candidatura (incluindo password_temp e email)
+  const { data: app, error: fetchError } = await supabase
+    .from('affiliate_applications')
+    .select('id, full_name, phone, national_id, email, password_temp')
+    .eq('id', applicationId)
+    .single()
+
+  if (fetchError || !app) return { error: 'Candidatura não encontrada.' }
+
+  // Criar conta Supabase Auth se ainda não existir
+  // Email de login: usa o email fornecido, ou gera um fictício baseado no telefone
+  const loginEmail = app.email
+    ? app.email.toLowerCase().trim()
+    : `${app.phone.replace(/\D/g, '')}@mais-vida.ao`
+
+  const password = app.password_temp
+  if (!password) return { error: 'Candidatura sem palavra-passe definida. O candidato deve resubmeter.' }
+
+  // Verificar se já tem conta
+  const adminSupabase = await import('./supabase-server').then(m => m.createServerSupabaseAdminClient())
+  const { data: { users } } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 })
+  const existingUser = users?.find(u => u.email === loginEmail)
+
+  if (!existingUser) {
+    // Criar conta de afiliado
+    const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
+      email: loginEmail,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        full_name:   app.full_name,
+        phone:       app.phone,
+        national_id: app.national_id,
+        role:        'affiliate',
+      },
+    })
+
+    if (createError) return { error: 'Erro ao criar conta: ' + createError.message }
+
+    // O trigger handle_new_user() cria o perfil automaticamente
+    // Mas garantimos que o role e dados ficam correctos
+    if (newUser?.user) {
+      // Gerar código de referido
+      const referralCode = 'VIDA-' + newUser.user.id.replace(/-/g, '').substring(0, 6).toUpperCase()
+
+      // Aguardar um momento para o trigger criar o profile
+      await new Promise(r => setTimeout(r, 500))
+
+      // Actualizar o profile com role affiliate e dados do BI
+      await adminSupabase
+        .from('profiles')
+        .update({
+          role:          'affiliate',
+          phone:         app.phone,
+          national_id:   app.national_id,
+          referral_code: referralCode,
+        })
+        .eq('id', newUser.user.id)
+
+      // Criar registo em affiliates
+      await adminSupabase
+        .from('affiliates')
+        .upsert({
+          profile_id:    newUser.user.id,
+          referral_code: referralCode,
+          is_active:     true,
+        }, { onConflict: 'profile_id' })
+    }
+  }
+
+  // Marcar candidatura como aprovada e limpar password_temp
   const { error } = await supabase
     .from('affiliate_applications')
     .update({
-      status: 'approved',
-      reviewed_at: new Date().toISOString(),
+      status:        'approved',
+      reviewed_at:   new Date().toISOString(),
       reject_reason: null,
+      password_temp: null,  // limpar por segurança após criar conta
     })
     .eq('id', applicationId)
 
