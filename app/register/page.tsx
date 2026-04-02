@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase-client'
 import Logo from '@/app/components/ui/Logo'
+import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
+import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import { REFERRAL } from '@/lib/constants'
 
 function RegisterForm() {
@@ -80,12 +82,8 @@ function RegisterForm() {
               Entre na sua conta ou adquira já o seu cartão.
             </p>
             <div className="flex flex-col gap-3">
-              <Link href="/login" className="btn-primary text-center">
-                Entrar na conta →
-              </Link>
-              <Link href="/comprar" className="btn-outline text-sm text-center">
-                Comprar cartão sem conta
-              </Link>
+              <Link href="/login" className="btn-primary text-center">Entrar na conta →</Link>
+              <Link href="/comprar" className="btn-outline text-sm text-center">Comprar cartão sem conta</Link>
             </div>
           </div>
         </div>
@@ -96,8 +94,10 @@ function RegisterForm() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10"
       style={{ background: 'rgba(240,247,239,0.6)' }}>
-      <div className="w-full max-w-md">
 
+      {isPending && <LoadingOverlay message="A criar conta…" />}
+
+      <div className="w-full max-w-md">
         <Link href="/" className="btn-back mb-6 inline-flex">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -105,9 +105,7 @@ function RegisterForm() {
           Voltar ao início
         </Link>
 
-        <div className="flex justify-center mb-8">
-          <Logo size="lg" href="/" />
-        </div>
+        <div className="flex justify-center mb-8"><Logo size="lg" href="/" /></div>
 
         <div className="card">
           <div className="text-center mb-6 pb-5 border-b" style={{ borderColor: 'var(--color-border)' }}>
@@ -119,9 +117,7 @@ function RegisterForm() {
                 Registo de Cliente
               </span>
             </div>
-            <h2 className="font-display text-xl font-bold text-gray-900 mb-1">
-              Cria a tua conta
-            </h2>
+            <h2 className="font-display text-xl font-bold text-gray-900 mb-1">Cria a tua conta</h2>
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
               Regista-te para adquirir o teu Cartão +Vida.
             </p>
@@ -191,8 +187,9 @@ function RegisterForm() {
               </div>
             )}
 
-            <button type="submit" disabled={isPending} className="btn-primary w-full">
-              {isPending ? 'A criar conta...' : 'Criar conta de Cliente'}
+            <button type="submit" disabled={isPending}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
+              {isPending ? <><BtnSpinner />A criar conta…</> : 'Criar conta de Cliente'}
             </button>
           </form>
 
