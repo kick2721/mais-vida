@@ -1,7 +1,6 @@
 'use client'
 
 // app/admin/dashboard/AdminApplicationsTable.tsx
-// Gestão de candidaturas de afiliados — aprovar ou rejeitar
 
 import { useState, useTransition } from 'react'
 import { approveApplication, rejectApplication } from '@/lib/admin-actions'
@@ -23,8 +22,17 @@ interface Application {
   created_at: string
 }
 
+function BtnSpinner() {
+  return (
+    <svg className="animate-spin inline-block mr-1" width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2"/>
+      <path d="M14 8A6 6 0 0 0 8 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
 export default function AdminApplicationsTable({ applications }: { applications: Application[] }) {
-  const pending = applications.filter(a => a.status === 'pending')
+  const pending  = applications.filter(a => a.status === 'pending')
   const reviewed = applications.filter(a => a.status !== 'pending')
 
   return (
@@ -46,9 +54,7 @@ export default function AdminApplicationsTable({ applications }: { applications:
             ⏳ Pendentes de análise
           </h3>
           <div className="space-y-4">
-            {pending.map(app => (
-              <ApplicationCard key={app.id} application={app} />
-            ))}
+            {pending.map(app => <ApplicationCard key={app.id} application={app} />)}
           </div>
         </div>
       )}
@@ -59,9 +65,7 @@ export default function AdminApplicationsTable({ applications }: { applications:
             Já analisadas
           </h3>
           <div className="space-y-3">
-            {reviewed.map(app => (
-              <ApplicationCard key={app.id} application={app} />
-            ))}
+            {reviewed.map(app => <ApplicationCard key={app.id} application={app} />)}
           </div>
         </div>
       )}
@@ -78,12 +82,12 @@ export default function AdminApplicationsTable({ applications }: { applications:
 
 function ApplicationCard({ application: app }: { application: Application }) {
   const [isPending, startTransition] = useTransition()
-  const [status, setStatus] = useState(app.status)
+  const [status, setStatus]               = useState(app.status)
   const [showRejectModal, setShowRejectModal] = useState(false)
-  const [rejectReason, setRejectReason] = useState('')
+  const [rejectReason, setRejectReason]   = useState('')
 
   const handleApprove = () => {
-    if (!confirm(`Aprovar candidatura de ${app.full_name}?\n\nIsto irá criar uma conta de afiliado — deverá depois criar as credenciais de acesso para a pessoa.`)) return
+    if (!confirm(`Aprovar candidatura de ${app.full_name}?\n\nIsto irá criar uma conta de afiliado.`)) return
     startTransition(async () => {
       const result = await approveApplication(app.id)
       if (result.success) setStatus('approved')
@@ -126,14 +130,12 @@ function ApplicationCard({ application: app }: { application: Application }) {
         </div>
       </div>
 
-      {/* Motivação */}
       <div className="rounded-xl p-3 mb-4"
         style={{ background: 'var(--color-surface)', borderLeft: '3px solid var(--color-primary)' }}>
         <p className="text-xs font-semibold text-gray-600 mb-1">Motivação:</p>
         <p className="text-sm text-gray-700 leading-relaxed">{app.motivation}</p>
       </div>
 
-      {/* Redes sociais */}
       {(app.instagram || app.facebook || app.tiktok || app.other_social) && (
         <div className="rounded-xl p-3 mb-4 border" style={{ borderColor: 'var(--color-border)' }}>
           <p className="text-xs font-semibold text-gray-600 mb-2">Redes sociais:</p>
@@ -156,9 +158,7 @@ function ApplicationCard({ application: app }: { application: Application }) {
                 🎵 tiktok.com/@{app.tiktok}
               </a>
             )}
-            {app.other_social && (
-              <span className="text-xs text-gray-600">🔗 {app.other_social}</span>
-            )}
+            {app.other_social && <span className="text-xs text-gray-600">🔗 {app.other_social}</span>}
           </div>
         </div>
       )}
@@ -170,12 +170,11 @@ function ApplicationCard({ application: app }: { application: Application }) {
         </div>
       )}
 
-      {/* Acções */}
       {status === 'pending' && (
         <div className="flex gap-2 pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
           <button onClick={handleApprove} disabled={isPending}
-            className="btn-primary text-sm py-2 px-4 disabled:opacity-50">
-            {isPending ? '...' : '✅ Aprovar'}
+            className="btn-primary text-sm py-2 px-4 disabled:opacity-50 flex items-center gap-1">
+            {isPending ? <><BtnSpinner />A processar…</> : '✅ Aprovar'}
           </button>
           <button onClick={() => setShowRejectModal(true)} disabled={isPending}
             className="btn-outline text-sm py-2 px-4 border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50">
@@ -184,14 +183,11 @@ function ApplicationCard({ application: app }: { application: Application }) {
         </div>
       )}
 
-      {/* Modal rejeição */}
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.5)' }}>
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="font-display text-lg font-bold text-gray-900 mb-3">
-              Rejeitar candidatura
-            </h3>
+            <h3 className="font-display text-lg font-bold text-gray-900 mb-3">Rejeitar candidatura</h3>
             <p className="text-sm text-gray-600 mb-4">
               Indique o motivo da rejeição (opcional — para referência interna):
             </p>
@@ -208,8 +204,8 @@ function ApplicationCard({ application: app }: { application: Application }) {
                 Cancelar
               </button>
               <button onClick={handleReject} disabled={isPending}
-                className="flex-1 text-sm py-2 px-4 rounded-xl font-semibold bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50">
-                {isPending ? '...' : 'Confirmar rejeição'}
+                className="flex-1 text-sm py-2 px-4 rounded-xl font-semibold bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 flex items-center justify-center gap-1">
+                {isPending ? <><BtnSpinner />A rejeitar…</> : 'Confirmar rejeição'}
               </button>
             </div>
           </div>
