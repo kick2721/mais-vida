@@ -85,24 +85,35 @@ function ApplicationCard({ application: app }: { application: Application }) {
   const [status, setStatus]                   = useState(app.status)
   const [showRejectModal, setShowRejectModal]  = useState(false)
   const [rejectReason, setRejectReason]        = useState(app.reject_reason || '')
+  const [actionError, setActionError]          = useState('')
 
   const handleApprove = () => {
     const msg = status === 'rejected'
       ? `Reverter decisão e APROVAR candidatura de ${app.full_name}?\n\nIsto irá criar uma conta de afiliado.`
       : `Aprovar candidatura de ${app.full_name}?\n\nIsto irá criar uma conta de afiliado.`
     if (!confirm(msg)) return
+    setActionError('')
     startTransition(async () => {
-      const result = await approveApplication(app.id)
-      if (result.success) setStatus('approved')
-      else alert(result.error || 'Erro ao aprovar.')
+      try {
+        const result = await approveApplication(app.id)
+        if (result.success) setStatus('approved')
+        else setActionError(result.error || 'Erro ao aprovar.')
+      } catch {
+        setActionError('Sessão expirada. Por favor recarregue a página.')
+      }
     })
   }
 
   const handleReject = () => {
+    setActionError('')
     startTransition(async () => {
-      const result = await rejectApplication(app.id, rejectReason)
-      if (result.success) { setStatus('rejected'); setShowRejectModal(false) }
-      else alert(result.error || 'Erro ao rejeitar.')
+      try {
+        const result = await rejectApplication(app.id, rejectReason)
+        if (result.success) { setStatus('rejected'); setShowRejectModal(false) }
+        else setActionError(result.error || 'Erro ao rejeitar.')
+      } catch {
+        setActionError('Sessão expirada. Por favor recarregue a página.')
+      }
     })
   }
 
@@ -170,6 +181,19 @@ function ApplicationCard({ application: app }: { application: Application }) {
         <div className="rounded-xl p-3 mb-4 bg-red-50 border border-red-100">
           <p className="text-xs font-semibold text-red-700 mb-1">Motivo de rejeição:</p>
           <p className="text-sm text-red-600">{rejectReason}</p>
+        </div>
+      )}
+
+      {/* Erro inline — mostra mensagem sem crashar a app */}
+      {actionError && (
+        <div className="rounded-xl p-3 mb-3 bg-red-50 border border-red-200">
+          <p className="text-sm text-red-700">⚠️ {actionError}</p>
+          {actionError.includes('expirada') && (
+            <button onClick={() => window.location.reload()}
+              className="text-xs text-red-600 underline mt-1">
+              Recarregar página
+            </button>
+          )}
         </div>
       )}
 
