@@ -6,13 +6,11 @@ import { createServerClient } from '@supabase/ssr'
 const ROLE_ROUTES: Record<string, string[]> = {
   admin: ['/admin'],
   affiliate: ['/affiliate'],
-  // cliente e afiliado podem ambos aceder ao dashboard de cliente
 }
 
 const AUTH_ROUTES = ['/dashboard', '/affiliate', '/admin']
 const GUEST_ONLY_ROUTES = ['/login', '/forgot-password', '/reset-password']
 
-// Rutas que son siempre públicas aunque haya sesión activa
 const ALWAYS_PUBLIC = ['/register', '/comprar', '/']
 
 const REDIRECT_MAP: Record<string, string> = {
@@ -73,6 +71,22 @@ export async function middleware(request: NextRequest) {
   // ── 2. Rotas protegidas: requerem autenticação ───────────────────────
   if (AUTH_ROUTES.some(route => pathname.startsWith(route))) {
     if (!user) {
+      // Server Actions chegam como POST com header 'next-action'
+      // Um redirect 307 num POST de Server Action quebra a app inteira
+      // Nesse caso devolvemos JSON 401 em vez de redirecionar
+      const isServerAction =
+        request.method === 'POST' &&
+        (request.headers.get('next-action') !== null ||
+          request.headers.get('content-type')?.includes('multipart/form-data') ||
+          request.headers.get('content-type')?.includes('application/x-www-form-urlencoded'))
+
+      if (isServerAction) {
+        return new NextResponse(
+          JSON.stringify({ error: 'Sessão expirada. Por favor recarregue a página e faça login novamente.' }),
+          { status: 401, headers: { 'content-type': 'application/json' } }
+        )
+      }
+
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(loginUrl)
