@@ -1,12 +1,12 @@
 'use client'
 
 // app/candidatura-estado/page.tsx
-// Página pública para o candidato consultar o estado da sua candidatura a afiliado
-// A pesquisa usa uma Server Action para bypassar RLS do Supabase com segurança
+// Consultar estado da candidatura — mesmo formato de login (identificador flexível)
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import Logo from '@/app/components/ui/Logo'
+import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import { consultarCandidatura } from '@/lib/actions'
 
 interface ApplicationResult {
@@ -18,11 +18,10 @@ interface ApplicationResult {
 }
 
 export default function CandidaturaEstadoPage() {
-  const [phone, setPhone] = useState('')
-  const [nationalId, setNationalId] = useState('')
-  const [result, setResult] = useState<ApplicationResult | null>(null)
-  const [notFound, setNotFound] = useState(false)
-  const [error, setError] = useState('')
+  const [identifier, setIdentifier] = useState('')
+  const [result, setResult]         = useState<ApplicationResult | null>(null)
+  const [notFound, setNotFound]     = useState(false)
+  const [error, setError]           = useState('')
   const [isPending, startTransition] = useTransition()
 
   const handleSearch = (e: React.FormEvent) => {
@@ -31,17 +30,17 @@ export default function CandidaturaEstadoPage() {
     setNotFound(false)
     setResult(null)
 
-    if (!phone.trim() || !nationalId.trim()) {
-      setError('Por favor preencha o telefone e o número do BI.')
+    if (!identifier.trim()) {
+      setError('Por favor introduza o seu telefone, BI ou email.')
       return
     }
 
     startTransition(async () => {
-      const res = await consultarCandidatura(phone.trim(), nationalId.trim())
+      const res = await consultarCandidatura(identifier.trim())
 
-      if (res.error) { setError(res.error); return }
-      if (res.notFound) { setNotFound(true); return }
-      if (res.result) setResult(res.result)
+      if (res.error)    { setError(res.error); return }
+      if (res.notFound) { setNotFound(true);   return }
+      if (res.result)   setResult(res.result)
     })
   }
 
@@ -107,34 +106,25 @@ export default function CandidaturaEstadoPage() {
         {!result && (
           <div className="card">
             <form onSubmit={handleSearch} className="space-y-4">
+
               <div>
-                <label className="input-label">
-                  Telefone <span className="text-red-500">*</span>
+                <label className="input-label" htmlFor="identifier">
+                  Telefone, BI / Passaporte ou Email
                 </label>
                 <input
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  className="input-field"
-                  placeholder="9XX XXX XXX"
-                  disabled={isPending}
-                />
-              </div>
-              <div>
-                <label className="input-label">
-                  Nº do BI ou Passaporte <span className="text-red-500">*</span>
-                </label>
-                <input
+                  id="identifier"
                   type="text"
+                  autoComplete="username"
                   required
-                  value={nationalId}
-                  onChange={e => setNationalId(e.target.value)}
+                  value={identifier}
+                  onChange={e => setIdentifier(e.target.value)}
                   className="input-field"
-                  placeholder="Ex: 005847291AN014"
+                  placeholder="9XX XXX XXX · 005847…AN014 · email@…"
                   disabled={isPending}
-                  autoComplete="off"
                 />
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                  Pode usar qualquer um dos três.
+                </p>
               </div>
 
               {error && (
@@ -147,7 +137,7 @@ export default function CandidaturaEstadoPage() {
                 <div className="rounded-xl p-3 bg-yellow-50 border border-yellow-200">
                   <p className="text-sm text-yellow-800 font-medium mb-1">Candidatura não encontrada</p>
                   <p className="text-xs text-yellow-700">
-                    Verifique se o telefone e o BI são os mesmos que usou ao preencher o formulário.
+                    Verifique se o telefone, BI ou email são os mesmos que usou ao preencher o formulário.
                   </p>
                 </div>
               )}
@@ -155,9 +145,9 @@ export default function CandidaturaEstadoPage() {
               <button
                 type="submit"
                 disabled={isPending}
-                className="btn-primary w-full"
+                className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isPending ? 'A pesquisar...' : 'Consultar estado →'}
+                {isPending ? <><BtnSpinner />A pesquisar…</> : 'Consultar estado →'}
               </button>
             </form>
           </div>
@@ -218,7 +208,7 @@ export default function CandidaturaEstadoPage() {
               )}
 
               <button
-                onClick={() => { setResult(null); setPhone(''); setNationalId('') }}
+                onClick={() => { setResult(null); setIdentifier('') }}
                 className="btn-outline w-full text-sm"
               >
                 ← Nova pesquisa
