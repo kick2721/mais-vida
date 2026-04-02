@@ -1,6 +1,6 @@
 'use server'
 
-import { createServerSupabaseClient } from './supabase-server'
+import { createServerSupabaseClient, createServerSupabaseAdminClient } from './supabase-server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
@@ -107,5 +107,72 @@ export async function consultarCandidatura(phone: string, nationalId: string) {
     }
   } catch {
     return { error: 'Erro inesperado. Tente novamente.' }
+  }
+}
+
+// ─── RESOLVER EMAIL POR TELEFONE / BI (para login flexível) ──────────────────
+// Usa a Service Role para aceder a auth.users e encontrar o email associado
+// ao telefone ou BI que o utilizador introduziu
+export async function resolveLoginIdentifier(identifier: string): Promise<{ email?: string; error?: string }> {
+  if (!identifier || identifier.trim().length < 3) {
+    return { error: 'Introduza o seu telefone, BI ou email.' }
+  }
+
+  const val = identifier.trim()
+
+  // Se parece um email, devolvê-lo directamente
+  if (val.includes('@')) {
+    return { email: val }
+  }
+
+  try {
+    const supabase = await createServerSupabaseAdminClient()
+
+    const digitsOnly  = (v: string) => v.replace(/\D/g, '')
+    const normalizeId = (v: string) => v.replace(/\s/g, '').toUpperCase()
+
+    // Estratégia 1: Procurar por telefone na tabela profiles
+    // (profiles.phone é guardado no registo)
+    const phoneVal = digitsOnly(val)
+    if (phoneVal.length >= 7) {
+      // Buscar todos os profiles e comparar dígitos
+      const { data: allProfiles } = await supabase
+        .from('profiles')
+        .select('id, phone')
+        .not('phone', 'is', null)
+
+      const matchProfile = allProfiles?.find(p =>
+        p.phone && digitsOnly(p.phone) === phoneVal
+      )
+
+      if (matchProfile) {
+        // Buscar email via auth admin
+        const { data: authData } = await supabase.auth.admin.getUserById(matchProfile.id)
+        if (authData?.user?.email) {
+          return { email: authData.user.email }
+        }
+      }
+    }
+
+    // Estratégia 2: Procurar por BI/Passaporte em user_metadata de auth.users
+    // Supabase não tem um índice em metadata, então usamos listUsers com filtro
+    const idNorm = normalizeId(val)
+    if (idNorm.length >= 5) {
+      // Listar utilizadores em lotes e procurar por national_id em metadata
+      const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+
+      const matchUser = users?.find(u =>
+        u.user_metadata?.national_id &&
+        normalizeId(u.user_metadata.national_id) === idNorm
+      )
+
+      if (matchUser?.email) {
+        return { email: matchUser.email }
+      }
+    }
+
+    return { error: 'Não encontrámos nenhuma conta com esses dados. Verifique o telefone, BI ou email.' }
+  } catch {
+    return { error: 'Erro ao verificar os dados. Tente novamente.' }
   }
 }
