@@ -250,9 +250,9 @@ export async function approveApplication(applicationId: string) {
     .update({
       status: 'approved',
       reviewed_at: new Date().toISOString(),
+      reject_reason: null,
     })
     .eq('id', applicationId)
-    .eq('status', 'pending')
 
   if (error) return { error: 'Erro ao aprovar: ' + error.message }
 
@@ -276,7 +276,6 @@ export async function rejectApplication(applicationId: string, reason?: string) 
       reviewed_at: new Date().toISOString(),
     })
     .eq('id', applicationId)
-    .eq('status', 'pending')
 
   if (error) return { error: 'Erro ao rejeitar: ' + error.message }
 
