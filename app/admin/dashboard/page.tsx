@@ -124,11 +124,11 @@ export default async function AdminDashboardPage({
     .eq('status', 'pending')
 
   const kpis = [
-    { label: 'Vendas Totais', value: totalSales || 0, sub: `${pendingSales} pendentes`, color: 'var(--color-primary)', icon: '💳' },
-    { label: 'Confirmadas', value: confirmedSales || 0, sub: 'receita validada', color: '#166534', icon: '✅' },
-    { label: 'Afiliados Activos', value: totalAffiliates || 0, sub: 'na plataforma', color: '#1e40af', icon: '👥' },
-    { label: 'Cartões Pendentes', value: pendingCards || 0, sub: 'para emitir', color: '#d97706', icon: '🪪' },
-    { label: 'Candidaturas', value: pendingApplications || 0, sub: 'pendentes de análise', color: '#7c3aed', icon: '📋' },
+    { label: 'Vendas Totais',      value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,       color: 'var(--color-primary)', icon: '💳' },
+    { label: 'Confirmadas',        value: confirmedSales      || 0, sub: 'receita validada',                     color: '#166534',              icon: '✅' },
+    { label: 'Afiliados Activos',  value: totalAffiliates     || 0, sub: 'na plataforma',                        color: '#1e40af',              icon: '👥' },
+    { label: 'Cartões Pendentes',  value: pendingCards        || 0, sub: 'para emitir',                          color: '#d97706',              icon: '🪪' },
+    { label: 'Candidaturas',       value: pendingApplications || 0, sub: 'pendentes de análise',                 color: '#7c3aed',              icon: '📋' },
   ]
 
   return (
@@ -179,10 +179,10 @@ export default async function AdminDashboardPage({
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-white rounded-2xl p-1 border" style={{ borderColor: 'var(--color-border)' }}>
           {[
-            { key: 'sales', label: '💳 Vendas' },
-            { key: 'cards', label: '🪪 Cartões' },
-            { key: 'affiliates', label: '👥 Afiliados' },
-            { key: 'commissions', label: '💰 Comissões' },
+            { key: 'sales',        label: '💳 Vendas' },
+            { key: 'cards',        label: '🪪 Cartões' },
+            { key: 'affiliates',   label: '👥 Afiliados' },
+            { key: 'commissions',  label: '💰 Comissões' },
             { key: 'applications', label: '📋 Candidaturas' },
           ].map(tab => (
             <a
@@ -233,7 +233,7 @@ export default async function AdminDashboardPage({
 // ─── CARDS SECTION ──────────────────────────────────────────────────────────
 function AdminCardsSection({ cards, adminId }: { cards: any[]; adminId: string }) {
   const pending = cards.filter(c => c.status === 'pending')
-  const issued = cards.filter(c => c.status === 'issued')
+  const issued  = cards.filter(c => c.status === 'issued')
 
   return (
     <div>
