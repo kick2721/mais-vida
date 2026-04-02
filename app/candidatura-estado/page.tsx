@@ -1,13 +1,17 @@
 'use client'
 
 // app/candidatura-estado/page.tsx
-// Consultar estado da candidatura — mesmo formato de login (identificador flexível)
+// Consultar estado da candidatura — com campo de senha igual ao login
+// Se aprovado e conta existe, faz login automático no painel de afiliado
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Logo from '@/app/components/ui/Logo'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
-import { consultarCandidatura } from '@/lib/actions'
+import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
+import { consultarCandidaturaComSenha } from '@/lib/actions'
+import { createBrowserSupabaseClient } from '@/lib/supabase-client'
 
 interface ApplicationResult {
   full_name: string
@@ -18,7 +22,9 @@ interface ApplicationResult {
 }
 
 export default function CandidaturaEstadoPage() {
+  const router = useRouter()
   const [identifier, setIdentifier] = useState('')
+  const [password, setPassword]     = useState('')
   const [result, setResult]         = useState<ApplicationResult | null>(null)
   const [notFound, setNotFound]     = useState(false)
   const [error, setError]           = useState('')
@@ -34,13 +40,38 @@ export default function CandidaturaEstadoPage() {
       setError('Por favor introduza o seu telefone, BI ou email.')
       return
     }
+    if (!password) {
+      setError('Por favor introduza a sua palavra-passe.')
+      return
+    }
 
     startTransition(async () => {
-      const res = await consultarCandidatura(identifier.trim())
+      const res = await consultarCandidaturaComSenha(identifier.trim(), password)
 
       if (res.error)    { setError(res.error); return }
       if (res.notFound) { setNotFound(true);   return }
-      if (res.result)   setResult(res.result)
+      if (!res.result)  { setError('Erro inesperado. Tente novamente.'); return }
+
+      // Se aprovado e tem conta -> fazer login e redirecionar
+      if (res.result.status === 'approved' && res.email) {
+        const supabase = createBrowserSupabaseClient()
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: res.email,
+          password,
+        })
+
+        if (authError) {
+          setResult(res.result)
+          setError('Palavra-passe incorrecta. Verifique e tente novamente.')
+          return
+        }
+
+        router.push('/affiliate/dashboard')
+        return
+      }
+
+      // Pendente, rejeitado, ou aprovado sem conta -> mostrar estado
+      setResult(res.result)
     })
   }
 
@@ -56,7 +87,7 @@ export default function CandidaturaEstadoPage() {
     approved: {
       icon: '✅',
       label: 'Aprovada!',
-      description: 'Parabéns! A sua candidatura foi aprovada. A nossa equipa irá entrar em contacto para lhe enviar as credenciais de acesso ao painel de afiliado.',
+      description: 'Parabéns! A sua candidatura foi aprovada. Entre no painel de afiliado com as suas credenciais.',
       color: '#166534',
       bg: '#dcfce7',
       border: '#86efac',
@@ -73,6 +104,9 @@ export default function CandidaturaEstadoPage() {
 
   return (
     <div className="min-h-screen px-4 py-10" style={{ background: 'rgba(240,247,239,0.6)' }}>
+
+      {isPending && <LoadingOverlay message="A verificar candidatura…" />}
+
       <div className="w-full max-w-md mx-auto">
 
         <Link href="/" className="btn-back mb-6 inline-flex">
@@ -127,6 +161,31 @@ export default function CandidaturaEstadoPage() {
                 </p>
               </div>
 
+              <div>
+                <label className="input-label" htmlFor="password">Palavra-passe</label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="input-field"
+                  placeholder="••••••••"
+                  disabled={isPending}
+                />
+              </div>
+
+              <div className="text-right">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs hover:opacity-70"
+                  style={{ color: 'var(--color-primary)' }}
+                >
+                  Esqueci a palavra-passe
+                </Link>
+              </div>
+
               {error && (
                 <div className="rounded-xl p-3 bg-red-50 border border-red-200">
                   <p className="text-sm text-red-700">{error}</p>
@@ -147,7 +206,7 @@ export default function CandidaturaEstadoPage() {
                 disabled={isPending}
                 className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isPending ? <><BtnSpinner />A pesquisar…</> : 'Consultar estado →'}
+                {isPending ? <><BtnSpinner />A verificar…</> : 'Consultar estado →'}
               </button>
             </form>
           </div>
@@ -208,7 +267,7 @@ export default function CandidaturaEstadoPage() {
               )}
 
               <button
-                onClick={() => { setResult(null); setIdentifier('') }}
+                onClick={() => { setResult(null); setIdentifier(''); setPassword(''); setError('') }}
                 className="btn-outline w-full text-sm"
               >
                 ← Nova pesquisa
