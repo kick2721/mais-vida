@@ -82,12 +82,15 @@ export default function AdminApplicationsTable({ applications }: { applications:
 
 function ApplicationCard({ application: app }: { application: Application }) {
   const [isPending, startTransition] = useTransition()
-  const [status, setStatus]               = useState(app.status)
-  const [showRejectModal, setShowRejectModal] = useState(false)
-  const [rejectReason, setRejectReason]   = useState('')
+  const [status, setStatus]                   = useState(app.status)
+  const [showRejectModal, setShowRejectModal]  = useState(false)
+  const [rejectReason, setRejectReason]        = useState(app.reject_reason || '')
 
   const handleApprove = () => {
-    if (!confirm(`Aprovar candidatura de ${app.full_name}?\n\nIsto irá criar uma conta de afiliado.`)) return
+    const msg = status === 'rejected'
+      ? `Reverter decisão e APROVAR candidatura de ${app.full_name}?\n\nIsto irá criar uma conta de afiliado.`
+      : `Aprovar candidatura de ${app.full_name}?\n\nIsto irá criar uma conta de afiliado.`
+    if (!confirm(msg)) return
     startTransition(async () => {
       const result = await approveApplication(app.id)
       if (result.success) setStatus('approved')
@@ -163,33 +166,73 @@ function ApplicationCard({ application: app }: { application: Application }) {
         </div>
       )}
 
-      {app.reject_reason && (
+      {status === 'rejected' && rejectReason && (
         <div className="rounded-xl p-3 mb-4 bg-red-50 border border-red-100">
           <p className="text-xs font-semibold text-red-700 mb-1">Motivo de rejeição:</p>
-          <p className="text-sm text-red-600">{app.reject_reason}</p>
+          <p className="text-sm text-red-600">{rejectReason}</p>
         </div>
       )}
 
-      {status === 'pending' && (
-        <div className="flex gap-2 pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+      {/* Botões — sempre visíveis, permitem reverter decisões */}
+      <div className="flex gap-2 pt-3 border-t flex-wrap" style={{ borderColor: 'var(--color-border)' }}>
+        {status !== 'approved' && (
           <button onClick={handleApprove} disabled={isPending}
             className="btn-primary text-sm py-2 px-4 disabled:opacity-50 flex items-center gap-1">
             {isPending ? <><BtnSpinner />A processar…</> : '✅ Aprovar'}
           </button>
+        )}
+        {status === 'approved' ? (
           <button onClick={() => setShowRejectModal(true)} disabled={isPending}
-            className="btn-outline text-sm py-2 px-4 border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50">
-            Rejeitar
+            className="btn-outline text-sm py-2 px-4 disabled:opacity-50"
+            style={{ borderColor: '#fca5a5', color: '#dc2626' }}>
+            ✗ Revogar aprovação
           </button>
-        </div>
-      )}
+        ) : status !== 'rejected' ? (
+          <button onClick={() => setShowRejectModal(true)} disabled={isPending}
+            className="btn-outline text-sm py-2 px-4 disabled:opacity-50"
+            style={{ borderColor: '#fca5a5', color: '#dc2626' }}>
+            ✗ Rejeitar
+          </button>
+        ) : (
+          <button onClick={() => setShowRejectModal(true)} disabled={isPending}
+            className="btn-outline text-sm py-2 px-4 disabled:opacity-50 text-xs"
+            style={{ borderColor: '#fca5a5', color: '#dc2626' }}>
+            ✏️ Alterar motivo / Rejeitar novamente
+          </button>
+        )}
+      </div>
 
+      {/* Modal centrado no viewport com position:fixed */}
       {showRejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="font-display text-lg font-bold text-gray-900 mb-3">Rejeitar candidatura</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Indique o motivo da rejeição (opcional — para referência interna):
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0,0,0,0.5)',
+            padding: '1rem',
+          }}
+        >
+          <div style={{
+            background: '#fff',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            maxWidth: '400px',
+            width: '100%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          }}>
+            <h3 className="font-display text-lg font-bold text-gray-900 mb-2">
+              {status === 'approved' ? 'Revogar aprovação' : 'Rejeitar candidatura'}
+            </h3>
+            <p className="text-sm text-gray-600 mb-1 font-medium">{app.full_name}</p>
+            <p className="text-sm text-gray-500 mb-4">
+              Indique o motivo (opcional — para referência interna):
             </p>
             <textarea
               value={rejectReason}
@@ -204,8 +247,9 @@ function ApplicationCard({ application: app }: { application: Application }) {
                 Cancelar
               </button>
               <button onClick={handleReject} disabled={isPending}
-                className="flex-1 text-sm py-2 px-4 rounded-xl font-semibold bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 flex items-center justify-center gap-1">
-                {isPending ? <><BtnSpinner />A rejeitar…</> : 'Confirmar rejeição'}
+                className="flex-1 text-sm py-2 px-4 rounded-xl font-semibold disabled:opacity-50 flex items-center justify-center gap-1"
+                style={{ background: '#fee2e2', color: '#b91c1c' }}>
+                {isPending ? <><BtnSpinner />A processar…</> : 'Confirmar'}
               </button>
             </div>
           </div>
