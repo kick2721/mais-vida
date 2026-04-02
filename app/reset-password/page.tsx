@@ -1,13 +1,13 @@
 'use client'
 
 // app/reset-password/page.tsx
-// Formulário para definir nova palavra-passe (após clicar no link do email)
 
 import { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase-client'
-import { BUSINESS } from '@/lib/constants'
 import Logo from '@/app/components/ui/Logo'
+import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
+import BtnSpinner from '@/app/components/ui/BtnSpinner'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -18,21 +18,12 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  // Verificar que há uma sessão válida via hash do URL (Supabase envia token no URL fragment)
   useEffect(() => {
     const supabase = createBrowserSupabaseClient()
-    
-    // Supabase Auth com PKCE / token no URL — listener detecta automaticamente
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setReady(true)
-      }
-      if (event === 'SIGNED_IN') {
-        // Sessão activa — pode ter vindo do link de reset
-        setReady(true)
-      }
+      if (event === 'PASSWORD_RECOVERY') setReady(true)
+      if (event === 'SIGNED_IN') setReady(true)
     })
-
     return () => subscription.unsubscribe()
   }, [])
 
@@ -51,9 +42,7 @@ export default function ResetPasswordPage() {
 
     startTransition(async () => {
       const supabase = createBrowserSupabaseClient()
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
-      })
+      const { error: updateError } = await supabase.auth.updateUser({ password })
 
       if (updateError) {
         setError('Erro ao actualizar palavra-passe. O link pode ter expirado. Tente novamente.')
@@ -79,11 +68,11 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'rgba(240,247,239,0.6)' }}>
+
+      {isPending && <LoadingOverlay message="A guardar nova palavra-passe…" />}
+
       <div className="w-full max-w-md">
-        {/* Logo oficial */}
-        <div className="flex justify-center mb-8">
-          <Logo size="lg" href="/" />
-        </div>
+        <div className="flex justify-center mb-8"><Logo size="lg" href="/" /></div>
 
         <div className="card">
           <h2 className="font-display text-xl font-bold text-gray-900 mb-2">
@@ -107,33 +96,15 @@ export default function ResetPasswordPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="input-label" htmlFor="password">Nova palavra-passe</label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="input-field"
-                placeholder="Mínimo 8 caracteres"
-                disabled={isPending}
-              />
+              <input id="password" type="password" autoComplete="new-password" required minLength={8}
+                value={password} onChange={e => setPassword(e.target.value)}
+                className="input-field" placeholder="Mínimo 8 caracteres" disabled={isPending} />
             </div>
-
             <div>
               <label className="input-label" htmlFor="confirm">Confirmar palavra-passe</label>
-              <input
-                id="confirm"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={confirm}
-                onChange={e => setConfirm(e.target.value)}
-                className="input-field"
-                placeholder="Repetir palavra-passe"
-                disabled={isPending}
-              />
+              <input id="confirm" type="password" autoComplete="new-password" required
+                value={confirm} onChange={e => setConfirm(e.target.value)}
+                className="input-field" placeholder="Repetir palavra-passe" disabled={isPending} />
             </div>
 
             {error && (
@@ -142,12 +113,9 @@ export default function ResetPasswordPage() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={isPending || !ready}
-              className="btn-primary w-full disabled:opacity-50"
-            >
-              {isPending ? 'A actualizar...' : 'Guardar nova palavra-passe'}
+            <button type="submit" disabled={isPending || !ready}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
+              {isPending ? <><BtnSpinner />A guardar…</> : 'Guardar nova palavra-passe'}
             </button>
           </form>
         </div>
