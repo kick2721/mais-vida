@@ -1,12 +1,19 @@
 'use client'
 
 // app/admin/dashboard/AdminSalesTable.tsx
-// Tabela de vendas com acções de confirmação e cancelamento
 
 import { useState, useTransition } from 'react'
 import { confirmSale, cancelSale } from '@/lib/admin-actions'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function BtnSpinner({ white = true }: { white?: boolean }) {
+  return (
+    <svg className="animate-spin" width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="6" stroke={white ? 'white' : 'currentColor'} strokeOpacity="0.3" strokeWidth="2"/>
+      <path d="M14 8A6 6 0 0 0 8 2" stroke={white ? 'white' : 'currentColor'} strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
 export default function AdminSalesTable({ sales, adminId }: { sales: any[]; adminId: string }) {
   const [filter, setFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
@@ -24,34 +31,25 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
   })
 
   const statusMap: Record<string, { label: string; color: string; bg: string }> = {
-    confirmed: { label: '✓ Confirmada', color: '#166534', bg: '#dcfce7' },
-    pending_review: { label: '⏳ Em revisão', color: '#92400e', bg: '#fef3c7' },
-    pending: { label: '⏳ Pendente', color: '#6b7280', bg: '#f3f4f6' },
-    cancelled: { label: '✗ Cancelada', color: '#991b1b', bg: '#fee2e2' },
-    refunded: { label: '↩ Reembolsada', color: '#6b7280', bg: '#f3f4f6' },
+    confirmed:      { label: '✓ Confirmada',   color: '#166534', bg: '#dcfce7' },
+    pending_review: { label: '⏳ Em revisão',   color: '#92400e', bg: '#fef3c7' },
+    pending:        { label: '⏳ Pendente',     color: '#6b7280', bg: '#f3f4f6' },
+    cancelled:      { label: '✗ Cancelada',    color: '#991b1b', bg: '#fee2e2' },
+    refunded:       { label: '↩ Reembolsada',  color: '#6b7280', bg: '#f3f4f6' },
   }
 
   const paymentMethodLabel: Record<string, string> = {
-    transfer: '🏦 Transferência',
+    transfer:   '🏦 Transferência',
     multicaixa: '💳 Multicaixa Express',
-    cash: '💵 Numerário',
+    cash:       '💵 Numerário',
   }
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <input
-          type="text"
-          placeholder="Pesquisar por nome ou telefone..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="input-field flex-1"
-        />
-        <select
-          value={filter}
-          onChange={e => setFilter(e.target.value)}
-          className="input-field sm:w-48"
-        >
+        <input type="text" placeholder="Pesquisar por nome ou telefone..."
+          value={search} onChange={e => setSearch(e.target.value)} className="input-field flex-1" />
+        <select value={filter} onChange={e => setFilter(e.target.value)} className="input-field sm:w-48">
           <option value="all">Todos os estados</option>
           <option value="pending_review">Em revisão</option>
           <option value="pending">Pendente</option>
@@ -70,7 +68,7 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
           const affiliates = Array.isArray(sale.affiliates) ? sale.affiliates[0] : sale.affiliates
           const affiliateProfile = Array.isArray(affiliates?.profiles) ? affiliates?.profiles[0] : affiliates?.profiles
           const canConfirm = ['pending', 'pending_review'].includes(sale.status)
-          const canCancel = !['cancelled', 'refunded'].includes(sale.status)
+          const canCancel  = !['cancelled', 'refunded'].includes(sale.status)
 
           return (
             <div key={sale.id} className="card">
@@ -103,23 +101,17 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
                   </p>
                   {sale.payment_proof_url && (
                     <a href={sale.payment_proof_url} target="_blank" rel="noopener noreferrer"
-                      className="text-xs underline mt-1 block"
-                      style={{ color: 'var(--color-primary)' }}>
+                      className="text-xs underline mt-1 block" style={{ color: 'var(--color-primary)' }}>
                       Ver comprovativo ↗
                     </a>
                   )}
                 </div>
               </div>
 
-              {/* Actions */}
               {(canConfirm || canCancel) && (
                 <div className="flex gap-2 mt-4 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-                  {canConfirm && (
-                    <ConfirmSaleButton saleId={sale.id} adminId={adminId} />
-                  )}
-                  {canCancel && (
-                    <CancelSaleButton saleId={sale.id} />
-                  )}
+                  {canConfirm && <ConfirmSaleButton saleId={sale.id} adminId={adminId} />}
+                  {canCancel  && <CancelSaleButton saleId={sale.id} />}
                 </div>
               )}
             </div>
@@ -157,12 +149,9 @@ function ConfirmSaleButton({ saleId, adminId }: { saleId: string; adminId: strin
   )
 
   return (
-    <button
-      onClick={handleConfirm}
-      disabled={isPending}
-      className="btn-primary text-sm py-2 px-4 disabled:opacity-50"
-    >
-      {isPending ? 'A confirmar...' : '✓ Confirmar Pagamento'}
+    <button onClick={handleConfirm} disabled={isPending}
+      className="btn-primary text-sm py-2 px-4 disabled:opacity-50 flex items-center gap-2">
+      {isPending ? <><BtnSpinner />A confirmar…</> : '✓ Confirmar Pagamento'}
     </button>
   )
 }
@@ -182,18 +171,13 @@ function CancelSaleButton({ saleId }: { saleId: string }) {
   }
 
   if (done) return (
-    <span className="text-xs text-red-700 font-semibold px-3 py-2 bg-red-50 rounded-xl">
-      ✗ Cancelado
-    </span>
+    <span className="text-xs text-red-700 font-semibold px-3 py-2 bg-red-50 rounded-xl">✗ Cancelado</span>
   )
 
   return (
-    <button
-      onClick={handleCancel}
-      disabled={isPending}
-      className="btn-outline text-sm py-2 px-4 disabled:opacity-50 border-red-300 text-red-600 hover:bg-red-50"
-    >
-      {isPending ? 'A cancelar...' : 'Cancelar'}
+    <button onClick={handleCancel} disabled={isPending}
+      className="btn-outline text-sm py-2 px-4 disabled:opacity-50 border-red-300 text-red-600 hover:bg-red-50 flex items-center gap-2">
+      {isPending ? <><BtnSpinner white={false} />A cancelar…</> : 'Cancelar'}
     </button>
   )
 }

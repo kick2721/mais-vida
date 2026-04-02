@@ -1,7 +1,6 @@
 'use client'
 
 // app/admin/dashboard/IssueCardButton.tsx
-// Botão para emitir cartão digital — abre modal de confirmação
 
 import { useState, useTransition } from 'react'
 import { issueCard } from '@/lib/admin-actions'
@@ -13,15 +12,20 @@ interface Props {
   customerPhone?: string
 }
 
+function BtnSpinner() {
+  return (
+    <svg className="animate-spin" width="14" height="14" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="6" stroke="white" strokeOpacity="0.3" strokeWidth="2"/>
+      <path d="M14 8A6 6 0 0 0 8 2" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
 export default function IssueCardButton({ cardId, adminId, customerName, customerPhone }: Props) {
   const [isPending, startTransition] = useTransition()
-  const [done, setDone] = useState(false)
+  const [done, setDone]           = useState(false)
   const [cardNumber, setCardNumber] = useState('')
   const [showModal, setShowModal] = useState(false)
-
-  const handleIssue = () => {
-    setShowModal(true)
-  }
 
   const confirmIssue = () => {
     startTransition(async () => {
@@ -47,15 +51,11 @@ export default function IssueCardButton({ cardId, adminId, customerName, custome
 
   return (
     <>
-      <button
-        onClick={handleIssue}
-        disabled={isPending}
-        className="btn-primary text-sm py-2 px-4 disabled:opacity-50"
-      >
-        {isPending ? 'A emitir...' : '🪪 Marcar como Emitido'}
+      <button onClick={() => setShowModal(true)} disabled={isPending}
+        className="btn-primary text-sm py-2 px-4 disabled:opacity-50 flex items-center gap-2">
+        {isPending ? <><BtnSpinner />A emitir…</> : '🪪 Marcar como Emitido'}
       </button>
 
-      {/* Modal de confirmação */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.5)' }}>
@@ -76,18 +76,13 @@ export default function IssueCardButton({ cardId, adminId, customerName, custome
               Esta acção vai registar a emissão no sistema e notificar o cliente por email.
             </p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 btn-outline text-sm py-2"
-              >
+              <button onClick={() => setShowModal(false)} disabled={isPending}
+                className="flex-1 btn-outline text-sm py-2">
                 Cancelar
               </button>
-              <button
-                onClick={confirmIssue}
-                disabled={isPending}
-                className="flex-1 btn-primary text-sm py-2 disabled:opacity-50"
-              >
-                {isPending ? 'A registar...' : 'Confirmar emissão'}
+              <button onClick={confirmIssue} disabled={isPending}
+                className="flex-1 btn-primary text-sm py-2 disabled:opacity-50 flex items-center justify-center gap-2">
+                {isPending ? <><BtnSpinner />A registar…</> : 'Confirmar emissão'}
               </button>
             </div>
           </div>
