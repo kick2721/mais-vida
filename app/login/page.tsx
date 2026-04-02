@@ -1,38 +1,53 @@
 'use client'
 
 // app/login/page.tsx
-// Página de login — logo oficial + autenticação Supabase
+// Login flexível: telefone, BI/Passaporte ou email — todos funcionam
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase-client'
+import { resolveLoginIdentifier } from '@/lib/actions'
 import Logo from '@/app/components/ui/Logo'
+import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
+import BtnSpinner from '@/app/components/ui/BtnSpinner'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError]       = useState('')
+  const [identifier, setIdentifier] = useState('')   // telefone, BI ou email
+  const [password, setPassword]     = useState('')
+  const [error, setError]           = useState('')
   const [isPending, startTransition] = useTransition()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
+    if (!identifier.trim()) { setError('Por favor introduza o seu telefone, BI ou email.'); return }
+    if (!password)           { setError('Por favor introduza a sua palavra-passe.'); return }
+
     startTransition(async () => {
+      // Passo 1 — resolver o email a partir do identificador
+      const resolved = await resolveLoginIdentifier(identifier.trim())
+
+      if (resolved.error || !resolved.email) {
+        setError(resolved.error || 'Conta não encontrada.')
+        return
+      }
+
+      // Passo 2 — fazer login com o email encontrado
       const supabase = createBrowserSupabaseClient()
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: resolved.email,
         password,
       })
 
       if (authError) {
-        setError('Email ou palavra-passe incorrectos.')
+        setError('Palavra-passe incorrecta. Verifique e tente novamente.')
         return
       }
 
-      // Redirecionar conforme role (middleware garante protecção)
+      // Passo 3 — redirecionar conforme role
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -50,53 +65,17 @@ export default function LoginPage() {
       className="min-h-screen flex items-center justify-center px-4"
       style={{ background: 'rgba(240,247,239,0.6)' }}
     >
-      {/* ── Overlay de carregamento ── */}
-      {isPending && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4"
-          style={{ background: 'rgba(240,247,239,0.85)', backdropFilter: 'blur(4px)' }}
-        >
-          {/* Spinner */}
-          <svg
-            className="animate-spin"
-            width="48"
-            height="48"
-            viewBox="0 0 48 48"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle
-              cx="24" cy="24" r="20"
-              stroke="var(--color-primary)"
-              strokeOpacity="0.2"
-              strokeWidth="4"
-            />
-            <path
-              d="M44 24c0-11.046-8.954-20-20-20"
-              stroke="var(--color-primary)"
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-          </svg>
-
-          <p
-            className="text-sm font-medium"
-            style={{ color: 'var(--color-primary)' }}
-          >
-            A verificar credenciais…
-          </p>
-        </div>
-      )}
+      {isPending && <LoadingOverlay message="A verificar credenciais…" />}
 
       <div className="w-full max-w-md">
 
-        {/* Botão voltar */}
         <Link href="/" className="btn-back mb-6 inline-flex">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           Voltar ao início
         </Link>
 
-        {/* Logo oficial */}
         <div className="flex justify-center mb-8">
           <Logo size="lg" href="/" />
         </div>
@@ -110,21 +89,29 @@ export default function LoginPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* Identificador flexível */}
             <div>
-              <label className="input-label" htmlFor="email">Email</label>
+              <label className="input-label" htmlFor="identifier">
+                Telefone, BI / Passaporte ou Email
+              </label>
               <input
-                id="email"
-                type="email"
-                autoComplete="email"
+                id="identifier"
+                type="text"
+                autoComplete="username"
                 required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                value={identifier}
+                onChange={e => setIdentifier(e.target.value)}
                 className="input-field"
-                placeholder="o-seu-email@exemplo.com"
+                placeholder="9XX XXX XXX · 005847…AN014 · email@…"
                 disabled={isPending}
               />
+              <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                Pode usar qualquer um dos três.
+              </p>
             </div>
 
+            {/* Palavra-passe */}
             <div>
               <label className="input-label" htmlFor="password">Palavra-passe</label>
               <input
@@ -161,20 +148,7 @@ export default function LoginPage() {
               disabled={isPending}
               className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isPending ? (
-                <>
-                  <svg
-                    className="animate-spin"
-                    width="16" height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                  >
-                    <circle cx="8" cy="8" r="6" stroke="white" strokeOpacity="0.3" strokeWidth="2"/>
-                    <path d="M14 8A6 6 0 0 0 8 2" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  A entrar…
-                </>
-              ) : 'Entrar'}
+              {isPending ? <><BtnSpinner />A entrar…</> : 'Entrar'}
             </button>
           </form>
 
