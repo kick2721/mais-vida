@@ -63,6 +63,24 @@ export default function AffiliateCandidaturePage() {
 
     startTransition(async () => {
       const supabase = createBrowserSupabaseClient()
+
+      // Verificar duplicados por BI/Passaporte ou telefone
+      const { data: existing } = await supabase
+        .from('affiliate_applications')
+        .select('id, national_id, phone')
+        .or(`national_id.eq.${form.national_id},phone.eq.${form.phone}`)
+        .limit(1)
+
+      if (existing && existing.length > 0) {
+        const dup = existing[0]
+        if (dup.national_id === form.national_id) {
+          setError('Já existe uma candidatura com este número de BI / Passaporte. Se acredita que é um engano, contacte-nos.')
+        } else {
+          setError('Já existe uma candidatura com este número de telefone. Se acredita que é um engano, contacte-nos.')
+        }
+        return
+      }
+
       const { error: dbError } = await supabase
         .from('affiliate_applications')
         .insert({
