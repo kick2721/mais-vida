@@ -1,11 +1,12 @@
 'use client'
 
 // app/afiliado-candidatura/page.tsx
-// Formulário de candidatura para ser afiliado — aprovação manual pelo admin
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import Logo from '@/app/components/ui/Logo'
+import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
+import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import { createBrowserSupabaseClient } from '@/lib/supabase-client'
 import { COMMISSION, MEMBERSHIP, BUSINESS } from '@/lib/constants'
 
@@ -117,6 +118,9 @@ export default function AffiliateCandidaturePage() {
 
   return (
     <div className="min-h-screen px-4 py-10" style={{ background: 'rgba(240,247,239,0.6)' }}>
+
+      {isPending && <LoadingOverlay message="A enviar candidatura…" />}
+
       <div className="w-full max-w-xl mx-auto">
 
         <Link href="/" className="btn-back mb-6 inline-flex">
@@ -128,7 +132,6 @@ export default function AffiliateCandidaturePage() {
 
         <div className="flex justify-center mb-8"><Logo size="lg" href="/" /></div>
 
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
             style={{ background: 'rgba(139,26,26,0.08)' }}>
@@ -147,7 +150,6 @@ export default function AffiliateCandidaturePage() {
           </p>
         </div>
 
-        {/* Benefícios rápidos */}
         <div className="grid grid-cols-3 gap-3 mb-8">
           {[
             { icon: '💰', text: `${COMMISSION.amount.toLocaleString()} Kz por venda` },
@@ -161,11 +163,9 @@ export default function AffiliateCandidaturePage() {
           ))}
         </div>
 
-        {/* Formulário */}
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-5">
 
-            {/* Dados pessoais */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-4"
                 style={{ color: 'var(--color-primary)' }}>
@@ -173,23 +173,17 @@ export default function AffiliateCandidaturePage() {
               </p>
               <div className="space-y-4">
                 <div>
-                  <label className="input-label">
-                    Nome completo <span className="text-red-500">*</span>
-                  </label>
+                  <label className="input-label">Nome completo <span className="text-red-500">*</span></label>
                   <input type="text" required value={form.full_name} onChange={set('full_name')}
                     className="input-field" placeholder="João Silva" disabled={isPending} />
                 </div>
                 <div>
-                  <label className="input-label">
-                    Telefone / WhatsApp <span className="text-red-500">*</span>
-                  </label>
+                  <label className="input-label">Telefone / WhatsApp <span className="text-red-500">*</span></label>
                   <input type="tel" required value={form.phone} onChange={set('phone')}
                     className="input-field" placeholder="9XX XXX XXX" disabled={isPending} />
                 </div>
                 <div>
-                  <label className="input-label">
-                    Nº do BI ou Passaporte <span className="text-red-500">*</span>
-                  </label>
+                  <label className="input-label">Nº do BI ou Passaporte <span className="text-red-500">*</span></label>
                   <input type="text" required value={form.national_id} onChange={set('national_id')}
                     className="input-field" placeholder="Ex: 005847291AN014"
                     disabled={isPending} autoComplete="off" />
@@ -199,7 +193,6 @@ export default function AffiliateCandidaturePage() {
 
             <div className="border-t" style={{ borderColor: 'var(--color-border)' }} />
 
-            {/* Perfil comercial */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-4"
                 style={{ color: 'var(--color-primary)' }}>
@@ -211,21 +204,15 @@ export default function AffiliateCandidaturePage() {
                   <select value={form.occupation} onChange={set('occupation')}
                     className="input-field" disabled={isPending}>
                     <option value="">Seleccione uma opção</option>
-                    {OCCUPATION_OPTIONS.map(o => (
-                      <option key={o} value={o}>{o}</option>
-                    ))}
+                    {OCCUPATION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="input-label">
-                    Quantas pessoas tem na sua rede de contactos?
-                  </label>
+                  <label className="input-label">Quantas pessoas tem na sua rede de contactos?</label>
                   <select value={form.network_size} onChange={set('network_size')}
                     className="input-field" disabled={isPending}>
                     <option value="">Seleccione uma opção</option>
-                    {NETWORK_OPTIONS.map(o => (
-                      <option key={o} value={o}>{o}</option>
-                    ))}
+                    {NETWORK_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
                 </div>
               </div>
@@ -233,7 +220,6 @@ export default function AffiliateCandidaturePage() {
 
             <div className="border-t" style={{ borderColor: 'var(--color-border)' }} />
 
-            {/* Redes sociais */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-1"
                 style={{ color: 'var(--color-primary)' }}>
@@ -250,8 +236,7 @@ export default function AffiliateCandidaturePage() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
                       style={{ color: 'var(--color-text-muted)' }}>instagram.com/</span>
                     <input type="text" value={form.instagram} onChange={set('instagram')}
-                      className="input-field pl-28" placeholder="o_seu_usuario"
-                      disabled={isPending} />
+                      className="input-field pl-28" placeholder="o_seu_usuario" disabled={isPending} />
                   </div>
                 </div>
                 <div>
@@ -260,8 +245,7 @@ export default function AffiliateCandidaturePage() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
                       style={{ color: 'var(--color-text-muted)' }}>facebook.com/</span>
                     <input type="text" value={form.facebook} onChange={set('facebook')}
-                      className="input-field pl-28" placeholder="o_seu_usuario"
-                      disabled={isPending} />
+                      className="input-field pl-28" placeholder="o_seu_usuario" disabled={isPending} />
                   </div>
                 </div>
                 <div>
@@ -270,8 +254,7 @@ export default function AffiliateCandidaturePage() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"
                       style={{ color: 'var(--color-text-muted)' }}>tiktok.com/@</span>
                     <input type="text" value={form.tiktok} onChange={set('tiktok')}
-                      className="input-field pl-28" placeholder="o_seu_usuario"
-                      disabled={isPending} />
+                      className="input-field pl-28" placeholder="o_seu_usuario" disabled={isPending} />
                   </div>
                 </div>
                 <div>
@@ -285,7 +268,6 @@ export default function AffiliateCandidaturePage() {
 
             <div className="border-t" style={{ borderColor: 'var(--color-border)' }} />
 
-            {/* Motivação */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-4"
                 style={{ color: 'var(--color-primary)' }}>
@@ -301,7 +283,7 @@ export default function AffiliateCandidaturePage() {
                   onChange={set('motivation')}
                   rows={4}
                   disabled={isPending}
-                  placeholder="Descreva brevemente a sua motivação, como pensa promover o cartão e porque seria um bom afiliado..."
+                  placeholder="Descreva brevemente a sua motivação..."
                   className="input-field resize-none"
                 />
                 <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
@@ -316,8 +298,9 @@ export default function AffiliateCandidaturePage() {
               </div>
             )}
 
-            <button type="submit" disabled={isPending} className="btn-primary w-full">
-              {isPending ? 'A enviar candidatura...' : 'Enviar candidatura →'}
+            <button type="submit" disabled={isPending}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50">
+              {isPending ? <><BtnSpinner />A enviar candidatura…</> : 'Enviar candidatura →'}
             </button>
 
             <p className="text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>
@@ -327,7 +310,6 @@ export default function AffiliateCandidaturePage() {
           </form>
         </div>
 
-        {/* Já é afiliado? */}
         <div className="mt-6 text-center space-y-2">
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
             Já foi aprovado?{' '}
