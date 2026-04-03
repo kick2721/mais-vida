@@ -8,15 +8,14 @@ const ROLE_ROUTES: Record<string, string[]> = {
   affiliate: ['/affiliate'],
 }
 
-const AUTH_ROUTES = ['/dashboard', '/affiliate', '/admin']
+const AUTH_ROUTES = ['/affiliate', '/admin']
 const GUEST_ONLY_ROUTES = ['/login', '/forgot-password', '/reset-password']
 
-const ALWAYS_PUBLIC = ['/register', '/comprar', '/']
+const ALWAYS_PUBLIC = ['/comprar', '/seguimento', '/afiliado-candidatura', '/candidatura-estado', '/']
 
 const REDIRECT_MAP: Record<string, string> = {
   admin: '/admin/dashboard',
   affiliate: '/affiliate/dashboard',
-  customer: '/dashboard',
 }
 
 export async function middleware(request: NextRequest) {
