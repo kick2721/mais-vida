@@ -9,11 +9,12 @@ import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import { MEMBERSHIP, BANK, REFERRAL, BUSINESS } from '@/lib/constants'
 
-const MAX_CARDS = 10
+const MAX_CARDS = 5
 
 interface CardHolder {
   full_name: string
   national_id: string
+  receipt: File | null
 }
 
 function ComprarForm() {
@@ -26,12 +27,11 @@ function ComprarForm() {
   }
 
   const [quantity, setQuantity]   = useState(1)
-  const [holders, setHolders]     = useState<CardHolder[]>([{ full_name: '', national_id: '' }])
+  const [holders, setHolders]     = useState<CardHolder[]>([{ full_name: '', national_id: '', receipt: null }])
   const [contact, setContact]     = useState({ email: '', phone: '' })
   const [referralCode, setReferralCode] = useState(
     searchParams.get(REFERRAL.urlParam) || getRefFromCookie()
   )
-  const [file, setFile]           = useState<File | null>(null)
   const [error, setError]         = useState('')
   const [success, setSuccess]     = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -44,7 +44,7 @@ function ComprarForm() {
     setQuantity(q)
     setHolders(prev => {
       if (q > prev.length) {
-        return [...prev, ...Array(q - prev.length).fill({ full_name: '', national_id: '' })]
+        return [...prev, ...Array(q - prev.length).fill({ full_name: '', national_id: '', receipt: null })]
       }
       return prev.slice(0, q)
     })
@@ -52,16 +52,17 @@ function ComprarForm() {
 
   const setHolder = (index: number, field: keyof CardHolder) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setHolders(prev => prev.map((h, i) => i === index ? { ...h, [field]: e.target.value } : h))
+      setHolders(prev => prev.map((h, i) => i === index ? {
+        ...h,
+        [field]: field === 'receipt' ? (e.target.files?.[0] ?? null) : e.target.value
+      } : h))
     }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!file) { setError('Por favor anexe o comprovativo de pagamento.'); return }
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-    if (!allowed.includes(file.type)) { setError('Formato inválido. Use JPG, PNG, WEBP ou PDF.'); return }
 
     for (let i = 0; i < holders.length; i++) {
       if (!holders[i].full_name.trim()) {
@@ -70,29 +71,36 @@ function ComprarForm() {
       if (!holders[i].national_id.trim()) {
         setError(`Por favor preencha o BI/Passaporte do Cartão ${i + 1}.`); return
       }
+      if (!holders[i].receipt) {
+        setError(`Por favor anexe o comprovativo do Cartão ${i + 1}.`); return
+      }
+      if (!allowed.includes(holders[i].receipt!.type)) {
+        setError(`Cartão ${i + 1}: formato inválido. Use JPG, PNG, WEBP ou PDF.`); return
+      }
     }
-
     startTransition(async () => {
       const supabase = createBrowserSupabaseClient()
 
-      // Upload comprovativo
-      const ext = file.name.split('.').pop()
-      const path = `receipts/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: uploadError } = await supabase.storage.from('receipts').upload(path, file)
-      if (uploadError) { setError('Erro ao enviar o comprovativo. Tente novamente.'); return }
-
-      // Insert one sale row per cartão
-      const rows = holders.map(h => ({
-        customer_name:  h.full_name,
-        customer_email: contact.email,
-        customer_phone: contact.phone,
-        national_id:    h.national_id,
-        amount:         MEMBERSHIP.price,
-        currency:       MEMBERSHIP.currency,
-        receipt_path:   path,
-        referral_code:  referralCode || null,
-        status:         'pending_review',
-      }))
+      // Upload comprovativo por cartão e construir rows
+      const rows = []
+      for (const h of holders) {
+        const receiptFile = h.receipt!
+        const ext = receiptFile.name.split('.').pop()
+        const filePath = `receipts/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: uploadError } = await supabase.storage.from('receipts').upload(filePath, receiptFile)
+        if (uploadError) { setError('Erro ao enviar comprovativo. Tente novamente.'); return }
+        rows.push({
+          customer_name:  h.full_name,
+          customer_email: contact.email,
+          customer_phone: contact.phone,
+          national_id:    h.national_id,
+          amount:         MEMBERSHIP.price,
+          currency:       MEMBERSHIP.currency,
+          receipt_path:   filePath,
+          referral_code:  referralCode || null,
+          status:         'pending_review',
+        })
+      }
 
       const { error: saleError } = await supabase.from('sales').insert(rows)
       if (saleError) { setError('Erro ao registar a compra. Tente novamente.'); return }
@@ -161,7 +169,7 @@ function ComprarForm() {
             style={{ color: 'var(--color-primary)' }}>
             Quantos cartões pretende comprar?
           </p>
-            Pode comprar para si e para a sua família. Máximo {MAX_CARDS} por pedido.
+            <p className="text-sm mb-3" style={{ color: 'var(--color-text-muted)' }}>Pode comprar para si e para a sua família. Máximo {MAX_CARDS} por pedido.</p>
 
           {/* Selector visual */}
           <div className="flex items-center gap-3 mb-4">
@@ -187,7 +195,7 @@ function ComprarForm() {
 
           {/* Pills de seleção rápida — centradas em grid */}
           <div className="grid grid-cols-5 gap-2 mb-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+            {[1, 2, 3, 4, 5].map(n => (
               <button key={n} type="button"
                 onClick={() => changeQuantity(n)}
                 className="py-2 rounded-full text-sm font-semibold border-2 transition-all text-center"
@@ -302,6 +310,15 @@ function ComprarForm() {
                       Aceita BI angolano ou passaporte de qualquer país.
                     </p>
                   </div>
+                  <div>
+                    <label className="input-label">Comprovativo de pagamento</label>
+                    <input type="file" required accept="image/jpeg,image/png,image/webp,application/pdf"
+                      onChange={setHolder(i, 'receipt')}
+                      className="input-field" disabled={isPending} />
+                    <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                      JPG, PNG, WEBP ou PDF · Máx. 5MB
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -314,17 +331,6 @@ function ComprarForm() {
               <input id="referral_code" type="text" value={referralCode}
                 onChange={e => setReferralCode(e.target.value)}
                 className="input-field font-mono" placeholder="VIDA-XXXXXX" disabled={isPending} />
-            </div>
-
-            {/* Comprovativo */}
-            <div>
-              <label className="input-label" htmlFor="receipt">Comprovativo de pagamento</label>
-              <input id="receipt" type="file" required accept="image/jpeg,image/png,image/webp,application/pdf"
-                onChange={e => setFile(e.target.files?.[0] ?? null)}
-                className="input-field" disabled={isPending} />
-              <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                Formatos aceites: JPG, PNG, WEBP, PDF · Máx. 5MB
-              </p>
             </div>
 
             {error && (
