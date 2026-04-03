@@ -118,6 +118,9 @@ function ComprarForm() {
               A nossa equipa irá verificar o pagamento e enviar os cartões por{' '}
               <strong>WhatsApp</strong> em até <strong>48 horas úteis</strong>.
             </p>
+            <Link href="/seguimento" className="btn-primary text-sm block mb-3">
+              Ver estado do meu pedido →
+            </Link>
             <Link href="/" className="btn-outline text-sm">Voltar ao início</Link>
           </div>
         </div>
