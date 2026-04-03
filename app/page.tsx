@@ -1,4 +1,3 @@
-// app/page.tsx
 import { Suspense } from 'react'
 import Navbar from '@/app/components/layout/Navbar'
 import Footer from '@/app/components/layout/Footer'
@@ -9,6 +8,7 @@ import AffiliatesSection from '@/app/components/sections/AffiliatesSection'
 import ClinicGallerySection from '@/app/components/sections/ClinicGallerySection'
 import FaqSection from '@/app/components/sections/FaqSection'
 import LocationSection from '@/app/components/sections/LocationSection'
+import ContactSection from '@/app/components/sections/ContactSection'
 import RefCapture from '@/app/components/RefCapture'
 
 export default function HomePage() {
@@ -24,6 +24,7 @@ export default function HomePage() {
         <AffiliatesSection />
         <FaqSection />
         <LocationSection />
+        <ContactSection />
       </main>
       <Footer />
     </>
