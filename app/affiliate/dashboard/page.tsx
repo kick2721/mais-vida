@@ -29,6 +29,7 @@ export default async function AffiliateDashboardPage() {
     .single()
 
   if (!affiliate) redirect('/login')
+  if (!affiliate.is_active) redirect('/login?erro=conta-inactiva')
 
   const { data: sales } = await supabase
     .from('sales')
