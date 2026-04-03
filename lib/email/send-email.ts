@@ -312,8 +312,8 @@ export async function sendEmail({ to, template, data }: SendEmailOptions): Promi
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: `${BUSINESS.name} <no-reply@mais-vida.com>`,
-        to: [to],
+        from: `${BUSINESS.name} <onboarding@resend.dev>`,
+        to: ['kick02721@gmail.com'], // TODO: cambiar a [to] cuando el dominio mais-vida.com esté verificado en Resend
         subject,
         html,
       }),
