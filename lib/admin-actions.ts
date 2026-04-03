@@ -50,7 +50,8 @@ export async function confirmSale(saleId: string, adminId: string) {
         .single()
 
       if (customer) {
-        const { data: authUser } = await supabase.auth.admin.getUserById(customer.profile_id)
+        const supabaseAdmin = await createServerSupabaseAdminClient()
+        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(customer.profile_id)
         if (authUser?.user?.email) {
           await sendEmail({
             to: authUser.user.email,
@@ -123,7 +124,8 @@ export async function issueCard(cardId: string, adminId: string) {
   try {
     const customerData = card.customers as any
     if (customerData?.profile_id) {
-      const { data: authUser } = await supabase.auth.admin.getUserById(customerData.profile_id)
+      const supabaseAdmin = await createServerSupabaseAdminClient()
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(customerData.profile_id)
       if (authUser?.user?.email) {
         await sendEmail({
           to: authUser.user.email,
@@ -169,7 +171,8 @@ export async function toggleAffiliateStatus(affiliateId: string, isActive: boole
 
   // Email ao afiliado
   try {
-    const { data: authUser } = await supabase.auth.admin.getUserById(affiliate.profile_id)
+    const supabaseAdmin = await createServerSupabaseAdminClient()
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(affiliate.profile_id)
     const affiliateName = (affiliate.profiles as any)?.full_name || 'Afiliado'
     const email = authUser?.user?.email
 
@@ -242,7 +245,8 @@ export async function payCommission(commissionId: string) {
   try {
     const affiliateData = commission.affiliates as any
     if (affiliateData?.profile_id) {
-      const { data: authUser } = await supabase.auth.admin.getUserById(affiliateData.profile_id)
+      const supabaseAdmin = await createServerSupabaseAdminClient()
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(affiliateData.profile_id)
       if (authUser?.user?.email) {
         await sendEmail({
           to: authUser.user.email,
