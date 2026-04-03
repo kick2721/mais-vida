@@ -1,246 +1,440 @@
 'use server'
 
+// lib/admin-actions.ts
+// Server Actions exclusivas do painel do admin
+
 import { createServerSupabaseClient, createServerSupabaseAdminClient } from './supabase-server'
-import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { sendEmail } from './email/send-email'
+import { COMMISSION } from './constants'
 
-export async function logoutUser() {
+// ─── CONFIRMAR VENDA ─────────────────────────────────────────────────────────
+export async function confirmSale(saleId: string, adminId: string) {
   const supabase = await createServerSupabaseClient()
-  await supabase.auth.signOut()
-  redirect('/login')
-}
-
-// ─── RECUPERAÇÃO DE PASSWORD via Resend ──────────────────────────────────────
-// Substitui o email do Supabase (que tem limite muito baixo no plano gratuito)
-// Gera o link de reset via Admin API e envia pelo Resend
-export async function sendPasswordResetEmail(email: string): Promise<{ error?: string }> {
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { error: 'Email inválido.' }
-  }
-
-  try {
-    const adminSupabase = await createServerSupabaseAdminClient()
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mais-vida.com'
-    const redirectTo = `${siteUrl}/reset-password`
-
-    // Gerar o link de reset via Admin API
-    const { data, error } = await adminSupabase.auth.admin.generateLink({
-      type: 'recovery',
-      email: email.toLowerCase().trim(),
-      options: { redirectTo },
-    })
-
-    if (error) {
-      // Não revelar se o email existe ou não (segurança)
-      console.error('[PasswordReset] generateLink error:', error.message)
-      // Devolvemos sucesso na mesma para não expor se o email existe
-      return {}
-    }
-
-    if (!data?.properties?.action_link) {
-      return {}
-    }
-
-    // Enviar via Resend
-    await sendEmail({
-      to: email,
-      template: 'password_reset',
-      data: { resetUrl: data.properties.action_link },
-    })
-
-    return {}
-  } catch (err) {
-    console.error('[PasswordReset] Unexpected error:', err)
-    return {}
-  }
-}
-
-// ─── CONVERTER CLIENTE EM AFILIADO ───────────────────────────────────────────
-export async function becomeAffiliate() {
-  const supabase = await createServerSupabaseClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Não autenticado.' }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
-    .eq('id', user.id)
+    .eq('id', adminId)
     .single()
 
-  if (!profile) return { error: 'Perfil não encontrado.' }
-  if (profile.role === 'affiliate') return { error: 'Já é afiliado.' }
-  if (profile.role === 'admin') return { error: 'Conta de administrador.' }
+  if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
 
-  const referralCode = 'VIDA-' + user.id.replace(/-/g, '').substring(0, 6).toUpperCase()
+  const { data: sale, error } = await supabase
+    .from('sales')
+    .update({
+      status: 'confirmed',
+      confirmed_at: new Date().toISOString(),
+      confirmed_by: adminId,
+    })
+    .eq('id', saleId)
+    .select(`
+      id, amount, currency,
+      customers (
+        id,
+        profiles ( full_name, phone )
+      )
+    `)
+    .single()
 
-  const { data: existingAffiliate } = await supabase
-    .from('affiliates')
-    .select('id')
-    .eq('profile_id', user.id)
-    .maybeSingle()
+  if (error) return { error: 'Erro ao confirmar venda: ' + error.message }
 
-  if (!existingAffiliate) {
-    const { error: affError } = await supabase
-      .from('affiliates')
-      .insert({ profile_id: user.id, referral_code: referralCode })
+  // Email de confirmação ao cliente
+  try {
+    const customerProfile = (sale.customers as any)?.profiles
+    if (customerProfile) {
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('profile_id')
+        .eq('id', (sale.customers as any)?.id)
+        .single()
 
-    if (affError) return { error: 'Erro ao criar conta de afiliado: ' + affError.message }
+      if (customer) {
+        const supabaseAdmin = await createServerSupabaseAdminClient()
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(customer.profile_id)
+        if (authUser?.user?.email) {
+          await sendEmail({
+            to: authUser.user.email,
+            template: 'purchase_confirmed',
+            data: {
+              customerName: customerProfile.full_name,
+              amount: sale.amount,
+              currency: sale.currency,
+            },
+          })
+        }
+      }
+    }
+  } catch (emailError) {
+    console.error('[Email] confirmSale error:', emailError)
   }
 
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({ role: 'affiliate', referral_code: referralCode })
-    .eq('id', user.id)
-
-  if (profileError) return { error: 'Erro ao actualizar perfil: ' + profileError.message }
-
-  revalidatePath('/dashboard')
-  revalidatePath('/affiliate/dashboard')
-  redirect('/affiliate/dashboard')
+  revalidatePath('/admin/dashboard')
+  return { success: true }
 }
 
-// ─── CONSULTA PÚBLICA DE CANDIDATURA ─────────────────────────────────────────
-export async function consultarCandidatura(identifier: string) {
-  if (!identifier || identifier.trim().length < 3) return { error: 'Dados em falta.' }
+// ─── CANCELAR VENDA ──────────────────────────────────────────────────────────
+export async function cancelSale(saleId: string, reason?: string) {
+  const supabase = await createServerSupabaseClient()
 
-  const digitsOnly  = (v: string) => v.replace(/\D/g, '')
-  const normalizeId = (v: string) => v.replace(/\s/g, '').toUpperCase()
-  const normalizePhone = (v: string) => {
-    const d = digitsOnly(v)
-    if (d.startsWith('244') && d.length === 12) return d.slice(3)
-    return d
-  }
+  const { error } = await supabase
+    .from('sales')
+    .update({ status: 'cancelled', notes: reason || null })
+    .eq('id', saleId)
+    .not('status', 'in', '("cancelled","refunded")')
+
+  if (error) return { error: 'Erro ao cancelar venda: ' + error.message }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// ─── EMITIR CARTÃO ───────────────────────────────────────────────────────────
+export async function issueCard(cardId: string, adminId: string) {
+  const supabase = await createServerSupabaseClient()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', adminId)
+    .single()
+
+  if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
+
+  const { data: card, error } = await supabase
+    .from('member_cards')
+    .update({
+      status: 'issued',
+      issued_at: new Date().toISOString(),
+      issued_by: adminId,
+    })
+    .eq('id', cardId)
+    .eq('status', 'pending')
+    .select(`
+      id, card_number,
+      customers (
+        id, profile_id,
+        profiles ( full_name, phone )
+      )
+    `)
+    .single()
+
+  if (error) return { error: 'Erro ao emitir cartão: ' + error.message }
 
   try {
-    const supabase = await createServerSupabaseClient()
-
-    const { data, error } = await supabase
-      .from('affiliate_applications')
-      .select('full_name, phone, status, reject_reason, created_at, national_id, email')
-      .order('created_at', { ascending: false })
-
-    if (error) return { error: 'Erro ao consultar. Tente novamente.' }
-    if (!data || data.length === 0) return { notFound: true }
-
-    const val         = identifier.trim()
-    const phoneDigits = normalizePhone(val)
-    const idNorm      = normalizeId(val)
-    const emailNorm   = val.toLowerCase()
-
-    const match = data.find(row => {
-      if (val.includes('@') && row.email) return row.email.toLowerCase() === emailNorm
-      if (phoneDigits.length >= 7 && row.phone) {
-        if (normalizePhone(row.phone) === phoneDigits) return true
+    const customerData = card.customers as any
+    if (customerData?.profile_id) {
+      const supabaseAdmin = await createServerSupabaseAdminClient()
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(customerData.profile_id)
+      if (authUser?.user?.email) {
+        await sendEmail({
+          to: authUser.user.email,
+          template: 'card_issued',
+          data: {
+            customerName: customerData.profiles?.full_name,
+            cardNumber: card.card_number,
+          },
+        })
       }
-      if (idNorm.length >= 5 && row.national_id) {
-        if (normalizeId(row.national_id) === idNorm) return true
+    }
+  } catch (emailError) {
+    console.error('[Email] issueCard error:', emailError)
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true, cardNumber: card.card_number }
+}
+
+// ─── TOGGLE AFILIADO (activar / desactivar) ───────────────────────────────────
+// Envia email ao afiliado conforme a acção
+export async function toggleAffiliateStatus(affiliateId: string, isActive: boolean) {
+  const supabase = await createServerSupabaseClient()
+
+  // Buscar dados do afiliado antes de alterar (para o email)
+  const { data: affiliate, error: fetchError } = await supabase
+    .from('affiliates')
+    .select(`
+      id, referral_code, profile_id,
+      profiles ( full_name )
+    `)
+    .eq('id', affiliateId)
+    .single()
+
+  if (fetchError || !affiliate) return { error: 'Afiliado não encontrado.' }
+
+  const { error } = await supabase
+    .from('affiliates')
+    .update({ is_active: isActive })
+    .eq('id', affiliateId)
+
+  if (error) return { error: 'Erro ao actualizar afiliado: ' + error.message }
+
+  // Email ao afiliado
+  try {
+    const supabaseAdmin = await createServerSupabaseAdminClient()
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(affiliate.profile_id)
+    const affiliateName = (affiliate.profiles as any)?.full_name || 'Afiliado'
+    const email = authUser?.user?.email
+
+    if (email) {
+      await sendEmail({
+        to: email,
+        template: isActive ? 'affiliate_reactivated' : 'affiliate_deactivated',
+        data: {
+          affiliateName,
+          referralCode: affiliate.referral_code,
+        },
+      })
+    }
+  } catch (emailError) {
+    // Não bloquear a acção por falha de email
+    console.error('[Email] toggleAffiliateStatus error:', emailError)
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// ─── APROVAR COMISSÃO ────────────────────────────────────────────────────────
+export async function approveCommission(commissionId: string) {
+  const supabase = await createServerSupabaseClient()
+
+  const { error } = await supabase
+    .from('commissions')
+    .update({
+      status: 'approved',
+      approved_at: new Date().toISOString(),
+    })
+    .eq('id', commissionId)
+    .eq('status', 'pending')
+
+  if (error) return { error: 'Erro ao aprovar comissão: ' + error.message }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// ─── PAGAR COMISSÃO ──────────────────────────────────────────────────────────
+export async function payCommission(commissionId: string) {
+  const supabase = await createServerSupabaseClient()
+
+  const { data: commission } = await supabase
+    .from('commissions')
+    .select(`
+      id, amount, currency, status, affiliate_id,
+      affiliates (
+        profile_id, referral_code,
+        profiles ( full_name )
+      )
+    `)
+    .eq('id', commissionId)
+    .single()
+
+  if (!commission || commission.status !== 'approved') {
+    return { error: 'Comissão não encontrada ou ainda não aprovada.' }
+  }
+
+  const { error: commError } = await supabase
+    .from('commissions')
+    .update({ status: 'paid', paid_at: new Date().toISOString() })
+    .eq('id', commissionId)
+
+  if (commError) return { error: 'Erro ao pagar comissão: ' + commError.message }
+
+  // Email ao afiliado
+  try {
+    const affiliateData = commission.affiliates as any
+    if (affiliateData?.profile_id) {
+      const supabaseAdmin = await createServerSupabaseAdminClient()
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(affiliateData.profile_id)
+      if (authUser?.user?.email) {
+        await sendEmail({
+          to: authUser.user.email,
+          template: 'commission_paid',
+          data: {
+            affiliateName: affiliateData.profiles?.full_name || 'Afiliado',
+            amount: commission.amount,
+            currency: commission.currency,
+            paidAt: new Date().toLocaleDateString('pt-AO'),
+          },
+        })
       }
-      return false
+    }
+  } catch (emailError) {
+    console.error('[Email] payCommission error:', emailError)
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// ─── APROVAR CANDIDATURA DE AFILIADO ────────────────────────────────────────
+// Cria conta + envia email de aprovação (um único email)
+export async function approveApplication(applicationId: string) {
+  const supabase = await createServerSupabaseClient()
+
+  const currentUser = await supabase.auth.getUser()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', currentUser.data.user?.id || '')
+    .single()
+
+  if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
+
+  // Buscar dados da candidatura
+  const { data: app, error: fetchError } = await supabase
+    .from('affiliate_applications')
+    .select('id, full_name, phone, national_id, email, password_temp')
+    .eq('id', applicationId)
+    .single()
+
+  if (fetchError || !app) return { error: 'Candidatura não encontrada.' }
+
+  const loginEmail = app.email
+    ? app.email.toLowerCase().trim()
+    : `${app.phone.replace(/\D/g, '')}@mais-vida.ao`
+
+  const password = app.password_temp
+  if (!password) return { error: 'Candidatura sem palavra-passe definida. O candidato deve resubmeter.' }
+
+  const adminSupabase = await createServerSupabaseAdminClient()
+  const { data: { users } } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 })
+  const existingUser = users?.find(u => u.email === loginEmail)
+
+  let referralCode = ''
+
+  if (!existingUser) {
+    const { data: newUser, error: createError } = await adminSupabase.auth.admin.createUser({
+      email: loginEmail,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        full_name:   app.full_name,
+        phone:       app.phone,
+        national_id: app.national_id,
+        role:        'affiliate',
+      },
     })
 
-    if (!match) return { notFound: true }
+    if (createError) return { error: 'Erro ao criar conta: ' + createError.message }
 
-    return {
-      result: {
-        full_name:     match.full_name,
-        phone:         match.phone,
-        status:        match.status as 'pending' | 'approved' | 'rejected',
-        reject_reason: match.reject_reason,
-        created_at:    match.created_at,
-      }
+    if (newUser?.user) {
+      referralCode = 'VIDA-' + newUser.user.id.replace(/-/g, '').substring(0, 6).toUpperCase()
+
+      await new Promise(r => setTimeout(r, 500))
+
+      await adminSupabase
+        .from('profiles')
+        .update({
+          role:          'affiliate',
+          phone:         app.phone,
+          national_id:   app.national_id,
+          referral_code: referralCode,
+        })
+        .eq('id', newUser.user.id)
+
+      await adminSupabase
+        .from('affiliates')
+        .upsert({
+          profile_id:    newUser.user.id,
+          referral_code: referralCode,
+          is_active:     true,
+        }, { onConflict: 'profile_id' })
     }
-  } catch {
-    return { error: 'Erro inesperado. Tente novamente.' }
-  }
-}
-
-// ─── CONSULTAR CANDIDATURA COM SENHA ─────────────────────────────────────────
-export async function consultarCandidaturaComSenha(identifier: string, password: string) {
-  if (!identifier || identifier.trim().length < 3) return { error: 'Dados em falta.' }
-  if (!password) return { error: 'Introduza a sua palavra-passe.' }
-
-  const consultaRes = await consultarCandidatura(identifier)
-
-  if (consultaRes.error) return { error: consultaRes.error }
-  if (consultaRes.notFound) return { notFound: true }
-
-  const result = consultaRes.result!
-
-  if (result.status !== 'approved') return { result }
-
-  const resolved = await resolveLoginIdentifier(identifier.trim())
-  if (resolved.error || !resolved.email) return { result, noAccount: true }
-
-  return { result, email: resolved.email }
-}
-
-// ─── RESOLVER EMAIL POR TELEFONE / BI ────────────────────────────────────────
-export async function resolveLoginIdentifier(identifier: string): Promise<{ email?: string; error?: string }> {
-  if (!identifier || identifier.trim().length < 3) {
-    return { error: 'Introduza o seu telefone, BI ou email.' }
+  } else {
+    // Conta já existe — buscar o código de referido
+    const { data: existingAffiliate } = await adminSupabase
+      .from('affiliates')
+      .select('referral_code')
+      .eq('profile_id', existingUser.id)
+      .single()
+    referralCode = existingAffiliate?.referral_code || ''
   }
 
-  const val = identifier.trim()
-  if (val.includes('@')) return { email: val }
+  // Marcar candidatura como aprovada e limpar password_temp
+  const { error } = await supabase
+    .from('affiliate_applications')
+    .update({
+      status:        'approved',
+      reviewed_at:   new Date().toISOString(),
+      reject_reason: null,
+      password_temp: null,
+    })
+    .eq('id', applicationId)
 
+  if (error) return { error: 'Erro ao aprovar: ' + error.message }
+
+  // Email de aprovação — um único email com código + instruções
   try {
-    const supabase = await createServerSupabaseAdminClient()
-
-    const digitsOnly     = (v: string) => v.replace(/\D/g, '')
-    const normalizeId    = (v: string) => v.replace(/\s/g, '').toUpperCase()
-    const normalizePhone = (v: string) => {
-      const d = digitsOnly(v)
-      if (d.startsWith('244') && d.length === 12) return d.slice(3)
-      return d
-    }
-
-    const phoneVal = normalizePhone(val)
-    const idNorm   = normalizeId(val)
-
-    const { data: allProfiles } = await supabase
-      .from('profiles')
-      .select('id, phone, national_id')
-
-    if (phoneVal.length >= 7) {
-      const matchPhone = allProfiles?.find(p =>
-        p.phone && normalizePhone(p.phone) === phoneVal
-      )
-      if (matchPhone) {
-        const { data: authData } = await supabase.auth.admin.getUserById(matchPhone.id)
-        if (authData?.user?.email) return { email: authData.user.email }
-      }
-    }
-
-    if (idNorm.length >= 5) {
-      const matchId = allProfiles?.find(p =>
-        p.national_id && normalizeId(p.national_id) === idNorm
-      )
-      if (matchId) {
-        const { data: authData } = await supabase.auth.admin.getUserById(matchId.id)
-        if (authData?.user?.email) return { email: authData.user.email }
-      }
-    }
-
-    const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 })
-
-    if (phoneVal.length >= 7) {
-      const matchMeta = users?.find(u =>
-        u.user_metadata?.phone && normalizePhone(u.user_metadata.phone) === phoneVal
-      )
-      if (matchMeta?.email) return { email: matchMeta.email }
-    }
-
-    if (idNorm.length >= 5) {
-      const matchMeta = users?.find(u =>
-        u.user_metadata?.national_id && normalizeId(u.user_metadata.national_id) === idNorm
-      )
-      if (matchMeta?.email) return { email: matchMeta.email }
-    }
-
-    return { error: 'Não encontrámos nenhuma conta com esses dados. Verifique o telefone, BI ou email.' }
-  } catch {
-    return { error: 'Erro ao verificar os dados. Tente novamente.' }
+    await sendEmail({
+      to: loginEmail,
+      template: 'affiliate_approved',
+      data: {
+        affiliateName:    app.full_name,
+        referralCode:     referralCode,
+        commissionAmount: COMMISSION.amount.toLocaleString(),
+      },
+    })
+  } catch (emailError) {
+    // Não bloquear a aprovação por falha de email
+    console.error('[Email] approveApplication error:', emailError)
   }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// ─── REJEITAR CANDIDATURA DE AFILIADO ───────────────────────────────────────
+export async function rejectApplication(applicationId: string, reason?: string) {
+  const supabase = await createServerSupabaseClient()
+
+  const currentUser = await supabase.auth.getUser()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', currentUser.data.user?.id || '')
+    .single()
+
+  if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
+
+  // Buscar dados do candidato para o email
+  const { data: app } = await supabase
+    .from('affiliate_applications')
+    .select('full_name, email, phone')
+    .eq('id', applicationId)
+    .single()
+
+  const { error } = await supabase
+    .from('affiliate_applications')
+    .update({
+      status:        'rejected',
+      reject_reason: reason || null,
+      reviewed_at:   new Date().toISOString(),
+    })
+    .eq('id', applicationId)
+
+  if (error) return { error: 'Erro ao rejeitar: ' + error.message }
+
+  // Email de rejeição
+  if (app) {
+    const recipientEmail = app.email
+      || `${app.phone?.replace(/\D/g, '')}@mais-vida.ao`
+
+    try {
+      await sendEmail({
+        to: recipientEmail,
+        template: 'affiliate_rejected',
+        data: {
+          affiliateName: app.full_name,
+          rejectReason:  reason || null,
+        },
+      })
+    } catch (emailError) {
+      console.error('[Email] rejectApplication error:', emailError)
+    }
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
 }
