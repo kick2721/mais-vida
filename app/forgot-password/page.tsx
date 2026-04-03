@@ -1,14 +1,15 @@
 'use client'
 
 // app/forgot-password/page.tsx
+// Recuperação de password via Resend (bypass ao limite do Supabase)
+// Fluxo: email → Server Action gera token Supabase → Resend envia o link formatado
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { createBrowserSupabaseClient } from '@/lib/supabase-client'
-import { BUSINESS } from '@/lib/constants'
 import Logo from '@/app/components/ui/Logo'
 import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
+import { sendPasswordResetEmail } from '@/lib/actions'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -26,18 +27,11 @@ export default function ForgotPasswordPage() {
     }
 
     startTransition(async () => {
-      const supabase = createBrowserSupabaseClient()
-      const redirectTo = `${window.location.origin}/reset-password`
-
-      const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
-      })
-
-      if (authError) {
-        setError('Erro ao enviar email. Verifique o endereço e tente novamente.')
+      const result = await sendPasswordResetEmail(email)
+      if (result.error) {
+        setError(result.error)
         return
       }
-
       setSent(true)
     })
   }
@@ -51,7 +45,9 @@ export default function ForgotPasswordPage() {
 
       <div className="w-full max-w-md">
         <Link href="/login" className="btn-back mb-6 inline-flex">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           Voltar ao login
         </Link>
 
