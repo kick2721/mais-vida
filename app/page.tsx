@@ -8,7 +8,6 @@ import AffiliatesSection from '@/app/components/sections/AffiliatesSection'
 import ClinicGallerySection from '@/app/components/sections/ClinicGallerySection'
 import FaqSection from '@/app/components/sections/FaqSection'
 import LocationSection from '@/app/components/sections/LocationSection'
-import ContactSection from '@/app/components/sections/ContactSection'
 import RefCapture from '@/app/components/RefCapture'
 
 export default function HomePage() {
@@ -24,7 +23,6 @@ export default function HomePage() {
         <AffiliatesSection />
         <FaqSection />
         <LocationSection />
-        <ContactSection />
       </main>
       <Footer />
     </>
