@@ -5,18 +5,25 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase-client'
 import { resolveLoginIdentifier } from '@/lib/actions'
 import Logo from '@/app/components/ui/Logo'
 import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
 
-export default function LoginPage() {
+import { Suspense } from 'react'
+
+function LoginForm() {
   const router = useRouter()
-  const [identifier, setIdentifier] = useState('')   // telefone, BI ou email
+  const searchParams = useSearchParams()
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword]     = useState('')
-  const [error, setError]           = useState('')
+  const [error, setError]           = useState(
+    searchParams.get('erro') === 'conta-inactiva'
+      ? 'A sua conta de afiliado está desactivada. Contacte a clínica para mais informações.'
+      : ''
+  )
   const [isPending, startTransition] = useTransition()
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -54,9 +61,26 @@ export default function LoginPage() {
         .eq('id', data.user.id)
         .single()
 
-      if (profile?.role === 'admin')          router.push('/admin/dashboard')
-      else if (profile?.role === 'affiliate') router.push('/affiliate/dashboard')
-      else                                    router.push('/dashboard')
+      if (profile?.role === 'admin') {
+        router.push('/admin/dashboard')
+      } else if (profile?.role === 'affiliate') {
+        // Verificar se o afiliado está activo
+        const { data: affiliate } = await supabase
+          .from('affiliates')
+          .select('is_active')
+          .eq('profile_id', data.user.id)
+          .single()
+
+        if (!affiliate?.is_active) {
+          await supabase.auth.signOut()
+          setError('A sua conta de afiliado está desactivada. Contacte a clínica para mais informações.')
+          return
+        }
+
+        router.push('/affiliate/dashboard')
+      } else {
+        router.push('/dashboard')
+      }
     })
   }
 
@@ -167,5 +191,13 @@ export default function LoginPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }
