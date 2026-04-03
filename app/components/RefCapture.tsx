@@ -1,15 +1,15 @@
 'use client'
 
 // app/components/RefCapture.tsx
-// Captura o ?ref= da URL e guarda em cookie para persistir durante a navegação
-// Incluir na landing page — não renderiza nada visível
+// Captura o ?ref= da URL, guarda em cookie e redireciona para /comprar
 
 import { useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { REFERRAL } from '@/lib/constants'
 
 export default function RefCapture() {
   const searchParams = useSearchParams()
+  const router = useRouter()
 
   useEffect(() => {
     const ref = searchParams.get(REFERRAL.urlParam)
@@ -18,8 +18,11 @@ export default function RefCapture() {
       const expires = new Date()
       expires.setDate(expires.getDate() + REFERRAL.cookieDays)
       document.cookie = `${REFERRAL.urlParam}=${ref};expires=${expires.toUTCString()};path=/;SameSite=Lax`
+
+      // Redirecionar para /comprar mantendo o código na URL
+      router.replace(`/comprar?${REFERRAL.urlParam}=${ref}`)
     }
-  }, [searchParams])
+  }, [searchParams, router])
 
   return null
 }
