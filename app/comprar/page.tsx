@@ -9,7 +9,7 @@ import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import { MEMBERSHIP, BANK, REFERRAL, BUSINESS } from '@/lib/constants'
 
-const MAX_CARDS = 6
+const MAX_CARDS = 10
 
 interface CardHolder {
   full_name: string
@@ -161,9 +161,7 @@ function ComprarForm() {
             style={{ color: 'var(--color-primary)' }}>
             Quantos cartões pretende comprar?
           </p>
-          <p className="text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>
             Pode comprar para si e para a sua família. Máximo {MAX_CARDS} por pedido.
-          </p>
 
           {/* Selector visual */}
           <div className="flex items-center gap-3 mb-4">
@@ -187,12 +185,12 @@ function ComprarForm() {
             </button>
           </div>
 
-          {/* Pills de seleção rápida */}
-          <div className="flex gap-2 flex-wrap mb-4">
-            {[1, 2, 3, 4, 5, 6].map(n => (
+          {/* Pills de seleção rápida — centradas em grid */}
+          <div className="grid grid-cols-5 gap-2 mb-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
               <button key={n} type="button"
                 onClick={() => changeQuantity(n)}
-                className="px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-all"
+                className="py-2 rounded-full text-sm font-semibold border-2 transition-all text-center"
                 style={quantity === n
                   ? { background: 'var(--color-primary)', color: '#fff', borderColor: 'var(--color-primary)' }
                   : { background: 'transparent', color: 'var(--color-primary)', borderColor: 'var(--color-primary)', opacity: 0.6 }
