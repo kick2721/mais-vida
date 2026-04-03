@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -18,14 +18,27 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
   useEffect(() => { setMounted(true) }, [])
-  useEffect(() => { setOpen(false) }, [pathname])
+  useEffect(() => { setOpen(false); setDropdownOpen(false) }, [pathname])
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [open])
+
+  // Cerrar dropdown al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const panel = (
     <>
@@ -33,32 +46,19 @@ export default function Navbar() {
       <div
         onClick={() => setOpen(false)}
         style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 9998,
-          background: 'rgba(0,0,0,0.45)',
-          backdropFilter: 'blur(3px)',
+          position: 'fixed', inset: 0, zIndex: 9998,
+          background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(3px)',
         }}
       />
 
       {/* Panel */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 9999,
-          width: '80%',
-          maxWidth: '320px',
-          background: '#fff',
-          boxShadow: '-8px 0 40px rgba(0,0,0,0.18)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
+      <div style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 9999,
+        width: '80%', maxWidth: '320px', background: '#fff',
+        boxShadow: '-8px 0 40px rgba(0,0,0,0.18)',
+        display: 'flex', flexDirection: 'column',
+        overflowY: 'auto', WebkitOverflowScrolling: 'touch',
+      }}>
         {/* Botón cerrar */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 16px 8px' }}>
           <button
@@ -97,7 +97,9 @@ export default function Navbar() {
           <p style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--color-text-muted)', padding: '0 12px', marginBottom: '4px' }}>
             Acesso rápido
           </p>
-          <Link href="/candidatura-estado" onClick={() => setOpen(false)}
+
+          {/* Candidatura — dos opciones */}
+          <Link href="/afiliado-candidatura" onClick={() => setOpen(false)}
             style={{
               display: 'flex', alignItems: 'center', gap: '12px',
               padding: '14px 16px', borderRadius: '12px',
@@ -107,8 +109,21 @@ export default function Navbar() {
               border: '1px solid rgba(74,140,63,0.18)',
               textDecoration: 'none',
             }}>
+            <span>📋</span> Candidatar-me como afiliado
+          </Link>
+          <Link href="/candidatura-estado" onClick={() => setOpen(false)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '14px 16px', borderRadius: '12px',
+              fontSize: '14px', fontWeight: 500,
+              color: 'var(--color-text-muted)',
+              background: 'rgba(0,0,0,0.03)',
+              border: '1px solid var(--color-border)',
+              textDecoration: 'none',
+            }}>
             <span>🔍</span> Ver estado da candidatura
           </Link>
+
           <Link href="/login" onClick={() => setOpen(false)}
             className="btn-outline text-sm text-center w-full"
             style={{ paddingTop: '14px', paddingBottom: '14px' }}>
@@ -139,24 +154,82 @@ export default function Navbar() {
             <Logo size="sm" className="md:hidden" />
             <Logo size="md" className="hidden md:inline-flex" />
 
-            {/* Nav desktop — sin cambios */}
+            {/* Nav desktop */}
             <nav className="hidden md:flex items-center gap-1">
               {NAV_LINKS.map(link => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`nav-link ${pathname === link.href ? 'active' : ''}`}
-                >
+                <Link key={link.href} href={link.href}
+                  className={`nav-link ${pathname === link.href ? 'active' : ''}`}>
                   {link.label}
                 </Link>
               ))}
             </nav>
 
-            {/* CTAs desktop — "Ver candidatura" ahora es btn-outline */}
+            {/* CTAs desktop */}
             <div className="hidden md:flex items-center gap-3">
-              <Link href="/candidatura-estado" className="btn-outline text-sm py-2 px-4">
-                Ver candidatura
-              </Link>
+
+              {/* Dropdown candidatura */}
+              <div ref={dropdownRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="btn-outline text-sm py-2 px-4"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  Candidatura
+                  <svg
+                    width="12" height="12" viewBox="0 0 12 12" fill="none"
+                    style={{ transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+
+                {dropdownOpen && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                    background: '#fff', borderRadius: '12px', minWidth: '220px',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                    border: '1px solid var(--color-border)',
+                    overflow: 'hidden', zIndex: 100,
+                  }}>
+                    <Link href="/afiliado-candidatura"
+                      onClick={() => setDropdownOpen(false)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '12px 16px', fontSize: '14px', fontWeight: 500,
+                        color: 'var(--color-primary)', textDecoration: 'none',
+                        borderBottom: '1px solid var(--color-border)',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(74,140,63,0.06)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <span>📋</span>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>Candidatar-me</div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 400 }}>Tornar-me afiliado</div>
+                      </div>
+                    </Link>
+                    <Link href="/candidatura-estado"
+                      onClick={() => setDropdownOpen(false)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '12px 16px', fontSize: '14px', fontWeight: 500,
+                        color: 'var(--color-text)', textDecoration: 'none',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.03)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <span>🔍</span>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>Ver candidatura</div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 400 }}>Consultar o estado</div>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
               <Link href="/login" className="btn-outline text-sm py-2 px-4">
                 Entrar
               </Link>
@@ -165,7 +238,7 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Hambúrguer mobile — solo visible en mobile */}
+            {/* Hambúrguer mobile */}
             <button
               onClick={() => setOpen(!open)}
               className="md:hidden flex flex-col justify-center items-center w-11 h-11 rounded-xl transition-colors"
@@ -183,7 +256,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Portal mobile — solo se monta en cliente, solo visible en mobile */}
+      {/* Portal mobile */}
       {mounted && open && createPortal(
         <div className="md:hidden">{panel}</div>,
         document.body
