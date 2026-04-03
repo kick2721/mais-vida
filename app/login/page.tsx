@@ -153,15 +153,9 @@ export default function LoginPage() {
           </form>
 
           <div
-            className="mt-6 pt-4 border-t text-center space-y-2"
+            className="mt-6 pt-4 border-t text-center"
             style={{ borderColor: 'var(--color-border)' }}
           >
-            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              Ainda não tem conta?{' '}
-              <Link href="/register" style={{ color: 'var(--color-primary)' }}>
-                Registar como cliente
-              </Link>
-            </p>
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
               Quer ser afiliado?{' '}
               <Link href="/afiliado-candidatura" style={{ color: 'var(--color-primary)' }}>
