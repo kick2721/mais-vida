@@ -1,10 +1,19 @@
 // lib/email/send-email.ts
-// Utilitário para envio de emails usando Resend
-// NOTA: Requer RESEND_API_KEY no .env.local e domínio verificado no Resend
+// Todos os emails da plataforma — enviados via Resend
+// Supabase Auth emails (reset password) são substituídos por este sistema
 
 import { BUSINESS, MEMBERSHIP } from '@/lib/constants'
 
-type EmailTemplate = 'purchase_confirmed' | 'card_issued' | 'commission_paid' | 'welcome'
+type EmailTemplate =
+  | 'purchase_confirmed'
+  | 'card_issued'
+  | 'commission_paid'
+  | 'welcome'
+  | 'password_reset'
+  | 'affiliate_approved'
+  | 'affiliate_rejected'
+  | 'affiliate_deactivated'
+  | 'affiliate_reactivated'
 
 interface SendEmailOptions {
   to: string
@@ -17,15 +26,10 @@ interface ResendResponse {
   error?: { message: string }
 }
 
-// ─── TEMPLATES ───────────────────────────────────────────────────────────────
+// ─── BASE LAYOUT ─────────────────────────────────────────────────────────────
 
-function buildEmailHtml(template: EmailTemplate, data: Record<string, any>): {
-  subject: string
-  html: string
-} {
-  const base = (subject: string, body: string) => ({
-    subject,
-    html: `
+function baseLayout(subject: string, body: string): string {
+  return `
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -33,19 +37,30 @@ function buildEmailHtml(template: EmailTemplate, data: Record<string, any>): {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${subject}</title>
   <style>
-    body { font-family: 'DM Sans', Arial, sans-serif; background: #f0f7ef; margin: 0; padding: 20px; }
-    .container { max-width: 560px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; }
+    body { font-family: Arial, sans-serif; background: #f0f7ef; margin: 0; padding: 20px; }
+    .container { max-width: 560px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
     .header { background: #4A8C3F; padding: 32px 40px; text-align: center; }
-    .header h1 { color: white; font-size: 24px; margin: 0; font-weight: 700; }
-    .header p { color: #c6e4c3; font-size: 13px; margin: 4px 0 0; }
+    .header h1 { color: white; font-size: 22px; margin: 0 0 4px; font-weight: 700; letter-spacing: -0.3px; }
+    .header p { color: #c6e4c3; font-size: 13px; margin: 0; }
     .body { padding: 32px 40px; }
-    .body p { color: #374151; line-height: 1.6; }
-    .highlight { background: #f0f7ef; border-radius: 12px; padding: 16px 20px; margin: 20px 0; }
-    .highlight p { margin: 4px 0; font-size: 14px; }
-    .footer { padding: 20px 40px; border-top: 1px solid #d4e8d1; text-align: center; }
+    .body p { color: #374151; line-height: 1.65; font-size: 15px; margin: 0 0 16px; }
+    .highlight { background: #f0f7ef; border-radius: 12px; padding: 16px 20px; margin: 20px 0; border-left: 4px solid #4A8C3F; }
+    .highlight p { margin: 6px 0; font-size: 14px; color: #374151; }
+    .highlight p strong { color: #1a1a1a; }
+    .highlight-warning { background: #fff8e1; border-left: 4px solid #f59e0b; }
+    .highlight-danger { background: #fff1f2; border-left: 4px solid #e11d48; }
+    .highlight-info { background: #eff6ff; border-left: 4px solid #3b82f6; }
+    .btn { display: inline-block; background: #4A8C3F; color: white !important; padding: 13px 30px;
+           border-radius: 50px; text-decoration: none; font-weight: 700; margin: 20px 0; font-size: 15px; }
+    .btn-outline { background: transparent; color: #4A8C3F !important; border: 2px solid #4A8C3F; }
+    .divider { height: 1px; background: #e5e7eb; margin: 24px 0; }
+    .footer { padding: 20px 40px 28px; text-align: center; }
     .footer p { font-size: 12px; color: #9ca3af; margin: 4px 0; }
-    .btn { display: inline-block; background: #4A8C3F; color: white !important; padding: 12px 28px; 
-           border-radius: 50px; text-decoration: none; font-weight: 600; margin: 16px 0; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 50px; font-size: 12px; font-weight: 700; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-yellow { background: #fef9c3; color: #92400e; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
   </style>
 </head>
 <body>
@@ -58,87 +73,223 @@ function buildEmailHtml(template: EmailTemplate, data: Record<string, any>): {
       ${body}
     </div>
     <div class="footer">
-      <p>${BUSINESS.fullName}</p>
-      <p>${BUSINESS.address}</p>
-      <p>📞 ${BUSINESS.phone.main} | ${BUSINESS.email.info}</p>
+      <p><strong>${BUSINESS.fullName}</strong></p>
+      <p>${BUSINESS.address} · Luanda, Angola</p>
+      <p>📞 ${BUSINESS.phone.main} &nbsp;|&nbsp; ✉️ ${BUSINESS.email.info}</p>
     </div>
   </div>
 </body>
-</html>
-    `.trim(),
-  })
+</html>`.trim()
+}
+
+// ─── TEMPLATES ────────────────────────────────────────────────────────────────
+
+function buildEmailContent(
+  template: EmailTemplate,
+  data: Record<string, any>
+): { subject: string; html: string } {
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mais-vida.com'
 
   switch (template) {
-    case 'purchase_confirmed':
-      return base(
-        `Pagamento confirmado — ${MEMBERSHIP.name}`,
-        `
-          <p>Olá, <strong>${data.customerName}</strong>!</p>
-          <p>O seu pagamento foi confirmado com sucesso. A sua membresía <strong>${MEMBERSHIP.name}</strong> está agora activa.</p>
-          <div class="highlight">
-            <p><strong>Valor:</strong> ${(data.amount || 0).toLocaleString()} ${data.currency || 'AOA'}</p>
-            <p><strong>Estado:</strong> ✅ Confirmado</p>
-          </div>
-          <p>O seu cartão digital está a ser preparado e será enviado em breve para este email e para o seu WhatsApp.</p>
-          <p>Pode consultar o estado da sua membresía no painel do cliente.</p>
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://mais-vida.com'}/dashboard" class="btn">
-            Ver o meu painel
-          </a>
-        `,
-      )
 
-    case 'card_issued':
-      return base(
-        `O seu ${MEMBERSHIP.cardName} foi emitido!`,
-        `
-          <p>Olá, <strong>${data.customerName}</strong>!</p>
-          <p>O seu <strong>${MEMBERSHIP.cardName}</strong> foi emitido com sucesso! 🎉</p>
-          <div class="highlight">
-            <p><strong>Número do cartão:</strong> <span style="font-family: monospace; font-size: 15px;">${data.cardNumber}</span></p>
-            <p><strong>Estado:</strong> ✅ Emitido e activo</p>
-          </div>
-          <p>Apresente este número (ou o cartão digital enviado) em qualquer serviço da clínica para usufruir dos seus descontos.</p>
-          <p>Se tiver alguma questão, contacte-nos pelo WhatsApp: <strong>${BUSINESS.phone.whatsapp}</strong></p>
-        `,
-      )
+    // ── Compra confirmada ──────────────────────────────────────────────────
+    case 'purchase_confirmed': {
+      const subject = `Pagamento confirmado — ${MEMBERSHIP.name}`
+      const html = baseLayout(subject, `
+        <p>Olá, <strong>${data.customerName}</strong>!</p>
+        <p>O seu pagamento foi confirmado com sucesso. A sua membresía <strong>${MEMBERSHIP.name}</strong> está agora activa. 🎉</p>
+        <div class="highlight">
+          <p><strong>Valor pago:</strong> ${(data.amount || 0).toLocaleString()} ${data.currency || 'AOA'}</p>
+          <p><strong>Estado:</strong> <span class="badge badge-green">✅ Confirmado</span></p>
+        </div>
+        <p>O seu cartão digital está a ser preparado e será enviado para o seu WhatsApp em até 48 horas úteis.</p>
+        <div class="divider"></div>
+        <p style="text-align:center">
+          <a href="${siteUrl}/seguimento" class="btn">Ver estado do pedido →</a>
+        </p>
+      `)
+      return { subject, html }
+    }
 
-    case 'commission_paid':
-      return base(
-        `Comissão paga — ${BUSINESS.name}`,
-        `
-          <p>Olá, <strong>${data.affiliateName}</strong>!</p>
-          <p>A sua comissão foi processada e paga com sucesso.</p>
-          <div class="highlight">
-            <p><strong>Valor pago:</strong> ${(data.amount || 0).toLocaleString()} ${data.currency || 'AOA'}</p>
-            <p><strong>Data:</strong> ${data.paidAt || new Date().toLocaleDateString('pt-AO')}</p>
-          </div>
-          <p>Pode verificar o seu historial de comissões no painel do afiliado.</p>
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://mais-vida.com'}/affiliate/dashboard" class="btn">
-            Ver o meu painel
-          </a>
-        `,
-      )
+    // ── Cartão emitido ─────────────────────────────────────────────────────
+    case 'card_issued': {
+      const subject = `O seu ${MEMBERSHIP.cardName} foi emitido!`
+      const html = baseLayout(subject, `
+        <p>Olá, <strong>${data.customerName}</strong>!</p>
+        <p>O seu <strong>${MEMBERSHIP.cardName}</strong> foi emitido com sucesso! 🪪</p>
+        <div class="highlight">
+          <p><strong>Número do cartão:</strong> <span style="font-family:monospace;font-size:16px;letter-spacing:1px">${data.cardNumber}</span></p>
+          <p><strong>Estado:</strong> <span class="badge badge-green">✅ Activo</span></p>
+        </div>
+        <p>Apresente este número (ou o cartão digital enviado por WhatsApp) em qualquer serviço da clínica para usufruir dos seus descontos.</p>
+        <p>Dúvidas? Fale connosco: <strong>${BUSINESS.phone.main}</strong></p>
+      `)
+      return { subject, html }
+    }
 
-    case 'welcome':
-      return base(
-        `Bem-vindo(a) ao ${BUSINESS.name}!`,
-        `
-          <p>Olá, <strong>${data.customerName}</strong>!</p>
-          <p>A sua conta foi criada com sucesso na plataforma <strong>${BUSINESS.name}</strong>.</p>
-          <p>Para completar a sua adesão ao ${MEMBERSHIP.name}, efectue o pagamento de 
-          <strong>${MEMBERSHIP.price.toLocaleString()} ${MEMBERSHIP.currency}</strong> usando um dos métodos disponíveis.</p>
-          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://mais-vida.com'}/comprar" class="btn">
-            Completar adesão
-          </a>
-        `,
-      )
+    // ── Comissão paga ──────────────────────────────────────────────────────
+    case 'commission_paid': {
+      const subject = `Comissão paga — ${BUSINESS.name}`
+      const html = baseLayout(subject, `
+        <p>Olá, <strong>${data.affiliateName}</strong>!</p>
+        <p>A sua comissão foi processada e paga com sucesso. 💰</p>
+        <div class="highlight">
+          <p><strong>Valor pago:</strong> ${(data.amount || 0).toLocaleString()} ${data.currency || 'AOA'}</p>
+          <p><strong>Data:</strong> ${data.paidAt || new Date().toLocaleDateString('pt-AO')}</p>
+          <p><strong>Estado:</strong> <span class="badge badge-green">💰 Paga</span></p>
+        </div>
+        <p>Pode verificar o historial completo das suas comissões no painel do afiliado.</p>
+        <div class="divider"></div>
+        <p style="text-align:center">
+          <a href="${siteUrl}/affiliate/dashboard" class="btn">Ver painel de afiliado →</a>
+        </p>
+      `)
+      return { subject, html }
+    }
 
-    default:
-      return base('Notificação', '<p>Tem uma nova notificação.</p>')
+    // ── Bem-vindo ──────────────────────────────────────────────────────────
+    case 'welcome': {
+      const subject = `Bem-vindo(a) ao ${BUSINESS.name}!`
+      const html = baseLayout(subject, `
+        <p>Olá, <strong>${data.customerName}</strong>!</p>
+        <p>A sua conta foi criada com sucesso na plataforma <strong>${BUSINESS.name}</strong>.</p>
+        <p>Para completar a sua adesão ao ${MEMBERSHIP.name}, efectue o pagamento de
+        <strong>${MEMBERSHIP.price.toLocaleString()} ${MEMBERSHIP.currency}</strong> usando um dos métodos disponíveis.</p>
+        <div class="divider"></div>
+        <p style="text-align:center">
+          <a href="${siteUrl}/comprar" class="btn">Completar adesão →</a>
+        </p>
+      `)
+      return { subject, html }
+    }
+
+    // ── Recuperação de password ────────────────────────────────────────────
+    // Este template bypassa os emails do Supabase (que têm limite reduzido)
+    case 'password_reset': {
+      const subject = `Recuperação de palavra-passe — ${BUSINESS.name}`
+      const html = baseLayout(subject, `
+        <p>Olá!</p>
+        <p>Recebemos um pedido de recuperação de palavra-passe para a conta associada a este email.</p>
+        <div class="highlight">
+          <p>Clique no botão abaixo para definir uma nova palavra-passe.</p>
+          <p style="font-size:12px;color:#6b7280">Este link expira em <strong>1 hora</strong>.</p>
+        </div>
+        <div class="divider"></div>
+        <p style="text-align:center">
+          <a href="${data.resetUrl}" class="btn">Definir nova palavra-passe →</a>
+        </p>
+        <div class="divider"></div>
+        <div class="highlight highlight-warning">
+          <p style="font-size:13px">⚠️ <strong>Não pediu recuperação de palavra-passe?</strong></p>
+          <p style="font-size:13px">Ignore este email. A sua conta está segura.</p>
+        </div>
+        <p style="font-size:13px;color:#6b7280">Se o botão não funcionar, copie e cole este link no seu navegador:</p>
+        <p style="font-size:12px;color:#4A8C3F;word-break:break-all">${data.resetUrl}</p>
+      `)
+      return { subject, html }
+    }
+
+    // ── Candidatura aprovada ───────────────────────────────────────────────
+    case 'affiliate_approved': {
+      const subject = `A sua candidatura foi aprovada! — ${BUSINESS.name}`
+      const html = baseLayout(subject, `
+        <p>Olá, <strong>${data.affiliateName}</strong>!</p>
+        <p>🎉 Temos uma ótima notícia: a sua candidatura ao <strong>Programa de Afiliados ${BUSINESS.name}</strong> foi <strong>aprovada</strong>!</p>
+        <div class="highlight">
+          <p><strong>O seu código de afiliado:</strong> <span style="font-family:monospace;font-size:16px;font-weight:700;color:#4A8C3F">${data.referralCode}</span></p>
+          <p><strong>O seu link de referido:</strong></p>
+          <p style="font-size:13px;color:#4A8C3F;word-break:break-all">${siteUrl}/?ref=${data.referralCode}</p>
+        </div>
+        <p>Pode agora aceder ao seu painel de afiliado com o email e a palavra-passe que definiu ao candidatar-se.</p>
+        <div class="highlight highlight-info">
+          <p><strong>Como funciona:</strong></p>
+          <p style="font-size:13px">1. Partilhe o seu link com a sua rede de contactos.</p>
+          <p style="font-size:13px">2. Cada pessoa que comprar um cartão através do seu link gera uma comissão de <strong>${data.commissionAmount || '250'} Kz</strong>.</p>
+          <p style="font-size:13px">3. Acompanhe as suas vendas e comissões no painel do afiliado.</p>
+        </div>
+        <div class="divider"></div>
+        <p style="text-align:center">
+          <a href="${siteUrl}/login" class="btn">Entrar no painel →</a>
+        </p>
+        <p style="text-align:center;font-size:13px;color:#6b7280">
+          Use o email e a palavra-passe que definiu ao candidatar-se.
+        </p>
+      `)
+      return { subject, html }
+    }
+
+    // ── Candidatura rejeitada ──────────────────────────────────────────────
+    case 'affiliate_rejected': {
+      const subject = `Resposta à sua candidatura — ${BUSINESS.name}`
+      const html = baseLayout(subject, `
+        <p>Olá, <strong>${data.affiliateName}</strong>!</p>
+        <p>Agradecemos o interesse em fazer parte do <strong>Programa de Afiliados ${BUSINESS.name}</strong>.</p>
+        <p>Após análise, a sua candidatura <strong>não foi aprovada</strong> neste momento.</p>
+        ${data.rejectReason ? `
+        <div class="highlight highlight-danger">
+          <p><strong>Observação da equipa:</strong></p>
+          <p style="font-size:14px">${data.rejectReason}</p>
+        </div>
+        ` : ''}
+        <p>Pode candidatar-se novamente no futuro. Se tiver alguma questão, não hesite em contactar-nos.</p>
+        <div class="divider"></div>
+        <p style="text-align:center">
+          <a href="https://wa.me/${BUSINESS.phone.whatsapp}" class="btn btn-outline">Contactar a equipa →</a>
+        </p>
+      `)
+      return { subject, html }
+    }
+
+    // ── Conta desactivada ──────────────────────────────────────────────────
+    case 'affiliate_deactivated': {
+      const subject = `A sua conta de afiliado foi desactivada — ${BUSINESS.name}`
+      const html = baseLayout(subject, `
+        <p>Olá, <strong>${data.affiliateName}</strong>!</p>
+        <p>A sua conta de afiliado na plataforma <strong>${BUSINESS.name}</strong> foi temporariamente <strong>desactivada</strong>.</p>
+        <div class="highlight highlight-warning">
+          <p><strong>O que isto significa:</strong></p>
+          <p style="font-size:13px">• Não consegue aceder ao seu painel de afiliado.</p>
+          <p style="font-size:13px">• O seu link de referido não registará novas vendas durante este período.</p>
+          <p style="font-size:13px">• As comissões anteriores não são afectadas.</p>
+        </div>
+        <p>Para mais informações ou para resolver esta situação, contacte a nossa equipa directamente.</p>
+        <div class="divider"></div>
+        <p style="text-align:center">
+          <a href="https://wa.me/${BUSINESS.phone.whatsapp}" class="btn btn-outline">Contactar a equipa →</a>
+        </p>
+      `)
+      return { subject, html }
+    }
+
+    // ── Conta reactivada ───────────────────────────────────────────────────
+    case 'affiliate_reactivated': {
+      const subject = `A sua conta de afiliado foi reactivada — ${BUSINESS.name}`
+      const html = baseLayout(subject, `
+        <p>Olá, <strong>${data.affiliateName}</strong>!</p>
+        <p>Boa notícia: a sua conta de afiliado na plataforma <strong>${BUSINESS.name}</strong> foi <strong>reactivada</strong>! ✅</p>
+        <div class="highlight">
+          <p><strong>O seu código de afiliado:</strong> <span style="font-family:monospace;font-size:16px;font-weight:700;color:#4A8C3F">${data.referralCode}</span></p>
+          <p><strong>Estado:</strong> <span class="badge badge-green">✅ Activo</span></p>
+        </div>
+        <p>Já pode voltar a aceder ao seu painel e partilhar o seu link de referido normalmente.</p>
+        <div class="divider"></div>
+        <p style="text-align:center">
+          <a href="${siteUrl}/login" class="btn">Entrar no painel →</a>
+        </p>
+      `)
+      return { subject, html }
+    }
+
+    default: {
+      const subject = 'Notificação — ' + BUSINESS.name
+      const html = baseLayout(subject, '<p>Tem uma nova notificação.</p>')
+      return { subject, html }
+    }
   }
 }
 
-// ─── ENVIO ───────────────────────────────────────────────────────────────────
+// ─── ENVIO ────────────────────────────────────────────────────────────────────
 
 export async function sendEmail({ to, template, data }: SendEmailOptions): Promise<{
   success: boolean
@@ -151,7 +302,7 @@ export async function sendEmail({ to, template, data }: SendEmailOptions): Promi
     return { success: false, error: 'RESEND_API_KEY não configurada' }
   }
 
-  const { subject, html } = buildEmailHtml(template, data)
+  const { subject, html } = buildEmailContent(template, data)
 
   try {
     const response = await fetch('https://api.resend.com/emails', {
@@ -175,7 +326,7 @@ export async function sendEmail({ to, template, data }: SendEmailOptions): Promi
       return { success: false, error: result.error?.message }
     }
 
-    console.log('[Email] Enviado com sucesso:', result.id)
+    console.log(`[Email] ✓ Enviado (${template}) → ${to} | id: ${result.id}`)
     return { success: true }
   } catch (err) {
     console.error('[Email] Erro ao enviar:', err)
