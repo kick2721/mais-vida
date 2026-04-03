@@ -56,7 +56,7 @@ export default function AffiliateCandidaturePage() {
     e.preventDefault()
     setError('')
 
-    if (!form.full_name || !form.phone || !form.national_id || !form.motivation) {
+    if (!form.full_name || !form.phone || !form.national_id || !form.email || !form.motivation) {
       setError('Por favor preencha todos os campos obrigatórios.')
       return
     }
@@ -103,7 +103,7 @@ export default function AffiliateCandidaturePage() {
           full_name:     form.full_name,
           phone:         form.phone,
           national_id:   form.national_id,
-          email:         form.email || null,
+          email:         form.email,
           password_temp: form.password,
           occupation:    form.occupation || null,
           network_size:  form.network_size || null,
@@ -226,8 +226,8 @@ export default function AffiliateCandidaturePage() {
                     disabled={isPending} autoComplete="off" />
                 </div>
                 <div>
-                  <label className="input-label">Email <span className="text-xs font-normal" style={{ color: 'var(--color-text-muted)' }}>(opcional)</span></label>
-                  <input type="email" value={form.email} onChange={set('email')}
+                  <label className="input-label">Email <span className="text-red-500">*</span></label>
+                  <input type="email" required value={form.email} onChange={set('email')}
                     className="input-field" placeholder="email@exemplo.com" disabled={isPending} />
                 </div>
               </div>
