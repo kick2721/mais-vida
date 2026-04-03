@@ -12,7 +12,7 @@ const NAV_LINKS = [
   { href: '/#como-funciona', label: 'Como Funciona' },
   { href: '/#afiliados',     label: 'Afiliados' },
   { href: '/#faq',           label: 'FAQ' },
-  { href: '/#contacto',      label: 'Contacto' },
+  { href: '/#localizacao',   label: 'Contacto' },
 ]
 
 export default function Navbar() {
