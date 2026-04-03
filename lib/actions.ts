@@ -3,11 +3,57 @@
 import { createServerSupabaseClient, createServerSupabaseAdminClient } from './supabase-server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { sendEmail } from './email/send-email'
 
 export async function logoutUser() {
   const supabase = await createServerSupabaseClient()
   await supabase.auth.signOut()
   redirect('/login')
+}
+
+// ─── RECUPERAÇÃO DE PASSWORD via Resend ──────────────────────────────────────
+// Substitui o email do Supabase (que tem limite muito baixo no plano gratuito)
+// Gera o link de reset via Admin API e envia pelo Resend
+export async function sendPasswordResetEmail(email: string): Promise<{ error?: string }> {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: 'Email inválido.' }
+  }
+
+  try {
+    const adminSupabase = await createServerSupabaseAdminClient()
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mais-vida.com'
+    const redirectTo = `${siteUrl}/reset-password`
+
+    // Gerar o link de reset via Admin API
+    const { data, error } = await adminSupabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: email.toLowerCase().trim(),
+      options: { redirectTo },
+    })
+
+    if (error) {
+      // Não revelar se o email existe ou não (segurança)
+      console.error('[PasswordReset] generateLink error:', error.message)
+      // Devolvemos sucesso na mesma para não expor se o email existe
+      return {}
+    }
+
+    if (!data?.properties?.action_link) {
+      return {}
+    }
+
+    // Enviar via Resend
+    await sendEmail({
+      to: email,
+      template: 'password_reset',
+      data: { resetUrl: data.properties.action_link },
+    })
+
+    return {}
+  } catch (err) {
+    console.error('[PasswordReset] Unexpected error:', err)
+    return {}
+  }
 }
 
 // ─── CONVERTER CLIENTE EM AFILIADO ───────────────────────────────────────────
@@ -17,7 +63,6 @@ export async function becomeAffiliate() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Não autenticado.' }
 
-  // Verificar que é cliente
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -28,10 +73,8 @@ export async function becomeAffiliate() {
   if (profile.role === 'affiliate') return { error: 'Já é afiliado.' }
   if (profile.role === 'admin') return { error: 'Conta de administrador.' }
 
-  // Gerar código de referido único
   const referralCode = 'VIDA-' + user.id.replace(/-/g, '').substring(0, 6).toUpperCase()
 
-  // Verificar se já existe registo em affiliates (por algum motivo)
   const { data: existingAffiliate } = await supabase
     .from('affiliates')
     .select('id')
@@ -39,18 +82,13 @@ export async function becomeAffiliate() {
     .maybeSingle()
 
   if (!existingAffiliate) {
-    // Criar registo em affiliates
     const { error: affError } = await supabase
       .from('affiliates')
-      .insert({
-        profile_id: user.id,
-        referral_code: referralCode,
-      })
+      .insert({ profile_id: user.id, referral_code: referralCode })
 
     if (affError) return { error: 'Erro ao criar conta de afiliado: ' + affError.message }
   }
 
-  // Mudar role para affiliate
   const { error: profileError } = await supabase
     .from('profiles')
     .update({ role: 'affiliate', referral_code: referralCode })
@@ -60,13 +98,10 @@ export async function becomeAffiliate() {
 
   revalidatePath('/dashboard')
   revalidatePath('/affiliate/dashboard')
-
-  // Redirigir ao painel de afiliado
   redirect('/affiliate/dashboard')
 }
 
 // ─── CONSULTA PÚBLICA DE CANDIDATURA ─────────────────────────────────────────
-// Identificador flexível: telefone, BI/Passaporte ou email
 export async function consultarCandidatura(identifier: string) {
   if (!identifier || identifier.trim().length < 3) return { error: 'Dados em falta.' }
 
@@ -95,9 +130,7 @@ export async function consultarCandidatura(identifier: string) {
     const emailNorm   = val.toLowerCase()
 
     const match = data.find(row => {
-      if (val.includes('@') && row.email) {
-        return row.email.toLowerCase() === emailNorm
-      }
+      if (val.includes('@') && row.email) return row.email.toLowerCase() === emailNorm
       if (phoneDigits.length >= 7 && row.phone) {
         if (normalizePhone(row.phone) === phoneDigits) return true
       }
@@ -123,13 +156,11 @@ export async function consultarCandidatura(identifier: string) {
   }
 }
 
-// ─── CONSULTAR CANDIDATURA COM SENHA (página candidatura-estado) ──────────────
-// Se aprovado e tem conta, faz login. Senão mostra estado.
+// ─── CONSULTAR CANDIDATURA COM SENHA ─────────────────────────────────────────
 export async function consultarCandidaturaComSenha(identifier: string, password: string) {
   if (!identifier || identifier.trim().length < 3) return { error: 'Dados em falta.' }
   if (!password) return { error: 'Introduza a sua palavra-passe.' }
 
-  // Primeiro consultar o estado da candidatura
   const consultaRes = await consultarCandidatura(identifier)
 
   if (consultaRes.error) return { error: consultaRes.error }
@@ -137,43 +168,28 @@ export async function consultarCandidaturaComSenha(identifier: string, password:
 
   const result = consultaRes.result!
 
-  // Se não aprovado, devolver apenas o estado (sem tentar login)
-  if (result.status !== 'approved') {
-    return { result }
-  }
+  if (result.status !== 'approved') return { result }
 
-  // Se aprovado — tentar login para redirecionar ao painel
   const resolved = await resolveLoginIdentifier(identifier.trim())
-  if (resolved.error || !resolved.email) {
-    // Aprovado mas conta ainda não criada — mostrar estado aprovado sem login
-    return { result, noAccount: true }
-  }
+  if (resolved.error || !resolved.email) return { result, noAccount: true }
 
-  // Tem conta — devolver email para o cliente fazer login
   return { result, email: resolved.email }
 }
 
-
-// ─── RESOLVER EMAIL POR TELEFONE / BI (para login flexível) ──────────────────
-// Busca em profiles (fonte primária) e user_metadata (fallback) para os três identificadores
+// ─── RESOLVER EMAIL POR TELEFONE / BI ────────────────────────────────────────
 export async function resolveLoginIdentifier(identifier: string): Promise<{ email?: string; error?: string }> {
   if (!identifier || identifier.trim().length < 3) {
     return { error: 'Introduza o seu telefone, BI ou email.' }
   }
 
   const val = identifier.trim()
-
-  // Email — devolver directamente
-  if (val.includes('@')) {
-    return { email: val }
-  }
+  if (val.includes('@')) return { email: val }
 
   try {
     const supabase = await createServerSupabaseAdminClient()
 
-    const digitsOnly  = (v: string) => v.replace(/\D/g, '')
-    const normalizeId = (v: string) => v.replace(/\s/g, '').toUpperCase()
-    // Normaliza telefone angolano: remove prefixo 244 para comparar só os 9 dígitos locais
+    const digitsOnly     = (v: string) => v.replace(/\D/g, '')
+    const normalizeId    = (v: string) => v.replace(/\s/g, '').toUpperCase()
     const normalizePhone = (v: string) => {
       const d = digitsOnly(v)
       if (d.startsWith('244') && d.length === 12) return d.slice(3)
@@ -183,12 +199,10 @@ export async function resolveLoginIdentifier(identifier: string): Promise<{ emai
     const phoneVal = normalizePhone(val)
     const idNorm   = normalizeId(val)
 
-    // ── Buscar em profiles (fonte primária — phone e national_id sincronizados) ──
     const { data: allProfiles } = await supabase
       .from('profiles')
       .select('id, phone, national_id')
 
-    // Por telefone em profiles
     if (phoneVal.length >= 7) {
       const matchPhone = allProfiles?.find(p =>
         p.phone && normalizePhone(p.phone) === phoneVal
@@ -199,7 +213,6 @@ export async function resolveLoginIdentifier(identifier: string): Promise<{ emai
       }
     }
 
-    // Por BI/Passaporte em profiles
     if (idNorm.length >= 5) {
       const matchId = allProfiles?.find(p =>
         p.national_id && normalizeId(p.national_id) === idNorm
@@ -210,7 +223,6 @@ export async function resolveLoginIdentifier(identifier: string): Promise<{ emai
       }
     }
 
-    // ── Fallback: buscar em user_metadata (cobre casos onde profiles ainda não sincronizou) ──
     const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 })
 
     if (phoneVal.length >= 7) {
