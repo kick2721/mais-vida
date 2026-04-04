@@ -64,6 +64,8 @@ export default async function AdminDashboardPage({
     .eq('status', 'pending')
 
   // ─── SALES DATA ───────────────────────────────────────────────────────────
+  // Query simplificada: sem JOIN a customers (compras anónimas não têm customer_id)
+  // Afiliado resolvido por referral_code directamente
   const { data: salesRaw, error: salesError } = await supabaseAdmin
     .from('sales')
     .select(`
@@ -76,34 +78,47 @@ export default async function AdminDashboardPage({
     .limit(200)
 
   if (salesError) {
-    console.error('[Admin] Erro ao carregar vendas:', salesError)
+    console.error('[Admin] Erro ao carregar vendas COMPLETO:', JSON.stringify(salesError))
+    // Mostrar el error en pantalla para diagnóstico
+    return (
+      <div style={{ padding: 40, fontFamily: 'monospace', background: '#fff1f2', minHeight: '100vh' }}>
+        <h1 style={{ color: '#b91c1c', fontSize: 24, marginBottom: 16 }}>❌ Error al cargar ventas del admin</h1>
+        <p style={{ color: '#374151', marginBottom: 8 }}>Este mensaje es temporal para diagnóstico. El error exacto es:</p>
+        <pre style={{ background: '#fee2e2', padding: 20, borderRadius: 8, overflow: 'auto', fontSize: 13, color: '#7f1d1d' }}>
+          {JSON.stringify(salesError, null, 2)}
+        </pre>
+        <p style={{ marginTop: 16, color: '#6b7280', fontSize: 13 }}>
+          Mensaje: {(salesError as any)?.message || 'sin mensaje'}<br/>
+          Código: {(salesError as any)?.code || 'sin código'}<br/>
+          Hint: {(salesError as any)?.hint || 'sin hint'}<br/>
+          Details: {(salesError as any)?.details || 'sin detalles'}
+        </p>
+      </div>
+    )
   }
 
-  // ─── SIGNED URLs PARA COMPROVATIVOS ───────────────────────────────────────
-  // FIX: el objeto en storage tiene name = 'receipts/filename.jpeg'
-  // dentro del bucket 'receipts'. El path para createSignedUrl
-  // debe incluir la subcarpeta 'receipts/' como prefijo.
+  // Gerar signed URLs para todos os comprovativos via receipt_path
   const sales = await Promise.all((salesRaw || []).map(async (sale: any) => {
+    // Sempre regerar a URL a partir do receipt_path (URL pré-guardada pode expirar)
     if (sale.receipt_path) {
-      // El archivo se guardó como 'receipts/filename.jpeg' dentro del bucket 'receipts'
-      const storagePath = sale.receipt_path.startsWith('receipts/')
-        ? sale.receipt_path             // ya tiene el prefijo: 'receipts/filename.jpeg'
-        : `receipts/${sale.receipt_path}` // añadir prefijo: 'receipts/' + 'filename.jpeg'
+      const cleanPath = sale.receipt_path.startsWith('receipts/')
+        ? sale.receipt_path.slice('receipts/'.length)
+        : sale.receipt_path
 
       const { data: signed, error: signError } = await supabaseAdmin.storage
         .from('receipts')
-        .createSignedUrl(storagePath, 60 * 60 * 6) // válida 6 horas
+        .createSignedUrl(cleanPath, 60 * 60 * 6) // 6 horas
 
       if (signError) {
-        console.error('[Admin] Erro signed URL:', signError, '| storagePath:', storagePath)
+        console.error('[Admin] Erro signed URL:', signError, '| path:', sale.receipt_path)
       }
 
-      return { ...sale, payment_proof_url: signed?.signedUrl || null }
+      return { ...sale, payment_proof_url: signed?.signedUrl || sale.payment_proof_url || null }
     }
     return sale
   }))
 
-  // Enriquecer ventas con datos del afiliado (via referral_code)
+  // Enriquecer vendas com dados do afiliado (via referral_code)
   const salesWithAffiliate = await Promise.all(sales.map(async (sale: any) => {
     if (!sale.referral_code) return sale
     const { data: aff } = await supabaseAdmin
@@ -138,6 +153,7 @@ export default async function AdminDashboardPage({
     .order('created_at', { ascending: false })
 
   // ─── CARDS DATA ───────────────────────────────────────────────────────────
+  // Cartões ligados a vendas — buscar info do cliente via venda
   const { data: cardsRaw } = await supabaseAdmin
     .from('member_cards')
     .select(`
@@ -147,6 +163,7 @@ export default async function AdminDashboardPage({
     .order('created_at', { ascending: false })
     .limit(50)
 
+  // Enriquecer cartões com dados da venda associada
   const cards = await Promise.all((cardsRaw || []).map(async (card: any) => {
     if (!card.sale_id) return card
     const { data: sale } = await supabaseAdmin
@@ -164,11 +181,11 @@ export default async function AdminDashboardPage({
     .order('created_at', { ascending: false })
 
   const kpis = [
-    { label: 'Vendas Totais',     value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,   color: 'var(--color-primary)', icon: '💳' },
-    { label: 'Confirmadas',       value: confirmedSales      || 0, sub: 'receita validada',                 color: '#166534',              icon: '✅' },
-    { label: 'Afiliados Activos', value: totalAffiliates     || 0, sub: 'na plataforma',                    color: '#1e40af',              icon: '👥' },
-    { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                      color: '#d97706',              icon: '🪪' },
-    { label: 'Candidaturas',      value: pendingApplications || 0, sub: 'pendentes de análise',             color: '#7c3aed',              icon: '📋' },
+    { label: 'Vendas Totais',     value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,     color: 'var(--color-primary)', icon: '💳' },
+    { label: 'Confirmadas',       value: confirmedSales      || 0, sub: 'receita validada',                   color: '#166534',              icon: '✅' },
+    { label: 'Afiliados Activos', value: totalAffiliates     || 0, sub: 'na plataforma',                      color: '#1e40af',              icon: '👥' },
+    { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                        color: '#d97706',              icon: '🪪' },
+    { label: 'Candidaturas',      value: pendingApplications || 0, sub: 'pendentes de análise',               color: '#7c3aed',              icon: '📋' },
   ]
 
   return (
@@ -241,7 +258,7 @@ export default async function AdminDashboardPage({
           ))}
         </div>
 
-        {/* Contenido tabs */}
+        {/* Tabs content */}
         {activeTab === 'sales' && (
           <AdminSalesTable sales={salesWithAffiliate} adminId={user.id} />
         )}
