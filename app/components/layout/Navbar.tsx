@@ -19,21 +19,27 @@ export default function Navbar() {
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [cartaoDropdownOpen, setCartaoDropdownOpen] = useState(false)
+  const [mobileCartaoOpen, setMobileCartaoOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const cartaoDropdownRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
   useEffect(() => { setMounted(true) }, [])
-  useEffect(() => { setOpen(false); setDropdownOpen(false) }, [pathname])
+  useEffect(() => { setOpen(false); setDropdownOpen(false); setCartaoDropdownOpen(false) }, [pathname])
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [open])
 
-  // Cerrar dropdown al hacer clic fuera
+  // Cerrar dropdowns al hacer clic fuera
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false)
+      }
+      if (cartaoDropdownRef.current && !cartaoDropdownRef.current.contains(e.target as Node)) {
+        setCartaoDropdownOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -129,11 +135,51 @@ export default function Navbar() {
             style={{ paddingTop: '14px', paddingBottom: '14px' }}>
             Entrar
           </Link>
-          <Link href="/comprar" onClick={() => setOpen(false)}
-            className="btn-primary text-sm text-center w-full"
-            style={{ paddingTop: '14px', paddingBottom: '14px' }}>
-            Obter Cartão
-          </Link>
+
+          {/* Obter Cartão — botão duplo mobile */}
+          <div>
+            <button
+              onClick={() => setMobileCartaoOpen(o => !o)}
+              className="btn-primary text-sm text-center w-full"
+              style={{ paddingTop: '14px', paddingBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              Obter Cartão
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+                style={{ transition: 'transform 0.2s', transform: mobileCartaoOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                <path d="M2 5l5 5 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            {mobileCartaoOpen && (
+              <div style={{ marginTop: '8px', borderRadius: '12px', border: '1px solid var(--color-border)', overflow: 'hidden', background: '#fff' }}>
+                <Link href="/comprar" onClick={() => { setOpen(false); setMobileCartaoOpen(false) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '14px 16px', fontSize: '14px', fontWeight: 500,
+                    color: 'var(--color-primary)', textDecoration: 'none',
+                    borderBottom: '1px solid var(--color-border)',
+                    background: 'rgba(74,140,63,0.04)',
+                  }}>
+                  <span>💳</span>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Comprar Cartão</div>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 400 }}>Adquirir um novo cartão</div>
+                  </div>
+                </Link>
+                <Link href="/seguimento" onClick={() => { setOpen(false); setMobileCartaoOpen(false) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '14px 16px', fontSize: '14px', fontWeight: 500,
+                    color: 'var(--color-text)', textDecoration: 'none',
+                  }}>
+                  <span>📦</span>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Ver Estado do Pedido</div>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 400 }}>Consultar um pedido já feito</div>
+                  </div>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </>
@@ -233,9 +279,69 @@ export default function Navbar() {
               <Link href="/login" className="btn-outline text-sm py-2 px-4">
                 Entrar
               </Link>
-              <Link href="/comprar" className="btn-primary text-sm py-2 px-4">
-                Obter Cartão
-              </Link>
+
+              {/* Obter Cartão — dropdown desktop */}
+              <div ref={cartaoDropdownRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setCartaoDropdownOpen(!cartaoDropdownOpen)}
+                  className="btn-primary text-sm py-2 px-4"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  Obter Cartão
+                  <svg
+                    width="12" height="12" viewBox="0 0 12 12" fill="none"
+                    style={{ transition: 'transform 0.2s', transform: cartaoDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+
+                {cartaoDropdownOpen && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                    background: '#fff', borderRadius: '12px', minWidth: '230px',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                    border: '1px solid var(--color-border)',
+                    overflow: 'hidden', zIndex: 100,
+                  }}>
+                    <Link href="/comprar"
+                      onClick={() => setCartaoDropdownOpen(false)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '12px 16px', fontSize: '14px', fontWeight: 500,
+                        color: 'var(--color-primary)', textDecoration: 'none',
+                        borderBottom: '1px solid var(--color-border)',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(74,140,63,0.06)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <span>💳</span>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>Comprar Cartão</div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 400 }}>Adquirir um novo cartão</div>
+                      </div>
+                    </Link>
+                    <Link href="/seguimento"
+                      onClick={() => setCartaoDropdownOpen(false)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '12px 16px', fontSize: '14px', fontWeight: 500,
+                        color: 'var(--color-text)', textDecoration: 'none',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.03)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <span>📦</span>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>Ver Estado do Pedido</div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', fontWeight: 400 }}>Consultar um pedido já feito</div>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Hambúrguer mobile */}
