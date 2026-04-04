@@ -59,10 +59,12 @@ export default async function AdminDashboardPage({
     .eq('status', 'pending')
 
   // ─── SALES DATA ──────────────────────────────────────────────
-  const { data: sales } = await supabase
+  const { data: salesRaw } = await supabase
     .from('sales')
     .select(`
       id, amount, currency, status, payment_method, payment_proof_url,
+      receipt_path, referral_code,
+      customer_name, customer_email, customer_phone, national_id,
       created_at, confirmed_at, confirmed_by, notes,
       customers (
         id,
@@ -75,6 +77,17 @@ export default async function AdminDashboardPage({
     `)
     .order('created_at', { ascending: false })
     .limit(100)
+
+  // Gerar URLs assinadas para comprovativos (receipt_path → signed URL)
+  const sales = await Promise.all((salesRaw || []).map(async (sale: any) => {
+    if (!sale.payment_proof_url && sale.receipt_path) {
+      const { data: signed } = await supabase.storage
+        .from('receipts')
+        .createSignedUrl(sale.receipt_path, 60 * 60)
+      return { ...sale, payment_proof_url: signed?.signedUrl || null }
+    }
+    return sale
+  }))
 
   // ─── AFFILIATES DATA ─────────────────────────────────────────
   const { data: affiliates } = await supabase

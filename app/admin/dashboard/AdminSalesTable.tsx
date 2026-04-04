@@ -20,13 +20,16 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
 
   const filtered = sales.filter((sale: any) => {
     const matchesFilter = filter === 'all' || sale.status === filter
+    // Usar campos directos da venda (compra anónima) com fallback para JOIN
     const customers = Array.isArray(sale.customers) ? sale.customers[0] : sale.customers
     const profiles = Array.isArray(customers?.profiles) ? customers?.profiles[0] : customers?.profiles
-    const customerName = profiles?.full_name?.toLowerCase() || ''
-    const customerPhone = profiles?.phone || ''
+    const customerName = (sale.customer_name || profiles?.full_name || '').toLowerCase()
+    const customerPhone = sale.customer_phone || profiles?.phone || ''
+    const customerEmail = sale.customer_email || ''
     const matchesSearch = search === '' ||
       customerName.includes(search.toLowerCase()) ||
-      customerPhone.includes(search)
+      customerPhone.includes(search) ||
+      customerEmail.includes(search.toLowerCase())
     return matchesFilter && matchesSearch
   })
 
@@ -70,20 +73,27 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
           const canConfirm = ['pending', 'pending_review'].includes(sale.status)
           const canCancel  = !['cancelled', 'refunded'].includes(sale.status)
 
+          // Resolver nome/telefone/BI: campos directos têm prioridade (compra anónima)
+          const resolvedName  = sale.customer_name  || customerProfile?.full_name  || '—'
+          const resolvedPhone = sale.customer_phone || customerProfile?.phone       || '—'
+          const resolvedBI    = sale.national_id    || customerProfile?.national_id || '—'
+          const resolvedEmail = sale.customer_email || '—'
+
           return (
             <div key={sale.id} className="card">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <p className="font-semibold text-gray-800">{customerProfile?.full_name || '—'}</p>
+                    <p className="font-semibold text-gray-800">{resolvedName}</p>
                     <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                       style={{ background: st.bg, color: st.color }}>
                       {st.label}
                     </span>
                   </div>
                   <div className="flex gap-4 flex-wrap text-xs text-gray-500">
-                    <span>📞 {customerProfile?.phone || '—'}</span>
-                    <span>🪪 BI: {customerProfile?.national_id || '—'}</span>
+                    <span>📞 {resolvedPhone}</span>
+                    <span>📧 {resolvedEmail}</span>
+                    <span>🪪 BI: {resolvedBI}</span>
                     {affiliateProfile && (
                       <span>👤 Afiliado: <strong>{affiliates?.referral_code}</strong> ({affiliateProfile.full_name})</span>
                     )}
@@ -101,8 +111,8 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
                   </p>
                   {sale.payment_proof_url && (
                     <a href={sale.payment_proof_url} target="_blank" rel="noopener noreferrer"
-                      className="text-xs underline mt-1 block" style={{ color: 'var(--color-primary)' }}>
-                      Ver comprovativo ↗
+                      className="text-xs font-semibold underline mt-1 block" style={{ color: 'var(--color-primary)' }}>
+                      📎 Ver comprovativo ↗
                     </a>
                   )}
                 </div>
