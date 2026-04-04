@@ -2,7 +2,7 @@
 // Painel do Admin — Etapa 6
 
 import { redirect } from 'next/navigation'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createServerSupabaseClient, createServerSupabaseAdminClient } from '@/lib/supabase-server'
 import { logoutUser } from '@/lib/actions'
 import { BUSINESS } from '@/lib/constants'
 import AdminSalesTable from './AdminSalesTable'
@@ -21,6 +21,7 @@ export default async function AdminDashboardPage({
   const activeTab = params.tab || 'sales'
 
   const supabase = await createServerSupabaseClient()
+  const supabaseAdmin = await createServerSupabaseAdminClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -34,32 +35,32 @@ export default async function AdminDashboardPage({
   if (!profile || profile.role !== 'admin') redirect('/login')
 
   // ─── KPIs ────────────────────────────────────────────────────
-  const { count: totalSales } = await supabase
+  const { count: totalSales } = await supabaseAdmin
     .from('sales')
     .select('id', { count: 'exact', head: true })
 
-  const { count: pendingSales } = await supabase
+  const { count: pendingSales } = await supabaseAdmin
     .from('sales')
     .select('id', { count: 'exact', head: true })
     .in('status', ['pending', 'pending_review'])
 
-  const { count: confirmedSales } = await supabase
+  const { count: confirmedSales } = await supabaseAdmin
     .from('sales')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'confirmed')
 
-  const { count: totalAffiliates } = await supabase
+  const { count: totalAffiliates } = await supabaseAdmin
     .from('affiliates')
     .select('id', { count: 'exact', head: true })
     .eq('is_active', true)
 
-  const { count: pendingCards } = await supabase
+  const { count: pendingCards } = await supabaseAdmin
     .from('member_cards')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'pending')
 
   // ─── SALES DATA ──────────────────────────────────────────────
-  const { data: salesRaw } = await supabase
+  const { data: salesRaw } = await supabaseAdmin
     .from('sales')
     .select(`
       id, amount, currency, status, payment_method, payment_proof_url,
@@ -81,7 +82,7 @@ export default async function AdminDashboardPage({
   // Gerar URLs assinadas para comprovativos (receipt_path → signed URL)
   const sales = await Promise.all((salesRaw || []).map(async (sale: any) => {
     if (!sale.payment_proof_url && sale.receipt_path) {
-      const { data: signed } = await supabase.storage
+      const { data: signed } = await supabaseAdmin.storage
         .from('receipts')
         .createSignedUrl(sale.receipt_path, 60 * 60)
       return { ...sale, payment_proof_url: signed?.signedUrl || null }
@@ -90,7 +91,7 @@ export default async function AdminDashboardPage({
   }))
 
   // ─── AFFILIATES DATA ─────────────────────────────────────────
-  const { data: affiliates } = await supabase
+  const { data: affiliates } = await supabaseAdmin
     .from('affiliates')
     .select(`
       id, referral_code, total_sales, total_earned, total_paid, balance,
@@ -100,7 +101,7 @@ export default async function AdminDashboardPage({
     .order('joined_at', { ascending: false })
 
   // ─── COMMISSIONS DATA ────────────────────────────────────────
-  const { data: commissions } = await supabase
+  const { data: commissions } = await supabaseAdmin
     .from('commissions')
     .select(`
       id, amount, currency, status, created_at, paid_at,
@@ -113,7 +114,7 @@ export default async function AdminDashboardPage({
     .order('created_at', { ascending: false })
 
   // ─── CARDS DATA ──────────────────────────────────────────────
-  const { data: cards } = await supabase
+  const { data: cards } = await supabaseAdmin
     .from('member_cards')
     .select(`
       id, card_number, status, issued_at, issued_by, card_image_url, created_at,
@@ -126,12 +127,12 @@ export default async function AdminDashboardPage({
     .limit(50)
 
   // ─── APPLICATIONS DATA ───────────────────────────────────────
-  const { data: applications } = await supabase
+  const { data: applications } = await supabaseAdmin
     .from('affiliate_applications')
     .select('*')
     .order('created_at', { ascending: false })
 
-  const { count: pendingApplications } = await supabase
+  const { count: pendingApplications } = await supabaseAdmin
     .from('affiliate_applications')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'pending')
