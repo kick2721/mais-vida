@@ -1,6 +1,7 @@
 'use client'
 
 // app/admin/dashboard/AdminSalesTable.tsx
+// v2 — Visor de comprovativo melhorado (modal + badge destacado)
 
 import { useState, useTransition } from 'react'
 import { confirmSale, cancelSale } from '@/lib/admin-actions'
@@ -14,13 +15,98 @@ function BtnSpinner({ white = true }: { white?: boolean }) {
   )
 }
 
+// ─── MODAL DE COMPROVATIVO ───────────────────────────────────────────────────
+function ProofModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const isPdf = url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('application/pdf')
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.75)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl"
+        style={{ background: '#fff', maxHeight: '90vh' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header do modal */}
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: '#e5e7eb' }}>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📎</span>
+            <span className="font-semibold text-gray-800">Comprovativo de Pagamento</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs px-3 py-1.5 rounded-lg font-medium border"
+              style={{ color: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
+            >
+              ↗ Abrir em nova aba
+            </a>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none px-2"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        {/* Conteúdo */}
+        <div className="overflow-auto" style={{ maxHeight: 'calc(90vh - 72px)' }}>
+          {isPdf ? (
+            <iframe
+              src={url}
+              className="w-full"
+              style={{ height: '70vh', border: 'none' }}
+              title="Comprovativo PDF"
+            />
+          ) : (
+            <div className="flex items-center justify-center p-4 bg-gray-50">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt="Comprovativo de pagamento"
+                className="max-w-full rounded-lg shadow-md"
+                style={{ maxHeight: '70vh', objectFit: 'contain' }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── BOTÃO VER COMPROVATIVO (badge laranja chamativo) ────────────────────────
+function ProofButton({ url }: { url: string }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm transition-all hover:scale-105 active:scale-95"
+        style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #fbbf24' }}
+        title="Ver comprovativo de pagamento"
+      >
+        📎 Ver Comprovativo
+      </button>
+      {open && <ProofModal url={url} onClose={() => setOpen(false)} />}
+    </>
+  )
+}
+
+// ─── COMPONENTE PRINCIPAL ────────────────────────────────────────────────────
 export default function AdminSalesTable({ sales, adminId }: { sales: any[]; adminId: string }) {
   const [filter, setFilter] = useState<string>('all')
   const [search, setSearch] = useState('')
 
   const filtered = sales.filter((sale: any) => {
     const matchesFilter = filter === 'all' || sale.status === filter
-    // Usar campos directos da venda (compra anónima) com fallback para JOIN
     const customers = Array.isArray(sale.customers) ? sale.customers[0] : sale.customers
     const profiles = Array.isArray(customers?.profiles) ? customers?.profiles[0] : customers?.profiles
     const customerName = (sale.customer_name || profiles?.full_name || '').toLowerCase()
@@ -47,8 +133,33 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
     cash:       '💵 Numerário',
   }
 
+  // Contar pendentes com comprovativo (para alerta)
+  const pendingWithProof = sales.filter(s =>
+    ['pending', 'pending_review'].includes(s.status) && s.payment_proof_url
+  ).length
+
   return (
     <div>
+      {/* Alerta de pendentes com comprovativo */}
+      {pendingWithProof > 0 && (
+        <div
+          className="flex items-center gap-3 p-4 rounded-xl mb-4 text-sm font-medium"
+          style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #fbbf24' }}
+        >
+          <span className="text-xl">🔔</span>
+          <span>
+            <strong>{pendingWithProof} pedido{pendingWithProof > 1 ? 's' : ''}</strong> com comprovativo
+            aguarda{pendingWithProof === 1 ? '' : 'm'} verificação
+          </span>
+          <button
+            className="ml-auto text-xs underline"
+            onClick={() => setFilter('pending_review')}
+          >
+            Ver agora →
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <input type="text" placeholder="Pesquisar por nome ou telefone..."
           value={search} onChange={e => setSearch(e.target.value)} className="input-field flex-1" />
@@ -73,14 +184,19 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
           const canConfirm = ['pending', 'pending_review'].includes(sale.status)
           const canCancel  = !['cancelled', 'refunded'].includes(sale.status)
 
-          // Resolver nome/telefone/BI: campos directos têm prioridade (compra anónima)
           const resolvedName  = sale.customer_name  || customerProfile?.full_name  || '—'
           const resolvedPhone = sale.customer_phone || customerProfile?.phone       || '—'
           const resolvedBI    = sale.national_id    || customerProfile?.national_id || '—'
           const resolvedEmail = sale.customer_email || '—'
 
+          // Destaque visual para pedidos em revisão com comprovativo
+          const isUrgent = sale.status === 'pending_review' && !!sale.payment_proof_url
+          const cardStyle = isUrgent
+            ? { border: '2px solid #fbbf24', background: '#fffbeb' }
+            : {}
+
           return (
-            <div key={sale.id} className="card">
+            <div key={sale.id} className="card" style={cardStyle}>
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -89,6 +205,12 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
                       style={{ background: st.bg, color: st.color }}>
                       {st.label}
                     </span>
+                    {isUrgent && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                        style={{ background: '#fee2e2', color: '#991b1b' }}>
+                        🔴 Aguarda revisão
+                      </span>
+                    )}
                   </div>
                   <div className="flex gap-4 flex-wrap text-xs text-gray-500">
                     <span>📞 {resolvedPhone}</span>
@@ -105,19 +227,21 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
                     })}</span>
                   </div>
                 </div>
-                <div className="text-right flex-shrink-0">
+
+                {/* Lado direito: valor + comprovativo */}
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
                   <p className="font-bold text-gray-800 text-lg">
                     {sale.amount?.toLocaleString()} {sale.currency}
                   </p>
-                  {sale.payment_proof_url && (
-                    <a href={sale.payment_proof_url} target="_blank" rel="noopener noreferrer"
-                      className="text-xs font-semibold underline mt-1 block" style={{ color: 'var(--color-primary)' }}>
-                      📎 Ver comprovativo ↗
-                    </a>
+                  {sale.payment_proof_url ? (
+                    <ProofButton url={sale.payment_proof_url} />
+                  ) : (
+                    <span className="text-xs text-gray-400 italic">Sem comprovativo</span>
                   )}
                 </div>
               </div>
 
+              {/* Acções */}
               {(canConfirm || canCancel) && (
                 <div className="flex gap-2 mt-4 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
                   {canConfirm && <ConfirmSaleButton saleId={sale.id} adminId={adminId} />}
@@ -139,6 +263,7 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
   )
 }
 
+// ─── BOTÃO CONFIRMAR ─────────────────────────────────────────────────────────
 function ConfirmSaleButton({ saleId, adminId }: { saleId: string; adminId: string }) {
   const [isPending, startTransition] = useTransition()
   const [done, setDone] = useState(false)
@@ -166,6 +291,7 @@ function ConfirmSaleButton({ saleId, adminId }: { saleId: string; adminId: strin
   )
 }
 
+// ─── BOTÃO CANCELAR ──────────────────────────────────────────────────────────
 function CancelSaleButton({ saleId }: { saleId: string }) {
   const [isPending, startTransition] = useTransition()
   const [done, setDone] = useState(false)
