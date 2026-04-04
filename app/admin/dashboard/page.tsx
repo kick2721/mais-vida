@@ -1,5 +1,4 @@
 // app/admin/dashboard/page.tsx
-// Painel do Admin — Etapa 6
 
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient, createServerSupabaseAdminClient } from '@/lib/supabase-server'
@@ -34,7 +33,7 @@ export default async function AdminDashboardPage({
 
   if (!profile || profile.role !== 'admin') redirect('/login')
 
-  // ─── KPIs ────────────────────────────────────────────────────
+  // ─── KPIs ─────────────────────────────────────────────────────────────────
   const { count: totalSales } = await supabaseAdmin
     .from('sales')
     .select('id', { count: 'exact', head: true })
@@ -59,38 +58,62 @@ export default async function AdminDashboardPage({
     .select('id', { count: 'exact', head: true })
     .eq('status', 'pending')
 
-  // ─── SALES DATA ──────────────────────────────────────────────
-  const { data: salesRaw } = await supabaseAdmin
+  const { count: pendingApplications } = await supabaseAdmin
+    .from('affiliate_applications')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending')
+
+  // ─── SALES DATA ───────────────────────────────────────────────────────────
+  // Query simplificada: sem JOIN a customers (compras anónimas não têm customer_id)
+  // Afiliado resolvido por referral_code directamente
+  const { data: salesRaw, error: salesError } = await supabaseAdmin
     .from('sales')
     .select(`
-      id, amount, currency, status, payment_method, payment_proof_url,
-      receipt_path, referral_code,
+      id, amount, currency, status, payment_method,
+      payment_proof_url, receipt_path, referral_code,
       customer_name, customer_email, customer_phone, national_id,
-      created_at, confirmed_at, confirmed_by, notes,
-      customers (
-        id,
-        profiles ( full_name, phone, national_id )
-      ),
-      affiliates (
-        id, referral_code,
-        profiles ( full_name )
-      )
+      created_at, confirmed_at, notes
     `)
     .order('created_at', { ascending: false })
-    .limit(100)
+    .limit(200)
 
-  // Gerar URLs assinadas para comprovativos (receipt_path → signed URL)
+  if (salesError) {
+    console.error('[Admin] Erro ao carregar vendas:', salesError)
+  }
+
+  // Gerar signed URLs para todos os comprovativos via receipt_path
   const sales = await Promise.all((salesRaw || []).map(async (sale: any) => {
-    if (!sale.payment_proof_url && sale.receipt_path) {
-      const { data: signed } = await supabaseAdmin.storage
+    // Sempre regerar a URL a partir do receipt_path (URL pré-guardada pode expirar)
+    if (sale.receipt_path) {
+      const cleanPath = sale.receipt_path.startsWith('receipts/')
+        ? sale.receipt_path.slice('receipts/'.length)
+        : sale.receipt_path
+
+      const { data: signed, error: signError } = await supabaseAdmin.storage
         .from('receipts')
-        .createSignedUrl(sale.receipt_path, 60 * 60)
-      return { ...sale, payment_proof_url: signed?.signedUrl || null }
+        .createSignedUrl(cleanPath, 60 * 60 * 6) // 6 horas
+
+      if (signError) {
+        console.error('[Admin] Erro signed URL:', signError, '| path:', sale.receipt_path)
+      }
+
+      return { ...sale, payment_proof_url: signed?.signedUrl || sale.payment_proof_url || null }
     }
     return sale
   }))
 
-  // ─── AFFILIATES DATA ─────────────────────────────────────────
+  // Enriquecer vendas com dados do afiliado (via referral_code)
+  const salesWithAffiliate = await Promise.all(sales.map(async (sale: any) => {
+    if (!sale.referral_code) return sale
+    const { data: aff } = await supabaseAdmin
+      .from('affiliates')
+      .select('id, referral_code, profiles(full_name)')
+      .eq('referral_code', sale.referral_code)
+      .single()
+    return { ...sale, affiliate_data: aff || null }
+  }))
+
+  // ─── AFFILIATES DATA ──────────────────────────────────────────────────────
   const { data: affiliates } = await supabaseAdmin
     .from('affiliates')
     .select(`
@@ -100,7 +123,7 @@ export default async function AdminDashboardPage({
     `)
     .order('joined_at', { ascending: false })
 
-  // ─── COMMISSIONS DATA ────────────────────────────────────────
+  // ─── COMMISSIONS DATA ─────────────────────────────────────────────────────
   const { data: commissions } = await supabaseAdmin
     .from('commissions')
     .select(`
@@ -113,36 +136,40 @@ export default async function AdminDashboardPage({
     .in('status', ['pending', 'approved'])
     .order('created_at', { ascending: false })
 
-  // ─── CARDS DATA ──────────────────────────────────────────────
-  const { data: cards } = await supabaseAdmin
+  // ─── CARDS DATA ───────────────────────────────────────────────────────────
+  // Cartões ligados a vendas — buscar info do cliente via venda
+  const { data: cardsRaw } = await supabaseAdmin
     .from('member_cards')
     .select(`
       id, card_number, status, issued_at, issued_by, card_image_url, created_at,
-      customers (
-        id,
-        profiles ( full_name, phone )
-      )
+      sale_id
     `)
     .order('created_at', { ascending: false })
     .limit(50)
 
-  // ─── APPLICATIONS DATA ───────────────────────────────────────
+  // Enriquecer cartões com dados da venda associada
+  const cards = await Promise.all((cardsRaw || []).map(async (card: any) => {
+    if (!card.sale_id) return card
+    const { data: sale } = await supabaseAdmin
+      .from('sales')
+      .select('customer_name, customer_phone, customer_email, national_id')
+      .eq('id', card.sale_id)
+      .single()
+    return { ...card, sale_data: sale || null }
+  }))
+
+  // ─── APPLICATIONS DATA ────────────────────────────────────────────────────
   const { data: applications } = await supabaseAdmin
     .from('affiliate_applications')
     .select('*')
     .order('created_at', { ascending: false })
 
-  const { count: pendingApplications } = await supabaseAdmin
-    .from('affiliate_applications')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'pending')
-
   const kpis = [
-    { label: 'Vendas Totais',      value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,       color: 'var(--color-primary)', icon: '💳' },
-    { label: 'Confirmadas',        value: confirmedSales      || 0, sub: 'receita validada',                     color: '#166534',              icon: '✅' },
-    { label: 'Afiliados Activos',  value: totalAffiliates     || 0, sub: 'na plataforma',                        color: '#1e40af',              icon: '👥' },
-    { label: 'Cartões Pendentes',  value: pendingCards        || 0, sub: 'para emitir',                          color: '#d97706',              icon: '🪪' },
-    { label: 'Candidaturas',       value: pendingApplications || 0, sub: 'pendentes de análise',                 color: '#7c3aed',              icon: '📋' },
+    { label: 'Vendas Totais',     value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,     color: 'var(--color-primary)', icon: '💳' },
+    { label: 'Confirmadas',       value: confirmedSales      || 0, sub: 'receita validada',                   color: '#166534',              icon: '✅' },
+    { label: 'Afiliados Activos', value: totalAffiliates     || 0, sub: 'na plataforma',                      color: '#1e40af',              icon: '👥' },
+    { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                        color: '#d97706',              icon: '🪪' },
+    { label: 'Candidaturas',      value: pendingApplications || 0, sub: 'pendentes de análise',               color: '#7c3aed',              icon: '📋' },
   ]
 
   return (
@@ -175,7 +202,7 @@ export default async function AdminDashboardPage({
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           {kpis.map(kpi => (
             <div key={kpi.label} className="card">
               <div className="flex items-start justify-between mb-2">
@@ -191,7 +218,7 @@ export default async function AdminDashboardPage({
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-white rounded-2xl p-1 border" style={{ borderColor: 'var(--color-border)' }}>
+        <div className="flex gap-1 mb-6 bg-white rounded-2xl p-1 border overflow-x-auto" style={{ borderColor: 'var(--color-border)' }}>
           {[
             { key: 'sales',        label: '💳 Vendas' },
             { key: 'cards',        label: '🪪 Cartões' },
@@ -202,7 +229,7 @@ export default async function AdminDashboardPage({
             <a
               key={tab.key}
               href={`/admin/dashboard?tab=${tab.key}`}
-              className="flex-1 text-center py-2 px-3 rounded-xl text-sm font-semibold transition-all"
+              className="flex-shrink-0 text-center py-2 px-3 rounded-xl text-sm font-semibold transition-all"
               style={
                 activeTab === tab.key
                   ? { background: 'var(--color-primary)', color: 'white' }
@@ -215,27 +242,19 @@ export default async function AdminDashboardPage({
           ))}
         </div>
 
-        {/* Sales Tab */}
+        {/* Tabs content */}
         {activeTab === 'sales' && (
-          <AdminSalesTable sales={(sales as any[]) || []} adminId={user.id} />
+          <AdminSalesTable sales={salesWithAffiliate} adminId={user.id} />
         )}
-
-        {/* Cards Tab */}
         {activeTab === 'cards' && (
-          <AdminCardsSection cards={cards || []} adminId={user.id} />
+          <AdminCardsSection cards={cards} adminId={user.id} />
         )}
-
-        {/* Affiliates Tab */}
         {activeTab === 'affiliates' && (
           <AdminAffiliatesTable affiliates={affiliates || []} />
         )}
-
-        {/* Commissions Tab */}
         {activeTab === 'commissions' && (
           <AdminCommissionsSection commissions={commissions || []} adminId={user.id} />
         )}
-
-        {/* Applications Tab */}
         {activeTab === 'applications' && (
           <AdminApplicationsTable applications={(applications as any[]) || []} />
         )}
@@ -244,7 +263,7 @@ export default async function AdminDashboardPage({
   )
 }
 
-// ─── CARDS SECTION ──────────────────────────────────────────────────────────
+// ─── CARDS SECTION ────────────────────────────────────────────────────────────
 function AdminCardsSection({ cards, adminId }: { cards: any[]; adminId: string }) {
   const pending = cards.filter(c => c.status === 'pending')
   const issued  = cards.filter(c => c.status === 'issued')
@@ -260,39 +279,32 @@ function AdminCardsSection({ cards, adminId }: { cards: any[]; adminId: string }
         </span>
       </div>
 
-      {/* Alerta de processo manual */}
       <div className="rounded-2xl p-4 mb-6 border border-yellow-200 bg-yellow-50">
         <p className="text-sm font-semibold text-yellow-800">📋 Processo de emissão de cartão</p>
         <p className="text-xs text-yellow-700 mt-1">
           O cartão digital é preparado manualmente e enviado ao cliente via WhatsApp ou email.
-          Após enviar, marque como "Emitido" para registar a emissão no sistema.
+          Após enviar, marque como &quot;Emitido&quot; para registar a emissão no sistema.
         </p>
       </div>
 
-      {/* Pendentes primeiro */}
       {pending.length > 0 && (
         <div className="mb-8">
           <h3 className="font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wide">
             ⚠️ Pendentes de emissão
           </h3>
           <div className="space-y-3">
-            {pending.map(card => (
-              <CardRow key={card.id} card={card} adminId={adminId} />
-            ))}
+            {pending.map(card => <CardRow key={card.id} card={card} adminId={adminId} />)}
           </div>
         </div>
       )}
 
-      {/* Emitidos */}
       {issued.length > 0 && (
         <div>
           <h3 className="font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wide">
             ✅ Cartões emitidos
           </h3>
           <div className="space-y-3">
-            {issued.map(card => (
-              <CardRow key={card.id} card={card} adminId={adminId} />
-            ))}
+            {issued.map(card => <CardRow key={card.id} card={card} adminId={adminId} />)}
           </div>
         </div>
       )}
@@ -308,12 +320,12 @@ function AdminCardsSection({ cards, adminId }: { cards: any[]; adminId: string }
 }
 
 function CardRow({ card, adminId }: { card: any; adminId: string }) {
-  const customerProfile = card.customers?.profiles
+  const saleData = card.sale_data
   return (
     <div className="card flex items-center justify-between gap-4 flex-wrap">
       <div>
-        <p className="font-semibold text-gray-800 text-sm">{customerProfile?.full_name || 'Cliente'}</p>
-        <p className="text-xs text-gray-500">{customerProfile?.phone}</p>
+        <p className="font-semibold text-gray-800 text-sm">{saleData?.customer_name || 'Cliente'}</p>
+        <p className="text-xs text-gray-500">{saleData?.customer_phone}</p>
         <p className="text-xs font-mono text-gray-600 mt-1">Nº {card.card_number}</p>
       </div>
       <div className="flex items-center gap-3">
@@ -325,8 +337,8 @@ function CardRow({ card, adminId }: { card: any; adminId: string }) {
           <IssueCardButton
             cardId={card.id}
             adminId={adminId}
-            customerName={customerProfile?.full_name || 'Cliente'}
-            customerPhone={customerProfile?.phone}
+            customerName={saleData?.customer_name || 'Cliente'}
+            customerPhone={saleData?.customer_phone}
           />
         )}
       </div>
@@ -334,7 +346,7 @@ function CardRow({ card, adminId }: { card: any; adminId: string }) {
   )
 }
 
-// ─── COMMISSIONS SECTION ────────────────────────────────────────────────────
+// ─── COMMISSIONS SECTION ──────────────────────────────────────────────────────
 function AdminCommissionsSection({ commissions, adminId }: { commissions: any[]; adminId: string }) {
   return (
     <div>
@@ -345,7 +357,6 @@ function AdminCommissionsSection({ commissions, adminId }: { commissions: any[];
         <div className="space-y-3">
           {commissions.map(commission => {
             const affiliateProfile = (commission.affiliates as any)?.profiles
-            const isPending = commission.status === 'pending'
             return (
               <div key={commission.id} className="card flex items-center justify-between gap-4 flex-wrap">
                 <div>
