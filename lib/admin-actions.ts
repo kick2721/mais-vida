@@ -11,6 +11,7 @@ import { COMMISSION } from './constants'
 // ─── CONFIRMAR VENDA ─────────────────────────────────────────────────────────
 export async function confirmSale(saleId: string, adminId: string) {
   const supabase = await createServerSupabaseClient()
+  const supabaseAdmin = await createServerSupabaseAdminClient()
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -20,7 +21,17 @@ export async function confirmSale(saleId: string, adminId: string) {
 
   if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
 
-  const { data: sale, error } = await supabase
+  // Buscar dados da venda antes de confirmar
+  const { data: saleData } = await supabaseAdmin
+    .from('sales')
+    .select('id, amount, currency, customer_name, customer_email, customer_phone, national_id')
+    .eq('id', saleId)
+    .single()
+
+  if (!saleData) return { error: 'Venda não encontrada.' }
+
+  // Confirmar a venda
+  const { error } = await supabaseAdmin
     .from('sales')
     .update({
       status: 'confirmed',
@@ -28,42 +39,44 @@ export async function confirmSale(saleId: string, adminId: string) {
       confirmed_by: adminId,
     })
     .eq('id', saleId)
-    .select(`
-      id, amount, currency,
-      customers (
-        id,
-        profiles ( full_name, phone )
-      )
-    `)
-    .single()
 
   if (error) return { error: 'Erro ao confirmar venda: ' + error.message }
 
-  // Email de confirmação ao cliente
-  try {
-    const customerProfile = (sale.customers as any)?.profiles
-    if (customerProfile) {
-      const { data: customer } = await supabase
-        .from('customers')
-        .select('profile_id')
-        .eq('id', (sale.customers as any)?.id)
-        .single()
+  // Criar cartão pendente automaticamente
+  // Verificar se já existe cartão para esta venda (evitar duplicados)
+  const { data: existingCard } = await supabaseAdmin
+    .from('member_cards')
+    .select('id')
+    .eq('sale_id', saleId)
+    .maybeSingle()
 
-      if (customer) {
-        const supabaseAdmin = await createServerSupabaseAdminClient()
-        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(customer.profile_id)
-        if (authUser?.user?.email) {
-          await sendEmail({
-            to: authUser.user.email,
-            template: 'purchase_confirmed',
-            data: {
-              customerName: customerProfile.full_name,
-              amount: sale.amount,
-              currency: sale.currency,
-            },
-          })
-        }
-      }
+  if (!existingCard) {
+    // Gerar número de cartão único: MV-YYYYMMDD-XXXX
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase()
+    const cardNumber = `MV-${dateStr}-${randomSuffix}`
+
+    await supabaseAdmin
+      .from('member_cards')
+      .insert({
+        sale_id: saleId,
+        card_number: cardNumber,
+        status: 'pending',
+      })
+  }
+
+  // Email de confirmação ao cliente (via customer_email directo)
+  try {
+    if (saleData.customer_email) {
+      await sendEmail({
+        to: saleData.customer_email,
+        template: 'purchase_confirmed',
+        data: {
+          customerName: saleData.customer_name || 'Cliente',
+          amount: saleData.amount,
+          currency: saleData.currency,
+        },
+      })
     }
   } catch (emailError) {
     console.error('[Email] confirmSale error:', emailError)
@@ -92,6 +105,7 @@ export async function cancelSale(saleId: string, reason?: string) {
 // ─── EMITIR CARTÃO ───────────────────────────────────────────────────────────
 export async function issueCard(cardId: string, adminId: string) {
   const supabase = await createServerSupabaseClient()
+  const supabaseAdmin = await createServerSupabaseAdminClient()
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -101,7 +115,7 @@ export async function issueCard(cardId: string, adminId: string) {
 
   if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
 
-  const { data: card, error } = await supabase
+  const { data: card, error } = await supabaseAdmin
     .from('member_cards')
     .update({
       status: 'issued',
@@ -110,28 +124,26 @@ export async function issueCard(cardId: string, adminId: string) {
     })
     .eq('id', cardId)
     .eq('status', 'pending')
-    .select(`
-      id, card_number,
-      customers (
-        id, profile_id,
-        profiles ( full_name, phone )
-      )
-    `)
+    .select('id, card_number, sale_id')
     .single()
 
   if (error) return { error: 'Erro ao emitir cartão: ' + error.message }
 
+  // Buscar dados do cliente via sale_id
   try {
-    const customerData = card.customers as any
-    if (customerData?.profile_id) {
-      const supabaseAdmin = await createServerSupabaseAdminClient()
-      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(customerData.profile_id)
-      if (authUser?.user?.email) {
+    if (card.sale_id) {
+      const { data: sale } = await supabaseAdmin
+        .from('sales')
+        .select('customer_name, customer_email, amount, currency')
+        .eq('id', card.sale_id)
+        .single()
+
+      if (sale?.customer_email) {
         await sendEmail({
-          to: authUser.user.email,
+          to: sale.customer_email,
           template: 'card_issued',
           data: {
-            customerName: customerData.profiles?.full_name,
+            customerName: sale.customer_name || 'Cliente',
             cardNumber: card.card_number,
           },
         })
