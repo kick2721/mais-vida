@@ -3,7 +3,7 @@
 // app/admin/dashboard/AdminSalesTable.tsx
 
 import { useState, useTransition } from 'react'
-import { confirmSale, cancelSale } from '@/lib/admin-actions'
+import { confirmSale, cancelSale, reactivateSale } from '@/lib/admin-actions'
 
 function BtnSpinner({ white = true }: { white?: boolean }) {
   return (
@@ -140,7 +140,7 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
         {filtered.map((sale: any) => {
           const st = statusMap[sale.status] || { label: sale.status, color: '#374151', bg: '#f3f4f6' }
           const canConfirm = ['pending', 'pending_review'].includes(sale.status)
-          const canCancel  = sale.status !== 'cancelled'
+          const canCancel  = !['cancelled', 'refunded'].includes(sale.status)
           const isUrgent   = sale.status === 'pending_review'
 
           return (
@@ -190,6 +190,7 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
                 <div className="flex gap-2 pt-3 border-t" style={{ borderColor: '#e5e7eb' }}>
                   {canConfirm && <ConfirmSaleButton saleId={sale.id} adminId={adminId} hasProof={!!sale.payment_proof_url} />}
                   {canCancel  && <CancelSaleButton saleId={sale.id} />}
+                  {sale.status === 'cancelled' && <ReactivateSaleButton saleId={sale.id} adminId={adminId} />}
                 </div>
               )}
             </div>
@@ -255,6 +256,29 @@ function CancelSaleButton({ saleId }: { saleId: string }) {
     <button onClick={handleCancel} disabled={isPending}
       className="btn-outline text-sm py-2 px-4 disabled:opacity-50 border-red-300 text-red-600 hover:bg-red-50 flex items-center gap-2">
       {isPending ? <><BtnSpinner white={false} />A cancelar…</> : '✗ Cancelar'}
+    </button>
+  )
+}
+
+function ReactivateSaleButton({ saleId, adminId }: { saleId: string; adminId: string }) {
+  const [isPending, startTransition] = useTransition()
+  const [done, setDone] = useState(false)
+
+  const handleReactivate = () => {
+    if (!confirm('Reativar esta venda? Voltará ao estado "Em revisão" para poder ser confirmada.')) return
+    startTransition(async () => {
+      const result = await reactivateSale(saleId, adminId)
+      if (result.success) setDone(true)
+      else alert(result.error || 'Erro ao reativar.')
+    })
+  }
+
+  if (done) return <span className="text-xs text-blue-700 font-semibold px-3 py-2 bg-blue-50 rounded-xl">↩ Reativada</span>
+
+  return (
+    <button onClick={handleReactivate} disabled={isPending}
+      className="btn-outline text-sm py-2 px-4 disabled:opacity-50 border-blue-300 text-blue-600 hover:bg-blue-50 flex items-center gap-2">
+      {isPending ? <><BtnSpinner white={false} />A reativar…</> : '↩ Reativar'}
     </button>
   )
 }
