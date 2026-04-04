@@ -1,7 +1,6 @@
 'use client'
 
 // app/admin/dashboard/AdminSalesTable.tsx
-// v2 — Visor de comprovativo melhorado (modal + badge destacado)
 
 import { useState, useTransition } from 'react'
 import { confirmSale, cancelSale } from '@/lib/admin-actions'
@@ -15,64 +14,46 @@ function BtnSpinner({ white = true }: { white?: boolean }) {
   )
 }
 
-// ─── MODAL DE COMPROVATIVO ───────────────────────────────────────────────────
-function ProofModal({ url, onClose }: { url: string; onClose: () => void }) {
-  const isPdf = url.toLowerCase().includes('.pdf') || url.toLowerCase().includes('application/pdf')
+function ProofModal({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+  const lower = url.toLowerCase()
+  const isPdf = lower.includes('.pdf') || lower.includes('application%2Fpdf')
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.75)' }}
+      style={{ background: 'rgba(0,0,0,0.8)' }}
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl"
-        style={{ background: '#fff', maxHeight: '90vh' }}
+        className="relative w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl bg-white"
+        style={{ maxHeight: '92vh' }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header do modal */}
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: '#e5e7eb' }}>
-          <div className="flex items-center gap-2">
-            <span className="text-lg">📎</span>
-            <span className="font-semibold text-gray-800">Comprovativo de Pagamento</span>
+          <div>
+            <p className="font-bold text-gray-800">📎 Comprovativo de Pagamento</p>
+            <p className="text-xs text-gray-500 mt-0.5">{name}</p>
           </div>
           <div className="flex items-center gap-2">
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs px-3 py-1.5 rounded-lg font-medium border"
-              style={{ color: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
-            >
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
+              style={{ color: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}>
               ↗ Abrir em nova aba
             </a>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none px-2"
-            >
+            <button onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 text-xl font-bold">
               ×
             </button>
           </div>
         </div>
-
-        {/* Conteúdo */}
-        <div className="overflow-auto" style={{ maxHeight: 'calc(90vh - 72px)' }}>
+        <div className="overflow-auto bg-gray-50" style={{ maxHeight: 'calc(92vh - 80px)' }}>
           {isPdf ? (
-            <iframe
-              src={url}
-              className="w-full"
-              style={{ height: '70vh', border: 'none' }}
-              title="Comprovativo PDF"
-            />
+            <iframe src={url} className="w-full" style={{ height: '75vh', border: 'none' }} title="Comprovativo PDF" />
           ) : (
-            <div className="flex items-center justify-center p-4 bg-gray-50">
+            <div className="flex items-center justify-center p-6">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt="Comprovativo de pagamento"
-                className="max-w-full rounded-lg shadow-md"
-                style={{ maxHeight: '70vh', objectFit: 'contain' }}
-              />
+              <img src={url} alt="Comprovativo" className="max-w-full rounded-xl shadow-lg"
+                style={{ maxHeight: '70vh', objectFit: 'contain' }} />
             </div>
           )}
         </div>
@@ -81,170 +62,133 @@ function ProofModal({ url, onClose }: { url: string; onClose: () => void }) {
   )
 }
 
-// ─── BOTÃO VER COMPROVATIVO (badge laranja chamativo) ────────────────────────
-function ProofButton({ url }: { url: string }) {
+function ProofButton({ url, name }: { url: string; name: string }) {
   const [open, setOpen] = useState(false)
-
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm transition-all hover:scale-105 active:scale-95"
-        style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #fbbf24' }}
-        title="Ver comprovativo de pagamento"
-      >
+      <button onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105"
+        style={{ background: '#fef3c7', color: '#92400e', border: '2px solid #f59e0b' }}>
         📎 Ver Comprovativo
       </button>
-      {open && <ProofModal url={url} onClose={() => setOpen(false)} />}
+      {open && <ProofModal url={url} name={name} onClose={() => setOpen(false)} />}
     </>
   )
 }
 
-// ─── COMPONENTE PRINCIPAL ────────────────────────────────────────────────────
 export default function AdminSalesTable({ sales, adminId }: { sales: any[]; adminId: string }) {
-  const [filter, setFilter] = useState<string>('all')
+  const [filter, setFilter] = useState<string>('pending_review')
   const [search, setSearch] = useState('')
 
   const filtered = sales.filter((sale: any) => {
     const matchesFilter = filter === 'all' || sale.status === filter
-    const customers = Array.isArray(sale.customers) ? sale.customers[0] : sale.customers
-    const profiles = Array.isArray(customers?.profiles) ? customers?.profiles[0] : customers?.profiles
-    const customerName = (sale.customer_name || profiles?.full_name || '').toLowerCase()
-    const customerPhone = sale.customer_phone || profiles?.phone || ''
-    const customerEmail = sale.customer_email || ''
-    const matchesSearch = search === '' ||
-      customerName.includes(search.toLowerCase()) ||
-      customerPhone.includes(search) ||
-      customerEmail.includes(search.toLowerCase())
+    const q = search.toLowerCase()
+    const matchesSearch = !q ||
+      (sale.customer_name || '').toLowerCase().includes(q) ||
+      (sale.customer_phone || '').includes(q) ||
+      (sale.customer_email || '').toLowerCase().includes(q) ||
+      (sale.national_id || '').toLowerCase().includes(q)
     return matchesFilter && matchesSearch
   })
 
   const statusMap: Record<string, { label: string; color: string; bg: string }> = {
-    confirmed:      { label: '✓ Confirmada',   color: '#166534', bg: '#dcfce7' },
-    pending_review: { label: '⏳ Em revisão',   color: '#92400e', bg: '#fef3c7' },
-    pending:        { label: '⏳ Pendente',     color: '#6b7280', bg: '#f3f4f6' },
-    cancelled:      { label: '✗ Cancelada',    color: '#991b1b', bg: '#fee2e2' },
-    refunded:       { label: '↩ Reembolsada',  color: '#6b7280', bg: '#f3f4f6' },
+    confirmed:      { label: '✓ Confirmada',  color: '#166534', bg: '#dcfce7' },
+    pending_review: { label: '⏳ Em revisão',  color: '#92400e', bg: '#fef3c7' },
+    pending:        { label: '⏳ Pendente',    color: '#6b7280', bg: '#f3f4f6' },
+    cancelled:      { label: '✗ Cancelada',   color: '#991b1b', bg: '#fee2e2' },
   }
 
-  const paymentMethodLabel: Record<string, string> = {
-    transfer:   '🏦 Transferência',
-    multicaixa: '💳 Multicaixa Express',
-    cash:       '💵 Numerário',
+  const paymentLabel: Record<string, string> = {
+    bank_transfer: '🏦 Transferência bancária',
+    transfer:      '🏦 Transferência',
+    multicaixa:    '💳 Multicaixa Express',
+    cash:          '💵 Numerário',
   }
 
-  // Contar pendentes com comprovativo (para alerta)
-  const pendingWithProof = sales.filter(s =>
-    ['pending', 'pending_review'].includes(s.status) && s.payment_proof_url
-  ).length
+  const pendingCount = sales.filter(s => ['pending', 'pending_review'].includes(s.status)).length
 
   return (
     <div>
-      {/* Alerta de pendentes com comprovativo */}
-      {pendingWithProof > 0 && (
-        <div
-          className="flex items-center gap-3 p-4 rounded-xl mb-4 text-sm font-medium"
-          style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #fbbf24' }}
-        >
-          <span className="text-xl">🔔</span>
-          <span>
-            <strong>{pendingWithProof} pedido{pendingWithProof > 1 ? 's' : ''}</strong> com comprovativo
-            aguarda{pendingWithProof === 1 ? '' : 'm'} verificação
-          </span>
-          <button
-            className="ml-auto text-xs underline"
-            onClick={() => setFilter('pending_review')}
-          >
+      {pendingCount > 0 && (
+        <div className="flex items-center gap-3 p-4 rounded-xl mb-5 text-sm font-medium"
+          style={{ background: '#fef3c7', color: '#92400e', border: '2px solid #f59e0b' }}>
+          <span className="text-2xl">🔔</span>
+          <div className="flex-1">
+            <strong>{pendingCount} pedido{pendingCount > 1 ? 's' : ''} aguarda{pendingCount === 1 ? '' : 'm'} revisão</strong>
+          </div>
+          <button className="text-xs underline font-bold" onClick={() => setFilter('pending_review')}>
             Ver agora →
           </button>
         </div>
       )}
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <input type="text" placeholder="Pesquisar por nome ou telefone..."
+        <input type="text" placeholder="Pesquisar por nome, telefone, email ou BI…"
           value={search} onChange={e => setSearch(e.target.value)} className="input-field flex-1" />
-        <select value={filter} onChange={e => setFilter(e.target.value)} className="input-field sm:w-48">
-          <option value="all">Todos os estados</option>
-          <option value="pending_review">Em revisão</option>
-          <option value="pending">Pendente</option>
-          <option value="confirmed">Confirmadas</option>
-          <option value="cancelled">Canceladas</option>
+        <select value={filter} onChange={e => setFilter(e.target.value)} className="input-field sm:w-56">
+          <option value="all">Todos ({sales.length})</option>
+          <option value="pending_review">⏳ Em revisão ({sales.filter(s => s.status === 'pending_review').length})</option>
+          <option value="pending">Pendente ({sales.filter(s => s.status === 'pending').length})</option>
+          <option value="confirmed">✓ Confirmadas ({sales.filter(s => s.status === 'confirmed').length})</option>
+          <option value="cancelled">✗ Canceladas ({sales.filter(s => s.status === 'cancelled').length})</option>
         </select>
       </div>
 
-      <p className="text-xs text-gray-500 mb-3">{filtered.length} resultados</p>
+      <p className="text-xs text-gray-500 mb-3">{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</p>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {filtered.map((sale: any) => {
           const st = statusMap[sale.status] || { label: sale.status, color: '#374151', bg: '#f3f4f6' }
-          const customers = Array.isArray(sale.customers) ? sale.customers[0] : sale.customers
-          const customerProfile = Array.isArray(customers?.profiles) ? customers?.profiles[0] : customers?.profiles
-          const affiliates = Array.isArray(sale.affiliates) ? sale.affiliates[0] : sale.affiliates
-          const affiliateProfile = Array.isArray(affiliates?.profiles) ? affiliates?.profiles[0] : affiliates?.profiles
           const canConfirm = ['pending', 'pending_review'].includes(sale.status)
-          const canCancel  = !['cancelled', 'refunded'].includes(sale.status)
-
-          const resolvedName  = sale.customer_name  || customerProfile?.full_name  || '—'
-          const resolvedPhone = sale.customer_phone || customerProfile?.phone       || '—'
-          const resolvedBI    = sale.national_id    || customerProfile?.national_id || '—'
-          const resolvedEmail = sale.customer_email || '—'
-
-          // Destaque visual para pedidos em revisão com comprovativo
-          const isUrgent = sale.status === 'pending_review' && !!sale.payment_proof_url
-          const cardStyle = isUrgent
-            ? { border: '2px solid #fbbf24', background: '#fffbeb' }
-            : {}
+          const canCancel  = sale.status !== 'cancelled'
+          const isUrgent   = sale.status === 'pending_review'
 
           return (
-            <div key={sale.id} className="card" style={cardStyle}>
-              <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div key={sale.id} className="card"
+              style={isUrgent ? { borderColor: '#f59e0b', borderWidth: '2px', background: '#fffbeb' } : {}}>
+
+              <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <p className="font-semibold text-gray-800">{resolvedName}</p>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                      style={{ background: st.bg, color: st.color }}>
-                      {st.label}
-                    </span>
-                    {isUrgent && (
-                      <span className="text-xs px-2 py-0.5 rounded-full font-bold"
-                        style={{ background: '#fee2e2', color: '#991b1b' }}>
-                        🔴 Aguarda revisão
+                  <div className="flex items-center gap-2 flex-wrap mb-2">
+                    <p className="font-bold text-gray-900 text-base">{sale.customer_name || '—'}</p>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                      style={{ background: st.bg, color: st.color }}>{st.label}</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600">
+                    <span>📞 <strong>Tel:</strong> {sale.customer_phone || '—'}</span>
+                    <span>📧 <strong>Email:</strong> {sale.customer_email || '—'}</span>
+                    <span>🪪 <strong>BI:</strong> <span className="font-mono">{sale.national_id || '—'}</span></span>
+                    <span>🗓️ {new Date(sale.created_at).toLocaleString('pt-AO', {
+                      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                    <span>{paymentLabel[sale.payment_method || ''] || sale.payment_method || '—'}</span>
+                    {sale.referral_code && (
+                      <span>👤 <strong>Afiliado:</strong> <span className="font-mono">{sale.referral_code}</span>
+                        {sale.affiliate_data?.profiles?.full_name && (
+                          <span className="text-gray-400"> ({sale.affiliate_data.profiles.full_name})</span>
+                        )}
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-4 flex-wrap text-xs text-gray-500">
-                    <span>📞 {resolvedPhone}</span>
-                    <span>📧 {resolvedEmail}</span>
-                    <span>🪪 BI: {resolvedBI}</span>
-                    {affiliateProfile && (
-                      <span>👤 Afiliado: <strong>{affiliates?.referral_code}</strong> ({affiliateProfile.full_name})</span>
-                    )}
-                  </div>
-                  <div className="flex gap-4 flex-wrap text-xs text-gray-400 mt-1">
-                    <span>{paymentMethodLabel[sale.payment_method || ''] || sale.payment_method}</span>
-                    <span>{new Date(sale.created_at).toLocaleDateString('pt-AO', {
-                      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-                    })}</span>
-                  </div>
                 </div>
 
-                {/* Lado direito: valor + comprovativo */}
                 <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                  <p className="font-bold text-gray-800 text-lg">
-                    {sale.amount?.toLocaleString()} {sale.currency}
+                  <p className="font-bold text-gray-900 text-xl">
+                    {sale.amount?.toLocaleString('pt-AO')} {sale.currency}
                   </p>
-                  {sale.payment_proof_url ? (
-                    <ProofButton url={sale.payment_proof_url} />
-                  ) : (
-                    <span className="text-xs text-gray-400 italic">Sem comprovativo</span>
-                  )}
+                  {sale.payment_proof_url
+                    ? <ProofButton url={sale.payment_proof_url} name={sale.customer_name || 'Cliente'} />
+                    : <span className="text-xs text-gray-400 italic px-3 py-2 rounded-xl bg-gray-100">Sem comprovativo</span>
+                  }
                 </div>
               </div>
 
-              {/* Acções */}
+              {sale.notes && (
+                <div className="text-xs text-gray-500 mb-3 p-2 bg-gray-50 rounded-lg">📝 {sale.notes}</div>
+              )}
+
               {(canConfirm || canCancel) && (
-                <div className="flex gap-2 mt-4 pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-                  {canConfirm && <ConfirmSaleButton saleId={sale.id} adminId={adminId} />}
+                <div className="flex gap-2 pt-3 border-t" style={{ borderColor: '#e5e7eb' }}>
+                  {canConfirm && <ConfirmSaleButton saleId={sale.id} adminId={adminId} hasProof={!!sale.payment_proof_url} />}
                   {canCancel  && <CancelSaleButton saleId={sale.id} />}
                 </div>
               )}
@@ -253,9 +197,11 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
         })}
 
         {filtered.length === 0 && (
-          <div className="card text-center py-10">
-            <p className="text-4xl mb-3">🔍</p>
-            <p className="text-gray-500 text-sm">Sem resultados para os filtros seleccionados.</p>
+          <div className="card text-center py-12">
+            <p className="text-5xl mb-3">{filter === 'pending_review' ? '✅' : '🔍'}</p>
+            <p className="text-gray-500 text-sm">
+              {filter === 'pending_review' ? 'Não há pedidos em revisão. Tudo em dia!' : 'Sem resultados.'}
+            </p>
           </div>
         )}
       </div>
@@ -263,25 +209,23 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
   )
 }
 
-// ─── BOTÃO CONFIRMAR ─────────────────────────────────────────────────────────
-function ConfirmSaleButton({ saleId, adminId }: { saleId: string; adminId: string }) {
+function ConfirmSaleButton({ saleId, adminId, hasProof }: { saleId: string; adminId: string; hasProof: boolean }) {
   const [isPending, startTransition] = useTransition()
   const [done, setDone] = useState(false)
 
   const handleConfirm = () => {
-    if (!confirm('Confirmar este pagamento? Isto irá activar a membresía e criar a comissão do afiliado.')) return
+    const msg = hasProof
+      ? 'Confirmar pagamento? Isto irá activar a membresía e criar comissão do afiliado.'
+      : '⚠️ Este pedido NÃO tem comprovativo. Confirmar mesmo assim?'
+    if (!confirm(msg)) return
     startTransition(async () => {
       const result = await confirmSale(saleId, adminId)
       if (result.success) setDone(true)
-      else alert(result.error || 'Erro ao confirmar venda.')
+      else alert(result.error || 'Erro ao confirmar.')
     })
   }
 
-  if (done) return (
-    <span className="text-xs text-green-700 font-semibold px-3 py-2 bg-green-50 rounded-xl">
-      ✓ Confirmado!
-    </span>
-  )
+  if (done) return <span className="text-xs text-green-700 font-semibold px-3 py-2 bg-green-50 rounded-xl">✓ Confirmado!</span>
 
   return (
     <button onClick={handleConfirm} disabled={isPending}
@@ -291,7 +235,6 @@ function ConfirmSaleButton({ saleId, adminId }: { saleId: string; adminId: strin
   )
 }
 
-// ─── BOTÃO CANCELAR ──────────────────────────────────────────────────────────
 function CancelSaleButton({ saleId }: { saleId: string }) {
   const [isPending, startTransition] = useTransition()
   const [done, setDone] = useState(false)
@@ -302,18 +245,16 @@ function CancelSaleButton({ saleId }: { saleId: string }) {
     startTransition(async () => {
       const result = await cancelSale(saleId, reason || undefined)
       if (result.success) setDone(true)
-      else alert(result.error || 'Erro ao cancelar venda.')
+      else alert(result.error || 'Erro ao cancelar.')
     })
   }
 
-  if (done) return (
-    <span className="text-xs text-red-700 font-semibold px-3 py-2 bg-red-50 rounded-xl">✗ Cancelado</span>
-  )
+  if (done) return <span className="text-xs text-red-700 font-semibold px-3 py-2 bg-red-50 rounded-xl">✗ Cancelado</span>
 
   return (
     <button onClick={handleCancel} disabled={isPending}
       className="btn-outline text-sm py-2 px-4 disabled:opacity-50 border-red-300 text-red-600 hover:bg-red-50 flex items-center gap-2">
-      {isPending ? <><BtnSpinner white={false} />A cancelar…</> : 'Cancelar'}
+      {isPending ? <><BtnSpinner white={false} />A cancelar…</> : '✗ Cancelar'}
     </button>
   )
 }
