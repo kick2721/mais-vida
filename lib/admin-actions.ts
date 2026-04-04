@@ -21,14 +21,15 @@ export async function confirmSale(saleId: string, adminId: string) {
 
   if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
 
-  // Buscar dados da venda antes de confirmar
-  const { data: saleData } = await supabaseAdmin
+  // Buscar dados completos da venda
+  const { data: sale } = await supabaseAdmin
     .from('sales')
-    .select('id, amount, currency, customer_name, customer_email, customer_phone, national_id')
+    .select('id, amount, currency, status, customer_name, customer_email, referral_code')
     .eq('id', saleId)
     .single()
 
-  if (!saleData) return { error: 'Venda não encontrada.' }
+  if (!sale) return { error: 'Venda não encontrada.' }
+  if (sale.status === 'confirmed') return { error: 'Venda já confirmada.' }
 
   // Confirmar a venda
   const { error } = await supabaseAdmin
@@ -42,8 +43,7 @@ export async function confirmSale(saleId: string, adminId: string) {
 
   if (error) return { error: 'Erro ao confirmar venda: ' + error.message }
 
-  // Criar cartão pendente automaticamente
-  // Verificar se já existe cartão para esta venda (evitar duplicados)
+  // ── Criar cartão pendente (evitar duplicados) ──
   const { data: existingCard } = await supabaseAdmin
     .from('member_cards')
     .select('id')
@@ -51,30 +51,65 @@ export async function confirmSale(saleId: string, adminId: string) {
     .maybeSingle()
 
   if (!existingCard) {
-    // Gerar número de cartão único: MV-YYYYMMDD-XXXX
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
     const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase()
     const cardNumber = `MV-${dateStr}-${randomSuffix}`
 
     await supabaseAdmin
       .from('member_cards')
-      .insert({
-        sale_id: saleId,
-        card_number: cardNumber,
-        status: 'pending',
-      })
+      .insert({ sale_id: saleId, card_number: cardNumber, status: 'pending' })
   }
 
-  // Email de confirmação ao cliente (via customer_email directo)
+  // ── Criar comissão para o afiliado (se houver referral_code) ──
+  if (sale.referral_code) {
+    const { data: affiliate } = await supabaseAdmin
+      .from('affiliates')
+      .select('id, total_sales, total_earned, balance')
+      .eq('referral_code', sale.referral_code)
+      .maybeSingle()
+
+    if (affiliate) {
+      // Verificar se já existe comissão para esta venda (evitar duplicados)
+      const { data: existingCommission } = await supabaseAdmin
+        .from('commissions')
+        .select('id')
+        .eq('sale_id', saleId)
+        .maybeSingle()
+
+      if (!existingCommission) {
+        await supabaseAdmin
+          .from('commissions')
+          .insert({
+            affiliate_id: affiliate.id,
+            sale_id: saleId,
+            amount: COMMISSION.amount,
+            currency: COMMISSION.currency,
+            status: 'pending',
+          })
+
+        // Actualizar contadores do afiliado
+        await supabaseAdmin
+          .from('affiliates')
+          .update({
+            total_sales:  (affiliate.total_sales  || 0) + 1,
+            total_earned: (affiliate.total_earned || 0) + COMMISSION.amount,
+            balance:      (affiliate.balance      || 0) + COMMISSION.amount,
+          })
+          .eq('id', affiliate.id)
+      }
+    }
+  }
+
+  // ── Email ao cliente ──
   try {
-    if (saleData.customer_email) {
+    if (sale.customer_email) {
       await sendEmail({
-        to: saleData.customer_email,
+        to: sale.customer_email,
         template: 'purchase_confirmed',
         data: {
-          customerName: saleData.customer_name || 'Cliente',
-          amount: saleData.amount,
-          currency: saleData.currency,
+          customerName: sale.customer_name || 'Cliente',
+          amount: sale.amount,
+          currency: sale.currency,
         },
       })
     }
@@ -88,15 +123,104 @@ export async function confirmSale(saleId: string, adminId: string) {
 
 // ─── CANCELAR VENDA ──────────────────────────────────────────────────────────
 export async function cancelSale(saleId: string, reason?: string) {
-  const supabase = await createServerSupabaseClient()
+  const supabaseAdmin = await createServerSupabaseAdminClient()
 
-  const { error } = await supabase
+  // Buscar dados da venda antes de cancelar
+  const { data: sale } = await supabaseAdmin
+    .from('sales')
+    .select('id, status, referral_code')
+    .eq('id', saleId)
+    .single()
+
+  if (!sale) return { error: 'Venda não encontrada.' }
+  if (sale.status === 'cancelled') return { error: 'Venda já cancelada.' }
+
+  const wasConfirmed = sale.status === 'confirmed'
+
+  const { error } = await supabaseAdmin
     .from('sales')
     .update({ status: 'cancelled', notes: reason || null })
     .eq('id', saleId)
-    .not('status', 'in', '("cancelled","refunded")')
 
   if (error) return { error: 'Erro ao cancelar venda: ' + error.message }
+
+  // ── Se estava confirmada: reverter comissão e cartão ──
+  if (wasConfirmed && sale.referral_code) {
+    // Buscar comissão pendente/aprovada desta venda
+    const { data: commission } = await supabaseAdmin
+      .from('commissions')
+      .select('id, affiliate_id, amount, status')
+      .eq('sale_id', saleId)
+      .maybeSingle()
+
+    if (commission && commission.status !== 'paid') {
+      // Cancelar comissão
+      await supabaseAdmin
+        .from('commissions')
+        .update({ status: 'cancelled' })
+        .eq('id', commission.id)
+
+      // Reverter contadores do afiliado
+      const { data: affiliate } = await supabaseAdmin
+        .from('affiliates')
+        .select('total_sales, total_earned, balance')
+        .eq('id', commission.affiliate_id)
+        .single()
+
+      if (affiliate) {
+        await supabaseAdmin
+          .from('affiliates')
+          .update({
+            total_sales:  Math.max(0, (affiliate.total_sales  || 0) - 1),
+            total_earned: Math.max(0, (affiliate.total_earned || 0) - commission.amount),
+            balance:      Math.max(0, (affiliate.balance      || 0) - commission.amount),
+          })
+          .eq('id', commission.affiliate_id)
+      }
+    }
+  }
+
+  // ── Cancelar cartão pendente se existir ──
+  if (wasConfirmed) {
+    await supabaseAdmin
+      .from('member_cards')
+      .update({ status: 'cancelled' })
+      .eq('sale_id', saleId)
+      .eq('status', 'pending')
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// ─── REATIVAR VENDA (desfazer cancelamento) ───────────────────────────────────
+export async function reactivateSale(saleId: string, adminId: string) {
+  const supabase = await createServerSupabaseClient()
+  const supabaseAdmin = await createServerSupabaseAdminClient()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', adminId)
+    .single()
+
+  if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
+
+  const { data: sale } = await supabaseAdmin
+    .from('sales')
+    .select('status')
+    .eq('id', saleId)
+    .single()
+
+  if (!sale) return { error: 'Venda não encontrada.' }
+  if (sale.status !== 'cancelled') return { error: 'Só é possível reativar vendas canceladas.' }
+
+  const { error } = await supabaseAdmin
+    .from('sales')
+    .update({ status: 'pending_review', notes: null, confirmed_at: null, confirmed_by: null })
+    .eq('id', saleId)
+
+  if (error) return { error: 'Erro ao reativar venda: ' + error.message }
 
   revalidatePath('/admin/dashboard')
   return { success: true }
