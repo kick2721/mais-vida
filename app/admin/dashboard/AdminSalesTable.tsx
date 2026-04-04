@@ -186,13 +186,11 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
                 <div className="text-xs text-gray-500 mb-3 p-2 bg-gray-50 rounded-lg">📝 {sale.notes}</div>
               )}
 
-              {(canConfirm || canCancel) && (
-                <div className="flex gap-2 pt-3 border-t" style={{ borderColor: '#e5e7eb' }}>
-                  {canConfirm && <ConfirmSaleButton saleId={sale.id} adminId={adminId} hasProof={!!sale.payment_proof_url} />}
-                  {canCancel  && <CancelSaleButton saleId={sale.id} />}
-                  {sale.status === 'cancelled' && <ReactivateSaleButton saleId={sale.id} adminId={adminId} />}
-                </div>
-              )}
+              <div className="flex gap-2 pt-3 border-t" style={{ borderColor: '#e5e7eb' }}>
+                {canConfirm && <ConfirmSaleButton saleId={sale.id} adminId={adminId} hasProof={!!sale.payment_proof_url} />}
+                {canCancel  && <CancelSaleButton saleId={sale.id} />}
+                {sale.status === 'cancelled' && <ReactivateSaleButton saleId={sale.id} adminId={adminId} />}
+              </div>
             </div>
           )
         })}
