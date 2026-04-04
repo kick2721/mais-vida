@@ -78,36 +78,22 @@ export default async function AdminDashboardPage({
     .limit(200)
 
   if (salesError) {
-    console.error('[Admin] Erro ao carregar vendas COMPLETO:', JSON.stringify(salesError))
-    // Mostrar el error en pantalla para diagnóstico
-    return (
-      <div style={{ padding: 40, fontFamily: 'monospace', background: '#fff1f2', minHeight: '100vh' }}>
-        <h1 style={{ color: '#b91c1c', fontSize: 24, marginBottom: 16 }}>❌ Error al cargar ventas del admin</h1>
-        <p style={{ color: '#374151', marginBottom: 8 }}>Este mensaje es temporal para diagnóstico. El error exacto es:</p>
-        <pre style={{ background: '#fee2e2', padding: 20, borderRadius: 8, overflow: 'auto', fontSize: 13, color: '#7f1d1d' }}>
-          {JSON.stringify(salesError, null, 2)}
-        </pre>
-        <p style={{ marginTop: 16, color: '#6b7280', fontSize: 13 }}>
-          Mensaje: {(salesError as any)?.message || 'sin mensaje'}<br/>
-          Código: {(salesError as any)?.code || 'sin código'}<br/>
-          Hint: {(salesError as any)?.hint || 'sin hint'}<br/>
-          Details: {(salesError as any)?.details || 'sin detalles'}
-        </p>
-      </div>
-    )
+    console.error('[Admin] Erro ao carregar vendas:', salesError)
   }
 
   // Gerar signed URLs para todos os comprovativos via receipt_path
   const sales = await Promise.all((salesRaw || []).map(async (sale: any) => {
     // Sempre regerar a URL a partir do receipt_path (URL pré-guardada pode expirar)
     if (sale.receipt_path) {
-      const cleanPath = sale.receipt_path.startsWith('receipts/')
-        ? sale.receipt_path.slice('receipts/'.length)
-        : sale.receipt_path
+      // O ficheiro no storage tem path 'receipts/filename.jpeg' dentro do bucket 'receipts'
+      // Por isso o path para createSignedUrl deve INCLUIR o prefixo 'receipts/'
+      const storagePath = sale.receipt_path.startsWith('receipts/')
+        ? sale.receipt_path              // já tem o prefixo correcto
+        : `receipts/${sale.receipt_path}` // adiciona o prefixo
 
       const { data: signed, error: signError } = await supabaseAdmin.storage
         .from('receipts')
-        .createSignedUrl(cleanPath, 60 * 60 * 6) // 6 horas
+        .createSignedUrl(storagePath, 60 * 60 * 6) // 6 horas
 
       if (signError) {
         console.error('[Admin] Erro signed URL:', signError, '| path:', sale.receipt_path)
