@@ -170,7 +170,7 @@ export default async function AdminDashboardPage({
     { label: 'Vendas Totais',     value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,     color: 'var(--color-primary)', icon: '💳' },
     { label: 'Confirmadas',       value: confirmedSales      || 0, sub: 'receita validada',                   color: '#166534',              icon: '✅' },
     { label: 'Afiliados Activos', value: totalAffiliates     || 0, sub: 'na plataforma',                      color: '#1e40af',              icon: '👥' },
-    { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                        color: '#d97706',              icon: '🪪' },
+    { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                        color: '#d97706',              icon: 'card' },
     { label: 'Candidaturas',      value: pendingApplications || 0, sub: 'pendentes de análise',               color: '#7c3aed',              icon: '📋' },
   ]
 
@@ -209,7 +209,15 @@ export default async function AdminDashboardPage({
             <div key={kpi.label} className="card">
               <div className="flex items-start justify-between mb-2">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{kpi.label}</p>
-                <span className="text-xl">{kpi.icon}</span>
+                {kpi.icon === 'card' ? (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <line x1="2" y1="10" x2="22" y2="10"/>
+                    <line x1="6" y1="15" x2="10" y2="15"/>
+                  </svg>
+                ) : (
+                  <span className="text-xl">{kpi.icon}</span>
+                )}
               </div>
               <p className="font-display text-3xl font-bold" style={{ color: kpi.color }}>
                 {kpi.value}
@@ -222,24 +230,32 @@ export default async function AdminDashboardPage({
         {/* Tabs */}
         <div className="flex gap-1 mb-6 bg-white rounded-2xl p-1 border overflow-x-auto" style={{ borderColor: 'var(--color-border)' }}>
           {[
-            { key: 'sales',        label: '💳 Vendas' },
-            { key: 'cards',        label: '🪪 Cartões' },
-            { key: 'affiliates',   label: '👥 Afiliados' },
-            { key: 'commissions',  label: '💰 Comissões' },
-            { key: 'applications', label: '📋 Candidaturas' },
+            { key: 'sales',        label: 'Vendas',       emoji: '💳' },
+            { key: 'cards',        label: 'Cartões',      emoji: null },
+            { key: 'affiliates',   label: 'Afiliados',    emoji: '👥' },
+            { key: 'commissions',  label: 'Comissões',    emoji: '💰' },
+            { key: 'applications', label: 'Candidaturas', emoji: '📋' },
           ].map(tab => (
             <a
               key={tab.key}
               href={`/admin/dashboard?tab=${tab.key}`}
-              className="flex-shrink-0 text-center py-2 px-3 rounded-xl text-sm font-semibold transition-all"
+              className="flex-shrink-0 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-sm font-semibold transition-all"
               style={
                 activeTab === tab.key
                   ? { background: 'var(--color-primary)', color: 'white' }
                   : { color: '#6b7280' }
               }
             >
+              {tab.emoji ? (
+                <span>{tab.emoji}</span>
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2"/>
+                  <line x1="2" y1="10" x2="22" y2="10"/>
+                  <line x1="6" y1="15" x2="10" y2="15"/>
+                </svg>
+              )}
               <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
             </a>
           ))}
         </div>
