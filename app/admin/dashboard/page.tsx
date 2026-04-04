@@ -64,8 +64,6 @@ export default async function AdminDashboardPage({
     .eq('status', 'pending')
 
   // ─── SALES DATA ───────────────────────────────────────────────────────────
-  // Query simplificada: sem JOIN a customers (compras anónimas não têm customer_id)
-  // Afiliado resolvido por referral_code directamente
   const { data: salesRaw, error: salesError } = await supabaseAdmin
     .from('sales')
     .select(`
@@ -81,28 +79,31 @@ export default async function AdminDashboardPage({
     console.error('[Admin] Erro ao carregar vendas:', salesError)
   }
 
-  // Gerar signed URLs para todos os comprovativos via receipt_path
+  // ─── SIGNED URLs PARA COMPROVATIVOS ───────────────────────────────────────
+  // FIX: el objeto en storage tiene name = 'receipts/filename.jpeg'
+  // dentro del bucket 'receipts'. El path para createSignedUrl
+  // debe incluir la subcarpeta 'receipts/' como prefijo.
   const sales = await Promise.all((salesRaw || []).map(async (sale: any) => {
-    // Sempre regerar a URL a partir do receipt_path (URL pré-guardada pode expirar)
     if (sale.receipt_path) {
-      const cleanPath = sale.receipt_path.startsWith('receipts/')
-        ? sale.receipt_path.slice('receipts/'.length)
-        : sale.receipt_path
+      // El archivo se guardó como 'receipts/filename.jpeg' dentro del bucket 'receipts'
+      const storagePath = sale.receipt_path.startsWith('receipts/')
+        ? sale.receipt_path             // ya tiene el prefijo: 'receipts/filename.jpeg'
+        : `receipts/${sale.receipt_path}` // añadir prefijo: 'receipts/' + 'filename.jpeg'
 
       const { data: signed, error: signError } = await supabaseAdmin.storage
         .from('receipts')
-        .createSignedUrl(cleanPath, 60 * 60 * 6) // 6 horas
+        .createSignedUrl(storagePath, 60 * 60 * 6) // válida 6 horas
 
       if (signError) {
-        console.error('[Admin] Erro signed URL:', signError, '| path:', sale.receipt_path)
+        console.error('[Admin] Erro signed URL:', signError, '| storagePath:', storagePath)
       }
 
-      return { ...sale, payment_proof_url: signed?.signedUrl || sale.payment_proof_url || null }
+      return { ...sale, payment_proof_url: signed?.signedUrl || null }
     }
     return sale
   }))
 
-  // Enriquecer vendas com dados do afiliado (via referral_code)
+  // Enriquecer ventas con datos del afiliado (via referral_code)
   const salesWithAffiliate = await Promise.all(sales.map(async (sale: any) => {
     if (!sale.referral_code) return sale
     const { data: aff } = await supabaseAdmin
@@ -137,7 +138,6 @@ export default async function AdminDashboardPage({
     .order('created_at', { ascending: false })
 
   // ─── CARDS DATA ───────────────────────────────────────────────────────────
-  // Cartões ligados a vendas — buscar info do cliente via venda
   const { data: cardsRaw } = await supabaseAdmin
     .from('member_cards')
     .select(`
@@ -147,7 +147,6 @@ export default async function AdminDashboardPage({
     .order('created_at', { ascending: false })
     .limit(50)
 
-  // Enriquecer cartões com dados da venda associada
   const cards = await Promise.all((cardsRaw || []).map(async (card: any) => {
     if (!card.sale_id) return card
     const { data: sale } = await supabaseAdmin
@@ -165,11 +164,11 @@ export default async function AdminDashboardPage({
     .order('created_at', { ascending: false })
 
   const kpis = [
-    { label: 'Vendas Totais',     value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,     color: 'var(--color-primary)', icon: '💳' },
-    { label: 'Confirmadas',       value: confirmedSales      || 0, sub: 'receita validada',                   color: '#166534',              icon: '✅' },
-    { label: 'Afiliados Activos', value: totalAffiliates     || 0, sub: 'na plataforma',                      color: '#1e40af',              icon: '👥' },
-    { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                        color: '#d97706',              icon: '🪪' },
-    { label: 'Candidaturas',      value: pendingApplications || 0, sub: 'pendentes de análise',               color: '#7c3aed',              icon: '📋' },
+    { label: 'Vendas Totais',     value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,   color: 'var(--color-primary)', icon: '💳' },
+    { label: 'Confirmadas',       value: confirmedSales      || 0, sub: 'receita validada',                 color: '#166534',              icon: '✅' },
+    { label: 'Afiliados Activos', value: totalAffiliates     || 0, sub: 'na plataforma',                    color: '#1e40af',              icon: '👥' },
+    { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                      color: '#d97706',              icon: '🪪' },
+    { label: 'Candidaturas',      value: pendingApplications || 0, sub: 'pendentes de análise',             color: '#7c3aed',              icon: '📋' },
   ]
 
   return (
@@ -242,7 +241,7 @@ export default async function AdminDashboardPage({
           ))}
         </div>
 
-        {/* Tabs content */}
+        {/* Contenido tabs */}
         {activeTab === 'sales' && (
           <AdminSalesTable sales={salesWithAffiliate} adminId={user.id} />
         )}
