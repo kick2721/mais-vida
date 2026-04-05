@@ -620,3 +620,61 @@ export async function rejectApplication(applicationId: string, reason?: string) 
   revalidatePath('/admin/dashboard')
   return { success: true }
 }
+
+// ─── PAGAR PEDIDO DE RETIRO ──────────────────────────────────────────────────
+export async function payWithdrawal(withdrawalId: string, adminId: string) {
+  const supabase = await createServerSupabaseClient()
+  const supabaseAdmin = await createServerSupabaseAdminClient()
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', adminId).single()
+  if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
+
+  // Buscar dados do retiro
+  const { data: wr } = await supabaseAdmin
+    .from('withdrawal_requests')
+    .select('id, amount, affiliate_id, status')
+    .eq('id', withdrawalId)
+    .single()
+
+  if (!wr || wr.status !== 'pending') return { error: 'Pedido não encontrado ou já processado.' }
+
+  // Marcar como pago
+  const { error } = await supabaseAdmin
+    .from('withdrawal_requests')
+    .update({ status: 'paid', reviewed_at: new Date().toISOString(), reviewed_by: adminId })
+    .eq('id', withdrawalId)
+
+  if (error) return { error: 'Erro ao processar: ' + error.message }
+
+  // Descontar do balance do afiliado
+  const { data: aff } = await supabaseAdmin.from('affiliates').select('balance, total_paid').eq('id', wr.affiliate_id).single()
+  if (aff) {
+    await supabaseAdmin.from('affiliates').update({
+      balance:    Math.max(0, (aff.balance || 0) - wr.amount),
+      total_paid: (aff.total_paid || 0) + wr.amount,
+    }).eq('id', wr.affiliate_id)
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// ─── REJEITAR PEDIDO DE RETIRO ───────────────────────────────────────────────
+export async function rejectWithdrawal(withdrawalId: string, adminId: string) {
+  const supabase = await createServerSupabaseClient()
+  const supabaseAdmin = await createServerSupabaseAdminClient()
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', adminId).single()
+  if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
+
+  const { error } = await supabaseAdmin
+    .from('withdrawal_requests')
+    .update({ status: 'rejected', reviewed_at: new Date().toISOString(), reviewed_by: adminId })
+    .eq('id', withdrawalId)
+    .eq('status', 'pending')
+
+  if (error) return { error: 'Erro ao rejeitar: ' + error.message }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
