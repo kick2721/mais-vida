@@ -247,3 +247,49 @@ export async function resolveLoginIdentifier(identifier: string): Promise<{ emai
     return { error: 'Erro ao verificar os dados. Tente novamente.' }
   }
 }
+
+// ─── SOLICITAR RETIRO ────────────────────────────────────────────────────────
+export async function requestWithdrawal(iban: string, accountHolder: string) {
+  'use server'
+  const supabase = await createServerSupabaseClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Não autenticado.' }
+
+  const { data: affiliate } = await supabase
+    .from('affiliates')
+    .select('id, balance, is_active')
+    .eq('profile_id', user.id)
+    .single()
+
+  if (!affiliate || !affiliate.is_active) return { error: 'Conta de afiliado não encontrada ou inactiva.' }
+
+  const { COMMISSION } = await import('./constants')
+  if ((affiliate.balance || 0) < COMMISSION.withdrawalMinimum) {
+    return { error: `Saldo insuficiente. Mínimo para retiro: ${COMMISSION.withdrawalMinimum.toLocaleString()} AOA.` }
+  }
+
+  // Verificar se já tem pedido pendente
+  const { data: existing } = await supabase
+    .from('withdrawal_requests')
+    .select('id')
+    .eq('affiliate_id', affiliate.id)
+    .eq('status', 'pending')
+    .maybeSingle()
+
+  if (existing) return { error: 'Já tens um pedido de retiro pendente. Aguarda a aprovação.' }
+
+  const { error } = await supabase
+    .from('withdrawal_requests')
+    .insert({
+      affiliate_id: affiliate.id,
+      amount: affiliate.balance,
+      currency: 'AOA',
+      iban: iban.trim(),
+      account_holder: accountHolder.trim(),
+    })
+
+  if (error) return { error: 'Erro ao submeter pedido: ' + error.message }
+
+  return { success: true }
+}
