@@ -86,7 +86,7 @@ export async function confirmSale(saleId: string, adminId: string) {
             sale_id: saleId,
             amount: COMMISSION.amount,
             currency: COMMISSION.currency,
-            status: 'pending',
+            status: 'approved', // ← auto-aprovada ao confirmar venda, só falta marcar como paga
           })
 
         // Actualizar contadores do afiliado
