@@ -70,7 +70,16 @@ export default async function AdminDashboardPage({
     .select('id', { count: 'exact', head: true })
     .eq('status', 'pending')
 
-  // ─── SALES DATA ───────────────────────────────────────────────────────────
+  // ─── COMMISSIONS KPI ──────────────────────────────────────────────────────
+  const { count: pendingCommissions } = await supabaseAdmin
+    .from('commissions')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'approved')
+
+  const { count: paidCommissions } = await supabaseAdmin
+    .from('commissions')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'paid')
   // Query simplificada: sem JOIN a customers (compras anónimas não têm customer_id)
   // Afiliado resolvido por referral_code directamente
   const { data: salesRaw, error: salesError } = await supabaseAdmin
@@ -142,7 +151,7 @@ export default async function AdminDashboardPage({
         profiles ( full_name )
       )
     `)
-    .in('status', ['pending', 'approved'])
+    .in('status', ['approved', 'paid'])
     .order('created_at', { ascending: false })
 
   // ─── CARDS DATA ───────────────────────────────────────────────────────────
@@ -174,11 +183,11 @@ export default async function AdminDashboardPage({
     .order('created_at', { ascending: false })
 
   const kpis = [
-    { label: 'Vendas Totais',     value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,     color: 'var(--color-primary)', icon: '💳' },
-    { label: 'Confirmadas',       value: confirmedSales      || 0, sub: 'receita validada',                   color: '#166534',              icon: '✅' },
-    { label: 'Afiliados Activos', value: totalAffiliates     || 0, sub: 'na plataforma',                      color: '#1e40af',              icon: '👥' },
-    { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                        color: '#d97706',              icon: 'card' },
-    { label: 'Candidaturas',      value: pendingApplications || 0, sub: 'pendentes de análise',               color: '#7c3aed',              icon: '📋' },
+    { label: 'Vendas Totais',     value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,                              color: 'var(--color-primary)', icon: 'dollar' },
+    { label: 'Afiliados Activos', value: totalAffiliates     || 0, sub: 'na plataforma',                                               color: '#1e40af',              icon: '👥' },
+    { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                                                 color: '#d97706',              icon: 'card' },
+    { label: 'Comissões',         value: pendingCommissions  || 0, sub: `${paidCommissions ?? 0} pagas`,                               color: '#7c3aed',              icon: '💰' },
+    { label: 'Candidaturas',      value: pendingApplications || 0, sub: 'pendentes de análise',                                        color: '#dc2626',              icon: '📋' },
   ]
 
   return (
@@ -221,6 +230,11 @@ export default async function AdminDashboardPage({
                     <rect x="2" y="5" width="20" height="14" rx="2"/>
                     <line x1="2" y1="10" x2="22" y2="10"/>
                     <line x1="6" y1="15" x2="10" y2="15"/>
+                  </svg>
+                ) : kpi.icon === 'dollar' ? (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                   </svg>
                 ) : (
                   <span className="text-xl">{kpi.icon}</span>
@@ -373,44 +387,105 @@ function CardRow({ card, adminId }: { card: any; adminId: string }) {
 
 // ─── COMMISSIONS SECTION ──────────────────────────────────────────────────────
 function AdminCommissionsSection({ commissions, adminId }: { commissions: any[]; adminId: string }) {
+  // Agrupar por afiliado
+  const grouped: Record<string, { name: string; code: string; items: any[] }> = {}
+  for (const c of commissions) {
+    const aff = c.affiliates as any
+    const key = aff?.referral_code || 'unknown'
+    if (!grouped[key]) {
+      grouped[key] = {
+        name: aff?.profiles?.full_name || 'Afiliado',
+        code: aff?.referral_code || '—',
+        items: [],
+      }
+    }
+    grouped[key].items.push(c)
+  }
+
+  const groups = Object.values(grouped)
+  const totalPending = commissions.filter(c => c.status === 'approved').length
+  const totalPaid    = commissions.filter(c => c.status === 'paid').length
+
   return (
     <div>
-      <h2 className="font-display text-lg font-bold text-gray-900 mb-4">
-        Comissões a Pagar ({commissions.length})
-      </h2>
-      {commissions.length > 0 ? (
-        <div className="space-y-3">
-          {commissions.map(commission => {
-            const affiliateProfile = (commission.affiliates as any)?.profiles
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-display text-lg font-bold text-gray-900">Comissões</h2>
+        <div className="flex gap-3">
+          <span className="text-sm font-medium px-3 py-1 rounded-full bg-purple-100 text-purple-700">
+            {totalPending} por pagar
+          </span>
+          <span className="text-sm font-medium px-3 py-1 rounded-full bg-green-100 text-green-700">
+            {totalPaid} pagas
+          </span>
+        </div>
+      </div>
+
+      {groups.length > 0 ? (
+        <div className="space-y-4">
+          {groups.map(group => {
+            const pendingItems = group.items.filter(c => c.status === 'approved')
+            const paidItems    = group.items.filter(c => c.status === 'paid')
+            const totalPendingAmt = pendingItems.reduce((s: number, c: any) => s + c.amount, 0)
+            const totalPaidAmt    = paidItems.reduce((s: number, c: any) => s + c.amount, 0)
+            const currency = group.items[0]?.currency || 'AOA'
+
             return (
-              <div key={commission.id} className="card flex items-center justify-between gap-4 flex-wrap">
-                <div>
-                  <p className="font-semibold text-gray-800 text-sm">
-                    {affiliateProfile?.full_name || 'Afiliado'}
-                  </p>
-                  <p className="text-xs text-gray-500 font-mono">
-                    {(commission.affiliates as any)?.referral_code}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {new Date(commission.created_at).toLocaleDateString('pt-AO')}
-                  </p>
+              <div key={group.code} className="card">
+                {/* Cabeçalho do afiliado */}
+                <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+                  <div>
+                    <p className="font-semibold text-gray-800">{group.name}</p>
+                    <p className="text-xs text-gray-500 font-mono">{group.code}</p>
+                  </div>
+                  <div className="flex gap-3 text-right">
+                    {totalPendingAmt > 0 && (
+                      <div>
+                        <p className="text-xs text-gray-400">Por pagar</p>
+                        <p className="font-bold text-purple-700">{totalPendingAmt.toLocaleString()} {currency}</p>
+                      </div>
+                    )}
+                    {totalPaidAmt > 0 && (
+                      <div>
+                        <p className="text-xs text-gray-400">Já pago</p>
+                        <p className="font-bold text-green-700">{totalPaidAmt.toLocaleString()} {currency}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-gray-800">
-                    {commission.amount.toLocaleString()} {commission.currency}
-                  </span>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                    commission.status === 'approved' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {commission.status === 'approved' ? '✓ Aprovada' : '⏳ Pendente'}
-                  </span>
-                  <AdminCommissionsActions
-                    commissionId={commission.id}
-                    status={commission.status}
-                    amount={commission.amount}
-                    currency={commission.currency}
-                    affiliateName={affiliateProfile?.full_name || 'Afiliado'}
-                  />
+
+                {/* Lista de comissões */}
+                <div className="space-y-2">
+                  {group.items.map((c: any) => (
+                    <div key={c.id} className="flex items-center justify-between gap-3 py-2 border-t flex-wrap"
+                      style={{ borderColor: 'var(--color-border)' }}>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                          c.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+                        }`}>
+                          {c.status === 'paid' ? '💰 Paga' : '⏳ Por pagar'}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {c.status === 'paid'
+                            ? `Paga em ${new Date(c.paid_at).toLocaleDateString('pt-AO')}`
+                            : `Gerada em ${new Date(c.created_at).toLocaleDateString('pt-AO')}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold text-gray-800 text-sm">
+                          {c.amount.toLocaleString()} {c.currency}
+                        </span>
+                        {c.status !== 'paid' && (
+                          <AdminCommissionsActions
+                            commissionId={c.id}
+                            status={c.status}
+                            amount={c.amount}
+                            currency={c.currency}
+                            affiliateName={group.name}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )
@@ -419,7 +494,7 @@ function AdminCommissionsSection({ commissions, adminId }: { commissions: any[];
       ) : (
         <div className="card text-center py-10">
           <p className="text-4xl mb-3">✅</p>
-          <p className="text-gray-500 text-sm">Sem comissões pendentes de pagamento.</p>
+          <p className="text-gray-500 text-sm">Sem comissões registadas.</p>
         </div>
       )}
     </div>
