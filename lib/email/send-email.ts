@@ -313,8 +313,8 @@ export async function sendEmail({ to, template, data }: SendEmailOptions): Promi
       },
       body: JSON.stringify({
         from: `${BUSINESS.name} <onboarding@resend.dev>`,
-        to: [to],
-        subject,
+        to: ['kick02721@gmail.com'], // TEST: redirigir ao email verificado até ter domínio
+        subject: `[TESTE → ${to}] ${subject}`, // mostra o destinatário real no assunto
         html,
       }),
     })
