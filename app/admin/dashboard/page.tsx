@@ -457,6 +457,9 @@ function AdminCommissionsSection({ commissions, withdrawals, adminId }: { commis
                     <div className="text-right">
                       <p className="font-bold text-gray-800">{w.amount.toLocaleString()} {w.currency}</p>
                       <p className="text-xs text-gray-500 font-mono mt-1">{w.iban}</p>
+                      {w.account_holder && (
+                        <p className="text-xs text-gray-500 mt-0.5">👤 {w.account_holder}</p>
+                      )}
                     </div>
                   </div>
                   <WithdrawalActions
@@ -465,6 +468,7 @@ function AdminCommissionsSection({ commissions, withdrawals, adminId }: { commis
                     amount={w.amount}
                     currency={w.currency}
                     iban={w.iban}
+                    accountHolder={w.account_holder}
                     affiliateName={name}
                     affiliatePhone={phone}
                   />
