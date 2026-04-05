@@ -20,10 +20,11 @@ function BtnSpinner() {
 }
 
 export default function WithdrawalButton({ balance, hasPending }: Props) {
-  const [showModal, setShowModal] = useState(false)
-  const [iban, setIban]           = useState('')
-  const [error, setError]         = useState('')
-  const [success, setSuccess]     = useState(false)
+  const [showModal, setShowModal]   = useState(false)
+  const [iban, setIban]             = useState('')
+  const [accountHolder, setAccountHolder] = useState('')
+  const [error, setError]           = useState('')
+  const [success, setSuccess]       = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -31,10 +32,11 @@ export default function WithdrawalButton({ balance, hasPending }: Props) {
   const missing = COMMISSION.withdrawalMinimum - balance
 
   const handleSubmit = () => {
-    if (!iban.trim()) { setError('Introduza o seu IBAN.'); return }
+    if (!iban.trim())           { setError('Introduza o seu IBAN.'); return }
+    if (!accountHolder.trim())  { setError('Introduza o nome do titular da conta.'); return }
     setError('')
     startTransition(async () => {
-      const result = await requestWithdrawal(iban)
+      const result = await requestWithdrawal(iban, accountHolder)
       if (result.success) {
         setSuccess(true)
         router.refresh()
@@ -42,6 +44,14 @@ export default function WithdrawalButton({ balance, hasPending }: Props) {
         setError(result.error || 'Erro ao submeter pedido.')
       }
     })
+  }
+
+  const handleClose = () => {
+    setShowModal(false)
+    setError('')
+    setSuccess(false)
+    setIban('')
+    setAccountHolder('')
   }
 
   // Estado: já tem pedido pendente
@@ -110,30 +120,42 @@ export default function WithdrawalButton({ balance, hasPending }: Props) {
                 <p className="text-sm text-gray-500 mb-4">
                   A equipa irá processar o seu retiro e enviar o comprovativo via WhatsApp.
                 </p>
-                <button onClick={() => { setShowModal(false); setSuccess(false) }}
-                  className="btn-primary text-sm py-2 px-6">
+                <button onClick={handleClose} className="btn-primary text-sm py-2 px-6">
                   Fechar
                 </button>
               </div>
             ) : (
               <>
                 <h3 className="font-display text-lg font-bold text-gray-900 mb-1">Solicitar Retiro</h3>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-gray-500 mb-5">
                   Valor a receber: <strong>{balance.toLocaleString()} AOA</strong>
                 </p>
 
+                {/* IBAN */}
                 <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
-                  IBAN da sua conta bancária
+                  IBAN
                 </label>
                 <input
                   type="text"
                   value={iban}
                   onChange={e => setIban(e.target.value)}
                   placeholder="Ex: 0060 0140 0100 0000 0000 0"
-                  className="input-field w-full mb-1 font-mono text-sm"
+                  className="input-field w-full mb-4 font-mono text-sm"
                 />
-                <p className="text-xs text-gray-400 mb-4">
-                  Introduza o IBAN completo da conta onde deseja receber o pagamento.
+
+                {/* Nome do titular */}
+                <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
+                  Nome do titular da conta
+                </label>
+                <input
+                  type="text"
+                  value={accountHolder}
+                  onChange={e => setAccountHolder(e.target.value)}
+                  placeholder="Ex: João Manuel da Silva"
+                  className="input-field w-full mb-1 text-sm"
+                />
+                <p className="text-xs text-gray-400 mb-5">
+                  Tal como aparece associado ao IBAN no banco.
                 </p>
 
                 {error && (
@@ -143,8 +165,7 @@ export default function WithdrawalButton({ balance, hasPending }: Props) {
                 )}
 
                 <div className="flex gap-3">
-                  <button onClick={() => { setShowModal(false); setError('') }}
-                    className="flex-1 btn-outline text-sm py-2">
+                  <button onClick={handleClose} className="flex-1 btn-outline text-sm py-2">
                     Cancelar
                   </button>
                   <button onClick={handleSubmit} disabled={isPending}
