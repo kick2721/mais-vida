@@ -1,45 +1,57 @@
 'use server'
 
 // lib/receipt-cleanup.ts
-// Lógica de borrado de comprovativos del storage de Supabase
-// Se llama desde: confirmSale, cancelSale y el endpoint /api/cleanup-receipts
+// Borrado de comprovativos del storage
+// Estrategia: marcar para borrar en BD, borrar físicamente cuando el admin
+// abre el panel (lazy cleanup) — sin depender de crons externos
 
 import { createServerSupabaseAdminClient } from './supabase-server'
 
-// Marca el comprovativo para borrado en 60 minutos
+// Marca el comprovativo para borrado en 60 minutos desde ahora
 export async function scheduleReceiptDeletion(saleId: string) {
   const supabase = await createServerSupabaseAdminClient()
-  await supabase.rpc('mark_receipt_for_deletion', {
-    p_sale_id: saleId,
-    p_delay_minutes: 60,
-  })
+  const { error } = await supabase
+    .from('sales')
+    .update({
+      receipt_delete_after: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    })
+    .eq('id', saleId)
+    .is('receipt_delete_after', null) // no sobrescribir si ya está programado
+
+  if (error) {
+    console.error('[Cleanup] Error al programar borrado:', error.message)
+  }
 }
 
-// Borra físicamente del storage todos los comprovativos que ya cumplieron el tiempo
-export async function cleanupExpiredReceipts(): Promise<{
-  deleted: number
-  errors: number
-}> {
+// Borra físicamente del storage los comprovativos que ya cumplieron 1 hora
+// Se llama desde el panel admin al cargar — sin cron, sin servidor externo
+export async function cleanupExpiredReceipts(): Promise<{ deleted: number; errors: number }> {
   const supabase = await createServerSupabaseAdminClient()
 
-  // Obtener los comprovativos listos para borrar
-  const { data: receipts, error } = await supabase.rpc('get_receipts_to_delete')
+  // Buscar comprovativos listos para borrar
+  const { data: sales, error } = await supabase
+    .from('sales')
+    .select('id, receipt_path')
+    .not('receipt_delete_after', 'is', null)
+    .lte('receipt_delete_after', new Date().toISOString())
+    .not('receipt_path', 'is', null)
+    .is('receipt_deleted_at', null)
+    .limit(50) // procesar en lotes para no bloquear
 
-  if (error || !receipts || receipts.length === 0) {
+  if (error || !sales || sales.length === 0) {
     return { deleted: 0, errors: 0 }
   }
 
   let deleted = 0
   let errors = 0
 
-  for (const receipt of receipts) {
+  for (const sale of sales) {
     try {
-      const path = receipt.receipt_path as string
+      const path = sale.receipt_path as string
 
-      // Normalizar el path para el storage
-      // El bucket es 'receipts', el path dentro del bucket empieza con 'receipts/'
+      // El bucket es 'receipts', el path dentro empieza con 'receipts/'
       const storagePath = path.startsWith('receipts/')
-        ? path.slice('receipts/'.length) // quitar prefijo del bucket
+        ? path.slice('receipts/'.length)
         : path
 
       const { error: deleteError } = await supabase.storage
@@ -47,13 +59,19 @@ export async function cleanupExpiredReceipts(): Promise<{
         .remove([storagePath])
 
       if (deleteError) {
-        console.error(`[Cleanup] Error borrando ${path}:`, deleteError.message)
+        console.error(`[Cleanup] Error borrando ${storagePath}:`, deleteError.message)
         errors++
         continue
       }
 
-      // Marcar como borrado en BD
-      await supabase.rpc('mark_receipt_deleted', { p_sale_id: receipt.sale_id })
+      // Marcar como borrado en BD — limpiar el path
+      await supabase
+        .from('sales')
+        .update({
+          receipt_path: null,
+          receipt_deleted_at: new Date().toISOString(),
+        })
+        .eq('id', sale.id)
 
       console.log(`[Cleanup] ✓ Borrado: ${storagePath}`)
       deleted++
@@ -61,6 +79,10 @@ export async function cleanupExpiredReceipts(): Promise<{
       console.error(`[Cleanup] Error inesperado:`, err)
       errors++
     }
+  }
+
+  if (deleted > 0 || errors > 0) {
+    console.log(`[Cleanup] Resultado: ${deleted} borrados, ${errors} errores`)
   }
 
   return { deleted, errors }
