@@ -36,9 +36,9 @@ export default async function AffiliateDashboardPage() {
     .from('sales')
     .select(`
       id, amount, currency, status, created_at, confirmed_at,
-      customers ( id, profiles ( full_name, phone ) )
+      customer_name, customer_phone
     `)
-    .eq('affiliate_id', affiliate.id)
+    .eq('referral_code', affiliate.referral_code)
     .order('created_at', { ascending: false })
 
   const { data: commissions } = await supabase
@@ -160,14 +160,13 @@ export default async function AffiliateDashboardPage() {
               <div className="space-y-3">
                 {sales.map((sale) => {
                   const st = saleStatusMap[sale.status] || { label: sale.status, color: '#374151', bg: '#f3f4f6' }
-                  const customerProfile = (sale.customers as any)?.profiles
                   return (
                     <div key={sale.id} className="card flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-800 text-sm truncate">
-                          {customerProfile?.full_name || 'Cliente'}
+                          {sale.customer_name || 'Cliente'}
                         </p>
-                        <p className="text-xs text-gray-500">{customerProfile?.phone || '—'}</p>
+                        <p className="text-xs text-gray-500">{sale.customer_phone || '—'}</p>
                         <p className="text-xs text-gray-400 mt-1">
                           {new Date(sale.created_at).toLocaleDateString('pt-AO', {
                             day: '2-digit', month: 'short', year: 'numeric',
