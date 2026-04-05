@@ -63,6 +63,8 @@ function ComprarForm() {
     setError('')
 
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+    const MAX_SIZE_MB = 3
+    const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
 
     for (let i = 0; i < holders.length; i++) {
       if (!holders[i].full_name.trim()) {
@@ -76,6 +78,10 @@ function ComprarForm() {
       }
       if (!allowed.includes(holders[i].receipt!.type)) {
         setError(`Cartão ${i + 1}: formato inválido. Use JPG, PNG, WEBP ou PDF.`); return
+      }
+      if (holders[i].receipt!.size > MAX_SIZE_BYTES) {
+        const sizeMB = (holders[i].receipt!.size / 1024 / 1024).toFixed(1)
+        setError(`Cartão ${i + 1}: ficheiro demasiado grande (${sizeMB}MB). Máximo permitido: ${MAX_SIZE_MB}MB.`); return
       }
     }
     startTransition(async () => {
@@ -316,7 +322,7 @@ function ComprarForm() {
                       onChange={setHolder(i, 'receipt')}
                       className="input-field" disabled={isPending} />
                     <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                      JPG, PNG, WEBP ou PDF · Máx. 5MB
+                      JPG, PNG, WEBP ou PDF · Máx. 3MB
                     </p>
                   </div>
                 </div>
