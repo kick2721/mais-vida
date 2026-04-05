@@ -67,6 +67,7 @@ export async function confirmSale(saleId: string, adminId: string) {
       .from('affiliates')
       .select('id, total_sales, total_earned, balance')
       .eq('referral_code', sale.referral_code)
+      .eq('is_active', true)   // ← só gera comissão se o afiliado estiver activo
       .maybeSingle()
 
     if (affiliate) {
@@ -494,13 +495,43 @@ export async function approveApplication(applicationId: string) {
         }, { onConflict: 'profile_id' })
     }
   } else {
-    // Conta já existe — buscar o código de referido
+    // Conta já existe — garantir que perfil e afiliado estão correctos
+    // (pode ter ficado incompleto se foi rejeitado e re-aprovado)
+    const existingReferralCode = 'VIDA-' + existingUser.id.replace(/-/g, '').substring(0, 6).toUpperCase()
+
+    // Garantir que o perfil tem role affiliate e referral_code
+    await adminSupabase
+      .from('profiles')
+      .update({
+        role:          'affiliate',
+        phone:         app.phone,
+        national_id:   app.national_id,
+        referral_code: existingReferralCode,
+      })
+      .eq('id', existingUser.id)
+
+    // Garantir que existe fila em affiliates (criar se não existir)
     const { data: existingAffiliate } = await adminSupabase
       .from('affiliates')
       .select('referral_code')
       .eq('profile_id', existingUser.id)
-      .single()
-    referralCode = existingAffiliate?.referral_code || ''
+      .maybeSingle()
+
+    if (!existingAffiliate) {
+      await adminSupabase
+        .from('affiliates')
+        .insert({
+          profile_id:    existingUser.id,
+          referral_code: existingReferralCode,
+          is_active:     true,
+          total_sales:   0,
+          total_earned:  0,
+          balance:       0,
+        })
+      referralCode = existingReferralCode
+    } else {
+      referralCode = existingAffiliate.referral_code || existingReferralCode
+    }
   }
 
   // Marcar candidatura como aprovada e limpar password_temp
