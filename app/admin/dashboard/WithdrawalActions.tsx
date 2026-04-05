@@ -27,11 +27,12 @@ interface Props {
   amount: number
   currency: string
   iban: string
+  accountHolder?: string
   affiliateName: string
   affiliatePhone?: string
 }
 
-export default function WithdrawalActions({ withdrawalId, adminId, amount, currency, iban, affiliateName, affiliatePhone }: Props) {
+export default function WithdrawalActions({ withdrawalId, adminId, amount, currency, iban, accountHolder, affiliateName, affiliatePhone }: Props) {
   const [showModal, setShowModal] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
@@ -81,6 +82,9 @@ export default function WithdrawalActions({ withdrawalId, adminId, amount, curre
             <div className="bg-gray-50 rounded-xl p-3 mb-4">
               <p className="text-xs text-gray-500 mb-0.5">IBAN de destino</p>
               <p className="font-mono text-sm font-semibold text-gray-800">{iban}</p>
+              {accountHolder && (
+                <p className="text-xs text-gray-600 mt-1">👤 <strong>{accountHolder}</strong></p>
+              )}
               <p className="text-xs text-gray-500 mt-1">Valor: <strong>{amount.toLocaleString()} {currency}</strong></p>
             </div>
 
