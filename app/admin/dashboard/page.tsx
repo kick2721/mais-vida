@@ -420,8 +420,6 @@ function AdminCommissionsSection({ commissions, withdrawals, adminId }: { commis
   }
 
   const groups = Object.values(grouped)
-  const totalPending = commissions.filter(c => c.status === 'approved').length
-  const totalPaid    = commissions.filter(c => c.status === 'paid').length
 
   return (
     <div className="space-y-8">
@@ -516,23 +514,15 @@ function AdminCommissionsSection({ commissions, withdrawals, adminId }: { commis
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-lg font-bold text-gray-900">Comissões por Afiliado</h2>
-          <div className="flex gap-3">
-            <span className="text-sm font-medium px-3 py-1 rounded-full bg-purple-100 text-purple-700">
-              {totalPending} por pagar
-            </span>
-            <span className="text-sm font-medium px-3 py-1 rounded-full bg-green-100 text-green-700">
-              {totalPaid} pagas
-            </span>
-          </div>
+          <span className="text-sm font-medium px-3 py-1 rounded-full bg-purple-100 text-purple-700">
+            {commissions.length} comissões
+          </span>
         </div>
 
         {groups.length > 0 ? (
           <div className="space-y-4">
             {groups.map(group => {
-              const pendingItems = group.items.filter(c => c.status === 'approved')
-              const paidItems    = group.items.filter(c => c.status === 'paid')
-              const totalPendingAmt = pendingItems.reduce((s: number, c: any) => s + c.amount, 0)
-              const totalPaidAmt    = paidItems.reduce((s: number, c: any) => s + c.amount, 0)
+              const total = group.items.reduce((s: number, c: any) => s + c.amount, 0)
               const currency = group.items[0]?.currency || 'AOA'
 
               return (
@@ -543,43 +533,22 @@ function AdminCommissionsSection({ commissions, withdrawals, adminId }: { commis
                       <p className="text-xs text-gray-500 font-mono">{group.code}</p>
                       {group.phone && <p className="text-xs text-gray-400 mt-0.5">📞 {group.phone}</p>}
                     </div>
-                    <div className="flex gap-3 text-right">
-                      {totalPendingAmt > 0 && (
-                        <div>
-                          <p className="text-xs text-gray-400">Por pagar</p>
-                          <p className="font-bold text-purple-700">{totalPendingAmt.toLocaleString()} {currency}</p>
-                        </div>
-                      )}
-                      {totalPaidAmt > 0 && (
-                        <div>
-                          <p className="text-xs text-gray-400">Já pago</p>
-                          <p className="font-bold text-green-700">{totalPaidAmt.toLocaleString()} {currency}</p>
-                        </div>
-                      )}
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">Total gerado</p>
+                      <p className="font-bold text-purple-700">{total.toLocaleString()} {currency}</p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     {group.items.map((c: any) => (
-                      <div key={c.id} className="flex items-center justify-between gap-3 py-2 border-t flex-wrap"
+                      <div key={c.id} className="flex items-center justify-between gap-3 py-2 border-t"
                         style={{ borderColor: 'var(--color-border)' }}>
-                        <div className="flex items-center gap-3">
-                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                            c.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
-                          }`}>
-                            {c.status === 'paid' ? '💰 Paga' : '⏳ Por pagar'}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {c.status === 'paid'
-                              ? `Paga em ${new Date(c.paid_at).toLocaleDateString('pt-AO')}`
-                              : `Gerada em ${new Date(c.created_at).toLocaleDateString('pt-AO')}`}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold text-gray-800 text-sm">
-                            {c.amount.toLocaleString()} {c.currency}
-                          </span>
-                        </div>
+                        <span className="text-xs text-gray-400">
+                          Gerada em {new Date(c.created_at).toLocaleDateString('pt-AO')}
+                        </span>
+                        <span className="font-semibold text-gray-800 text-sm">
+                          {c.amount.toLocaleString()} {c.currency}
+                        </span>
                       </div>
                     ))}
                   </div>
