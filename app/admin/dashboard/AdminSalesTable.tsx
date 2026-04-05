@@ -35,6 +35,11 @@ function ProofModal({ url, name, onClose }: { url: string; name: string; onClose
             <p className="text-xs text-gray-500 mt-0.5">{name}</p>
           </div>
           <div className="flex items-center gap-2">
+            <a href={url} download={`comprovativo-${name.replace(/\s+/g, '-')}`}
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
+              style={{ color: '#166534', borderColor: '#166534', background: '#dcfce7' }}>
+              ⬇ Descarregar
+            </a>
             <a href={url} target="_blank" rel="noopener noreferrer"
               className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
               style={{ color: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}>
