@@ -7,7 +7,6 @@ import { BUSINESS } from '@/lib/constants'
 import AdminSalesTable from './AdminSalesTable'
 import AdminAffiliatesTable from './AdminAffiliatesTable'
 import IssueCardButton from './IssueCardButton'
-import AdminCommissionsActions from './AdminCommissionsActions'
 import WithdrawalActions from './WithdrawalActions'
 import AdminApplicationsTable from './AdminApplicationsTable'
 import Logo from '@/app/components/ui/Logo'
@@ -580,16 +579,6 @@ function AdminCommissionsSection({ commissions, withdrawals, adminId }: { commis
                           <span className="font-semibold text-gray-800 text-sm">
                             {c.amount.toLocaleString()} {c.currency}
                           </span>
-                          {c.status !== 'paid' && (
-                            <AdminCommissionsActions
-                              commissionId={c.id}
-                              status={c.status}
-                              amount={c.amount}
-                              currency={c.currency}
-                              affiliateName={group.name}
-                              affiliatePhone={group.phone}
-                            />
-                          )}
                         </div>
                       </div>
                     ))}
