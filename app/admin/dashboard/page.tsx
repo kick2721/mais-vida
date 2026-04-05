@@ -10,6 +10,7 @@ import IssueCardButton from './IssueCardButton'
 import AdminCommissionsActions from './AdminCommissionsActions'
 import AdminApplicationsTable from './AdminApplicationsTable'
 import Logo from '@/app/components/ui/Logo'
+import { cleanupExpiredReceipts } from '@/lib/receipt-cleanup'
 
 export default async function AdminDashboardPage({
   searchParams,
@@ -18,6 +19,12 @@ export default async function AdminDashboardPage({
 }) {
   const params = await searchParams
   const activeTab = params.tab || 'sales'
+
+  // Limpar comprovativos expirados em segundo plano (lazy cleanup)
+  // Corre silenciosamente cada vez que o admin abre o painel
+  cleanupExpiredReceipts().catch(err =>
+    console.error('[Cleanup] Erro no cleanup automático:', err)
+  )
 
   const supabase = await createServerSupabaseClient()
   const supabaseAdmin = await createServerSupabaseAdminClient()
