@@ -60,7 +60,7 @@ export default function IssueCardButton({ cardId, adminId, customerName, custome
     <>
       <button onClick={() => setShowModal(true)} disabled={isPending}
         className="btn-primary text-sm py-2 px-4 disabled:opacity-50 flex items-center gap-2">
-        {isPending ? <><BtnSpinner />A emitir…</> : '🪪 Marcar como Emitido'}
+        {isPending ? <><BtnSpinner />A emitir…</> : '✅ Marcar como Emitido'}
       </button>
 
       {showModal && (
