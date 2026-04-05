@@ -313,7 +313,7 @@ export async function sendEmail({ to, template, data }: SendEmailOptions): Promi
       },
       body: JSON.stringify({
         from: `${BUSINESS.name} <onboarding@resend.dev>`,
-        to: ['kick02721@gmail.com'], // TODO: cambiar a [to] cuando el dominio mais-vida.com esté verificado en Resend
+        to: [to],
         subject,
         html,
       }),
