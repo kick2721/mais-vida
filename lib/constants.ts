@@ -29,6 +29,7 @@ export const COMMISSION = {
   amount: 250,
   currency: 'AOA',
   paymentCycle: 'monthly',
+  withdrawalMinimum: 1000, // mínimo 4 vendas para solicitar retiro
 } as const
 
 export const BANK = {
