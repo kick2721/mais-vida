@@ -6,6 +6,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { logoutUser } from '@/lib/actions'
 import { BUSINESS, COMMISSION } from '@/lib/constants'
 import CopyButton from './CopyButton'
+import WithdrawalButton from './WithdrawalButton'
 import Logo from '@/app/components/ui/Logo'
 
 export default async function AffiliateDashboardPage() {
@@ -45,6 +46,14 @@ export default async function AffiliateDashboardPage() {
     .select('*')
     .eq('affiliate_id', affiliate.id)
     .order('created_at', { ascending: false })
+
+  // Verificar se tem pedido de retiro pendente
+  const { data: pendingWithdrawal } = await supabase
+    .from('withdrawal_requests')
+    .select('id')
+    .eq('affiliate_id', affiliate.id)
+    .eq('status', 'pending')
+    .maybeSingle()
 
   const totalSales = sales?.length || 0
   const confirmedSales = sales?.filter(s => s.status === 'confirmed').length || 0
@@ -123,7 +132,7 @@ export default async function AffiliateDashboardPage() {
         </div>
 
         {/* Referral link */}
-        <div className="rounded-2xl p-6 mb-8" style={{ background: 'var(--color-primary)', color: 'white' }}>
+        <div className="rounded-2xl p-6 mb-4" style={{ background: 'var(--color-primary)', color: 'white' }}>
           <p className="text-sm font-semibold text-green-200 mb-2">O seu link de afiliado</p>
           <div className="flex items-center gap-3 flex-wrap">
             <code className="flex-1 bg-white/20 rounded-xl px-4 py-2 text-sm font-mono break-all">
@@ -134,6 +143,11 @@ export default async function AffiliateDashboardPage() {
           <p className="text-xs text-green-200 mt-3">
             Cada venda confirmada gera <strong>{COMMISSION.amount.toLocaleString()} Kz</strong> de comissão.
           </p>
+        </div>
+
+        {/* Retiro */}
+        <div className="mb-8">
+          <WithdrawalButton balance={balance} hasPending={!!pendingWithdrawal} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
