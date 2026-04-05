@@ -8,6 +8,7 @@ import AdminSalesTable from './AdminSalesTable'
 import AdminAffiliatesTable from './AdminAffiliatesTable'
 import IssueCardButton from './IssueCardButton'
 import AdminCommissionsActions from './AdminCommissionsActions'
+import WithdrawalActions from './WithdrawalActions'
 import AdminApplicationsTable from './AdminApplicationsTable'
 import Logo from '@/app/components/ui/Logo'
 import { cleanupExpiredReceipts } from '@/lib/receipt-cleanup'
@@ -148,11 +149,24 @@ export default async function AdminDashboardPage({
       id, amount, currency, status, created_at, paid_at,
       affiliates (
         referral_code,
-        profiles ( full_name )
+        profiles ( full_name, phone )
       )
     `)
     .in('status', ['approved', 'paid'])
     .order('created_at', { ascending: false })
+
+  // ─── WITHDRAWAL REQUESTS ──────────────────────────────────────────────────
+  const { data: withdrawals } = await supabaseAdmin
+    .from('withdrawal_requests')
+    .select(`
+      id, amount, currency, iban, status, requested_at, reviewed_at,
+      affiliates (
+        referral_code,
+        profiles ( full_name, phone )
+      )
+    `)
+    .order('requested_at', { ascending: false })
+    .limit(50)
 
   // ─── CARDS DATA ───────────────────────────────────────────────────────────
   // Cartões ligados a vendas — buscar info do cliente via venda
@@ -292,7 +306,7 @@ export default async function AdminDashboardPage({
           <AdminAffiliatesTable affiliates={affiliates || []} />
         )}
         {activeTab === 'commissions' && (
-          <AdminCommissionsSection commissions={commissions || []} adminId={user.id} />
+          <AdminCommissionsSection commissions={commissions || []} withdrawals={withdrawals || []} adminId={user.id} />
         )}
         {activeTab === 'applications' && (
           <AdminApplicationsTable applications={(applications as any[]) || []} />
@@ -386,16 +400,20 @@ function CardRow({ card, adminId }: { card: any; adminId: string }) {
 }
 
 // ─── COMMISSIONS SECTION ──────────────────────────────────────────────────────
-function AdminCommissionsSection({ commissions, adminId }: { commissions: any[]; adminId: string }) {
-  // Agrupar por afiliado
-  const grouped: Record<string, { name: string; code: string; items: any[] }> = {}
+function AdminCommissionsSection({ commissions, withdrawals, adminId }: { commissions: any[]; withdrawals: any[]; adminId: string }) {
+  const pendingWithdrawals = withdrawals.filter(w => w.status === 'pending')
+  const doneWithdrawals    = withdrawals.filter(w => w.status !== 'pending')
+
+  // Agrupar comissões por afiliado
+  const grouped: Record<string, { name: string; code: string; phone: string; items: any[] }> = {}
   for (const c of commissions) {
     const aff = c.affiliates as any
     const key = aff?.referral_code || 'unknown'
     if (!grouped[key]) {
       grouped[key] = {
-        name: aff?.profiles?.full_name || 'Afiliado',
-        code: aff?.referral_code || '—',
+        name:  aff?.profiles?.full_name || 'Afiliado',
+        code:  aff?.referral_code || '—',
+        phone: aff?.profiles?.phone || '',
         items: [],
       }
     }
@@ -407,96 +425,182 @@ function AdminCommissionsSection({ commissions, adminId }: { commissions: any[];
   const totalPaid    = commissions.filter(c => c.status === 'paid').length
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-display text-lg font-bold text-gray-900">Comissões</h2>
-        <div className="flex gap-3">
-          <span className="text-sm font-medium px-3 py-1 rounded-full bg-purple-100 text-purple-700">
-            {totalPending} por pagar
-          </span>
-          <span className="text-sm font-medium px-3 py-1 rounded-full bg-green-100 text-green-700">
-            {totalPaid} pagas
-          </span>
+    <div className="space-y-8">
+
+      {/* ── Pedidos de Retiro ── */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-lg font-bold text-gray-900">Pedidos de Retiro</h2>
+          {pendingWithdrawals.length > 0 && (
+            <span className="text-sm font-medium px-3 py-1 rounded-full bg-orange-100 text-orange-700">
+              {pendingWithdrawals.length} pendente{pendingWithdrawals.length !== 1 ? 's' : ''}
+            </span>
+          )}
         </div>
+
+        {pendingWithdrawals.length > 0 && (
+          <div className="space-y-3 mb-4">
+            {pendingWithdrawals.map((w: any) => {
+              const aff = w.affiliates as any
+              const name  = aff?.profiles?.full_name || 'Afiliado'
+              const phone = aff?.profiles?.phone || ''
+              return (
+                <div key={w.id} className="card border-l-4" style={{ borderLeftColor: '#f97316' }}>
+                  <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
+                    <div>
+                      <p className="font-semibold text-gray-800">{name}</p>
+                      <p className="text-xs font-mono text-gray-500">{aff?.referral_code}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Pedido em {new Date(w.requested_at).toLocaleDateString('pt-AO')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-gray-800">{w.amount.toLocaleString()} {w.currency}</p>
+                      <p className="text-xs text-gray-500 font-mono mt-1">{w.iban}</p>
+                    </div>
+                  </div>
+                  <WithdrawalActions
+                    withdrawalId={w.id}
+                    adminId={adminId}
+                    amount={w.amount}
+                    currency={w.currency}
+                    iban={w.iban}
+                    affiliateName={name}
+                    affiliatePhone={phone}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {doneWithdrawals.length > 0 && (
+          <div>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Histórico</h3>
+            <div className="space-y-2">
+              {doneWithdrawals.map((w: any) => {
+                const aff = w.affiliates as any
+                return (
+                  <div key={w.id} className="card flex items-center justify-between gap-4 flex-wrap py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700">{aff?.profiles?.full_name || 'Afiliado'}</p>
+                      <p className="text-xs text-gray-400 font-mono">{w.iban}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold text-gray-700">{w.amount.toLocaleString()} {w.currency}</span>
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                        w.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {w.status === 'paid' ? '✅ Pago' : '✗ Rejeitado'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {withdrawals.length === 0 && (
+          <div className="card text-center py-8">
+            <p className="text-3xl mb-2">💸</p>
+            <p className="text-gray-500 text-sm">Sem pedidos de retiro.</p>
+          </div>
+        )}
       </div>
 
-      {groups.length > 0 ? (
-        <div className="space-y-4">
-          {groups.map(group => {
-            const pendingItems = group.items.filter(c => c.status === 'approved')
-            const paidItems    = group.items.filter(c => c.status === 'paid')
-            const totalPendingAmt = pendingItems.reduce((s: number, c: any) => s + c.amount, 0)
-            const totalPaidAmt    = paidItems.reduce((s: number, c: any) => s + c.amount, 0)
-            const currency = group.items[0]?.currency || 'AOA'
+      {/* ── Comissões ── */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-lg font-bold text-gray-900">Comissões por Afiliado</h2>
+          <div className="flex gap-3">
+            <span className="text-sm font-medium px-3 py-1 rounded-full bg-purple-100 text-purple-700">
+              {totalPending} por pagar
+            </span>
+            <span className="text-sm font-medium px-3 py-1 rounded-full bg-green-100 text-green-700">
+              {totalPaid} pagas
+            </span>
+          </div>
+        </div>
 
-            return (
-              <div key={group.code} className="card">
-                {/* Cabeçalho do afiliado */}
-                <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-                  <div>
-                    <p className="font-semibold text-gray-800">{group.name}</p>
-                    <p className="text-xs text-gray-500 font-mono">{group.code}</p>
-                  </div>
-                  <div className="flex gap-3 text-right">
-                    {totalPendingAmt > 0 && (
-                      <div>
-                        <p className="text-xs text-gray-400">Por pagar</p>
-                        <p className="font-bold text-purple-700">{totalPendingAmt.toLocaleString()} {currency}</p>
-                      </div>
-                    )}
-                    {totalPaidAmt > 0 && (
-                      <div>
-                        <p className="text-xs text-gray-400">Já pago</p>
-                        <p className="font-bold text-green-700">{totalPaidAmt.toLocaleString()} {currency}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+        {groups.length > 0 ? (
+          <div className="space-y-4">
+            {groups.map(group => {
+              const pendingItems = group.items.filter(c => c.status === 'approved')
+              const paidItems    = group.items.filter(c => c.status === 'paid')
+              const totalPendingAmt = pendingItems.reduce((s: number, c: any) => s + c.amount, 0)
+              const totalPaidAmt    = paidItems.reduce((s: number, c: any) => s + c.amount, 0)
+              const currency = group.items[0]?.currency || 'AOA'
 
-                {/* Lista de comissões */}
-                <div className="space-y-2">
-                  {group.items.map((c: any) => (
-                    <div key={c.id} className="flex items-center justify-between gap-3 py-2 border-t flex-wrap"
-                      style={{ borderColor: 'var(--color-border)' }}>
-                      <div className="flex items-center gap-3">
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                          c.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
-                        }`}>
-                          {c.status === 'paid' ? '💰 Paga' : '⏳ Por pagar'}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {c.status === 'paid'
-                            ? `Paga em ${new Date(c.paid_at).toLocaleDateString('pt-AO')}`
-                            : `Gerada em ${new Date(c.created_at).toLocaleDateString('pt-AO')}`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-semibold text-gray-800 text-sm">
-                          {c.amount.toLocaleString()} {c.currency}
-                        </span>
-                        {c.status !== 'paid' && (
-                          <AdminCommissionsActions
-                            commissionId={c.id}
-                            status={c.status}
-                            amount={c.amount}
-                            currency={c.currency}
-                            affiliateName={group.name}
-                          />
-                        )}
-                      </div>
+              return (
+                <div key={group.code} className="card">
+                  <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+                    <div>
+                      <p className="font-semibold text-gray-800">{group.name}</p>
+                      <p className="text-xs text-gray-500 font-mono">{group.code}</p>
+                      {group.phone && <p className="text-xs text-gray-400 mt-0.5">📞 {group.phone}</p>}
                     </div>
-                  ))}
+                    <div className="flex gap-3 text-right">
+                      {totalPendingAmt > 0 && (
+                        <div>
+                          <p className="text-xs text-gray-400">Por pagar</p>
+                          <p className="font-bold text-purple-700">{totalPendingAmt.toLocaleString()} {currency}</p>
+                        </div>
+                      )}
+                      {totalPaidAmt > 0 && (
+                        <div>
+                          <p className="text-xs text-gray-400">Já pago</p>
+                          <p className="font-bold text-green-700">{totalPaidAmt.toLocaleString()} {currency}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {group.items.map((c: any) => (
+                      <div key={c.id} className="flex items-center justify-between gap-3 py-2 border-t flex-wrap"
+                        style={{ borderColor: 'var(--color-border)' }}>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                            c.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+                          }`}>
+                            {c.status === 'paid' ? '💰 Paga' : '⏳ Por pagar'}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {c.status === 'paid'
+                              ? `Paga em ${new Date(c.paid_at).toLocaleDateString('pt-AO')}`
+                              : `Gerada em ${new Date(c.created_at).toLocaleDateString('pt-AO')}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-semibold text-gray-800 text-sm">
+                            {c.amount.toLocaleString()} {c.currency}
+                          </span>
+                          {c.status !== 'paid' && (
+                            <AdminCommissionsActions
+                              commissionId={c.id}
+                              status={c.status}
+                              amount={c.amount}
+                              currency={c.currency}
+                              affiliateName={group.name}
+                              affiliatePhone={group.phone}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="card text-center py-10">
-          <p className="text-4xl mb-3">✅</p>
-          <p className="text-gray-500 text-sm">Sem comissões registadas.</p>
-        </div>
-      )}
+              )
+            })}
+          </div>
+        ) : (
+          <div className="card text-center py-10">
+            <p className="text-4xl mb-3">✅</p>
+            <p className="text-gray-500 text-sm">Sem comissões registadas.</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
