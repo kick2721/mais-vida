@@ -71,13 +71,12 @@ export default async function AdminDashboardPage({
     .eq('status', 'pending')
 
   // ─── COMMISSIONS KPI ──────────────────────────────────────────────────────
-  const { count: pendingCommissions } = await supabaseAdmin
+  const { count: totalCommissions } = await supabaseAdmin
     .from('commissions')
     .select('id', { count: 'exact', head: true })
-    .eq('status', 'approved')
 
-  const { count: paidCommissions } = await supabaseAdmin
-    .from('commissions')
+  const { count: paidWithdrawals } = await supabaseAdmin
+    .from('withdrawal_requests')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'paid')
   // Query simplificada: sem JOIN a customers (compras anónimas não têm customer_id)
@@ -199,7 +198,7 @@ export default async function AdminDashboardPage({
     { label: 'Vendas Totais',     value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,                              color: 'var(--color-primary)', icon: 'dollar' },
     { label: 'Afiliados Activos', value: totalAffiliates     || 0, sub: 'na plataforma',                                               color: '#1e40af',              icon: '👥' },
     { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                                                 color: '#d97706',              icon: 'card' },
-    { label: 'Comissões',         value: pendingCommissions  || 0, sub: `${paidCommissions ?? 0} pagas`,                               color: '#7c3aed',              icon: '💰' },
+    { label: 'Comissões',         value: totalCommissions    || 0, sub: `${paidWithdrawals ?? 0} retiros pagos`,                        color: '#7c3aed',              icon: '💰' },
     { label: 'Candidaturas',      value: pendingApplications || 0, sub: 'pendentes de análise',                                        color: '#dc2626',              icon: '📋' },
   ]
 
