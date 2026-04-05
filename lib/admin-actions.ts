@@ -7,6 +7,7 @@ import { createServerSupabaseClient, createServerSupabaseAdminClient } from './s
 import { revalidatePath } from 'next/cache'
 import { sendEmail } from './email/send-email'
 import { COMMISSION } from './constants'
+import { scheduleReceiptDeletion } from './receipt-cleanup'
 
 // ─── CONFIRMAR VENDA ─────────────────────────────────────────────────────────
 export async function confirmSale(saleId: string, adminId: string) {
@@ -117,6 +118,13 @@ export async function confirmSale(saleId: string, adminId: string) {
     console.error('[Email] confirmSale error:', emailError)
   }
 
+  // ── Agendar borrado do comprovativo em 60 minutos ──
+  try {
+    await scheduleReceiptDeletion(saleId)
+  } catch (cleanupError) {
+    console.error('[Cleanup] Erro ao agendar borrado:', cleanupError)
+  }
+
   revalidatePath('/admin/dashboard')
   return { success: true }
 }
@@ -187,6 +195,13 @@ export async function cancelSale(saleId: string, reason?: string) {
       .update({ status: 'cancelled' })
       .eq('sale_id', saleId)
       .eq('status', 'pending')
+  }
+
+  // ── Agendar borrado do comprovativo em 60 minutos ──
+  try {
+    await scheduleReceiptDeletion(saleId)
+  } catch (cleanupError) {
+    console.error('[Cleanup] Erro ao agendar borrado:', cleanupError)
   }
 
   revalidatePath('/admin/dashboard')
