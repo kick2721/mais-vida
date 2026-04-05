@@ -1,4 +1,5 @@
 // app/affiliate/dashboard/page.tsx
+import AffiliateDashboardCharts from './AffiliateDashboardCharts'
 // Painel do Afiliado — Etapa 6
 
 import { redirect } from 'next/navigation'
@@ -58,7 +59,7 @@ export default async function AffiliateDashboardPage() {
   // Historial de retiros
   const { data: withdrawals } = await supabase
     .from('withdrawal_requests')
-    .select('id, amount, currency, status, requested_at, paid_at, rejected_at')
+    .select('id, amount, currency, status, requested_at, reviewed_at')
     .eq('affiliate_id', affiliate.id)
     .order('requested_at', { ascending: false })
 
@@ -157,80 +158,7 @@ export default async function AffiliateDashboardPage() {
           <WithdrawalButton balance={balance} hasPending={!!pendingWithdrawal} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Vendas */}
-          <div>
-            <h2 className="font-display text-lg font-bold text-gray-900 mb-4">
-              Vendas Referidas ({totalSales})
-            </h2>
-            {sales && sales.length > 0 ? (
-              <div className="space-y-3">
-                {sales.map((sale) => {
-                  const st = saleStatusMap[sale.status] || { label: sale.status, color: '#374151', bg: '#f3f4f6' }
-                  return (
-                    <div key={sale.id} className="card flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-800 text-sm truncate">
-                          {sale.customer_name || 'Cliente'}
-                        </p>
-                        <p className="text-xs text-gray-500">{sale.customer_phone || '—'}</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {new Date(sale.created_at).toLocaleDateString('pt-AO', {
-                            day: '2-digit', month: 'short', year: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="font-bold text-gray-800 text-sm">
-                          {sale.amount?.toLocaleString()} {sale.currency}
-                        </p>
-                        <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium"
-                          style={{ background: st.bg, color: st.color }}>
-                          {st.label}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="card text-center py-10">
-                <p className="text-4xl mb-3">📊</p>
-                <p className="text-gray-500 text-sm font-medium">Sem vendas referidas ainda.</p>
-                <p className="text-gray-400 text-xs mt-1">Partilhe o seu link para começar!</p>
-              </div>
-            )}
-          </div>
-
-          {/* Comissões */}
-          <div>
-            <h2 className="font-display text-lg font-bold text-gray-900 mb-4">
-              Comissões ({commissions?.length || 0})
-            </h2>
-            {commissions && commissions.length > 0 ? (
-              <div className="space-y-3">
-                {commissions.map((commission) => (
-                  <div key={commission.id} className="card flex items-center justify-between gap-4">
-                    <p className="text-xs text-gray-500">
-                      {new Date(commission.created_at).toLocaleDateString('pt-AO', {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                      })}
-                    </p>
-                    <p className="font-bold text-gray-800">
-                      {commission.amount.toLocaleString()} {commission.currency}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="card text-center py-10">
-                <p className="text-4xl mb-3">💰</p>
-                <p className="text-gray-500 text-sm font-medium">Sem comissões geradas.</p>
-                <p className="text-gray-400 text-xs mt-1">Aparecem após venda confirmada pelo admin.</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <AffiliateDashboardCharts sales={sales || []} commissions={commissions || []} saleStatusMap={saleStatusMap} />
 
         {/* Historial de Retiros */}
         {withdrawals && withdrawals.length > 0 && (
@@ -247,19 +175,19 @@ export default async function AffiliateDashboardPage() {
                         day: '2-digit', month: 'short', year: 'numeric',
                       })}
                     </p>
-                    {w.paid_at && (
+                    {w.reviewed_at && (
                       <p className="text-xs text-gray-400">
-                        Pago em {new Date(w.paid_at).toLocaleDateString('pt-AO')}
+                        {w.status === 'paid' ? 'Pago' : 'Revisto'} em {new Date(w.reviewed_at).toLocaleDateString('pt-AO')}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-3">
                     <p className="font-bold text-gray-800">{w.amount.toLocaleString()} {w.currency}</p>
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{
-                      background: w.status === 'paid' ? '#dcfce7' : w.status === 'rejected' ? '#fee2e2' : '#fef3c7',
-                      color:      w.status === 'paid' ? '#166534' : w.status === 'rejected' ? '#991b1b' : '#92400e',
+                      background: w.status === 'paid' ? '#dcfce7' : w.status === 'rejected' || w.status === 'cancelled' ? '#fee2e2' : '#fef3c7',
+                      color:      w.status === 'paid' ? '#166534' : w.status === 'rejected' || w.status === 'cancelled' ? '#991b1b' : '#92400e',
                     }}>
-                      {w.status === 'paid' ? '✅ Pago' : w.status === 'rejected' ? '✗ Rejeitado' : '⏳ Pendente'}
+                      {w.status === 'paid' ? '✅ Pago' : w.status === 'rejected' || w.status === 'cancelled' ? '✗ Rejeitado' : '⏳ Pendente'}
                     </span>
                   </div>
                 </div>
