@@ -3,6 +3,7 @@
 // app/affiliate/dashboard/AffiliateDashboardCharts.tsx
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 interface Sale {
   id: string
@@ -130,50 +131,91 @@ function DetailModal({
   onClose: () => void
   children: React.ReactNode
 }) {
-  // Lock background scroll when modal is open
+  const [mounted, setMounted] = useState(false)
+
   useEffect(() => {
-    const prev = document.body.style.overflow
+    setMounted(true)
+    // Lock background scroll
+    const scrollY = window.scrollY
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      window.scrollTo(0, scrollY)
+    }
   }, [])
 
-  return (
+  if (!mounted) return null
+
+  const modalContent = (
     <div
-      className="fixed z-50 flex items-center justify-center p-4"
       style={{
-        background: 'rgba(0,0,0,0.5)',
+        position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        background: 'rgba(0,0,0,0.5)',
       }}
       onClick={onClose}
     >
       <div
-        className="bg-white w-full max-w-lg rounded-2xl flex flex-col"
-        style={{ maxHeight: '85vh' }}
+        style={{
+          background: 'white',
+          width: '100%',
+          maxWidth: '32rem',
+          borderRadius: '1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '85vh',
+        }}
         onClick={e => e.stopPropagation()}
       >
         {/* Sticky header */}
         <div
-          className="flex items-center justify-between px-5 py-4 border-b bg-white rounded-t-2xl flex-shrink-0"
-          style={{ borderColor: 'var(--color-border)' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px 20px',
+            borderBottom: '1px solid var(--color-border)',
+            background: 'white',
+            borderRadius: '1rem 1rem 0 0',
+            flexShrink: 0,
+          }}
         >
-          <h3 className="font-display text-lg font-bold text-gray-900">{title}</h3>
+          <h3 style={{ fontWeight: 700, fontSize: '1.125rem', color: '#111827', margin: 0 }}>{title}</h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 transition-colors font-bold"
+            style={{
+              width: 32, height: 32,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '50%', border: 'none', background: 'transparent',
+              cursor: 'pointer', fontWeight: 700, color: '#6b7280', fontSize: '1rem',
+            }}
           >
             ✕
           </button>
         </div>
-        {/* Scrollable content — only this div scrolls */}
-        <div className="overflow-y-auto flex-1 p-5">
+        {/* Scrollable content */}
+        <div style={{ overflowY: 'auto', flex: 1, padding: '20px' }}>
           {children}
         </div>
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }
 
 export default function AffiliateDashboardCharts({ sales, commissions, saleStatusMap }: Props) {
