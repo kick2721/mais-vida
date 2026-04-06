@@ -15,58 +15,105 @@ interface Affiliate {
   is_active: boolean
   joined_at: string
   profiles?: { full_name: string; phone: string; national_id: string }
-  // vendas dos últimos 6 meses para o mini-gráfico e tendência
-  // estrutura: [{ month: '2025-01', count: 3 }, ...]
   monthly_sales?: { month: string; count: number }[]
 }
 
 const PAGE_SIZE = 50
 
-// ─── Mini bar chart ───────────────────────────────────────────────────────────
+// ─── Mini chart: barras + linha por cima (estilo profit/loss da referência) ───
 
-function MiniBarChart({ data, color }: { data: number[]; color: string }) {
+function MiniSalesChart({ data, up }: { data: number[]; up: boolean }) {
   const max = Math.max(...data, 1)
+  const W = 56
+  const H = 28
+  const barW = (W - (data.length - 1)) / data.length
+
+  // Pontos da linha (centro-topo de cada barra)
+  const points = data.map((v, i) => {
+    const x = i * (barW + 1) + barW / 2
+    const h = Math.max((v / max) * (H - 4), v > 0 ? 3 : 1)
+    const y = H - h
+    return { x, y }
+  })
+
+  const polyline = points.map(p => `${p.x},${p.y}`).join(' ')
+
+  const color = up ? '#16a34a' : '#dc2626'
+  const colorLight = up ? '#86efac' : '#fca5a5'
+
   return (
-    <div className="flex items-end gap-px" style={{ height: 28, width: 56 }}>
-      {data.map((v, i) => (
-        <div
-          key={i}
-          style={{
-            flex: 1,
-            height: `${Math.max((v / max) * 100, v > 0 ? 8 : 2)}%`,
-            background: i === data.length - 1 ? color : `${color}55`,
-            borderRadius: '2px 2px 0 0',
-            minHeight: v > 0 ? 2 : 1,
-          }}
-        />
-      ))}
-    </div>
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
+      {/* Barras */}
+      {data.map((v, i) => {
+        const h = Math.max((v / max) * (H - 4), v > 0 ? 3 : 1)
+        const x = i * (barW + 1)
+        const isLast = i === data.length - 1
+        return (
+          <rect
+            key={i}
+            x={x}
+            y={H - h}
+            width={barW}
+            height={h}
+            rx={1.5}
+            fill={isLast ? color : colorLight}
+            opacity={isLast ? 1 : 0.7}
+          />
+        )
+      })}
+      {/* Linha por cima */}
+      <polyline
+        points={polyline}
+        fill="none"
+        stroke="white"
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <polyline
+        points={polyline}
+        fill="none"
+        stroke={color}
+        strokeWidth={1}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      {/* Seta no fim da linha */}
+      {(() => {
+        const last = points[points.length - 1]
+        const prev = points[points.length - 2] || last
+        const dx = last.x - prev.x
+        const dy = last.y - prev.y
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+        return (
+          <g transform={`translate(${last.x},${last.y}) rotate(${angle})`}>
+            <polygon points="0,0 -5,-2.5 -5,2.5" fill={color} />
+          </g>
+        )
+      })()}
+    </svg>
   )
 }
 
-// ─── Trend arrow ─────────────────────────────────────────────────────────────
+// ─── Trend arrow — só seta, sem texto ────────────────────────────────────────
 
 function TrendArrow({ current, previous }: { current: number; previous: number }) {
-  if (previous === 0 && current === 0) return <span className="text-gray-300 text-xs">—</span>
-  if (previous === 0) return (
-    <span className="flex items-center gap-0.5 text-green-600 text-xs font-semibold">
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-        <path d="M5 1L9 7H1L5 1Z"/>
-      </svg>
-      novo
-    </span>
-  )
-  const pct = Math.round(((current - previous) / previous) * 100)
-  if (pct === 0) return <span className="text-gray-400 text-xs">=</span>
-  const up = pct > 0
+  if (previous === 0 && current === 0)
+    return <span className="text-gray-300">—</span>
+
+  const up = previous === 0 ? true : current >= previous
+
   return (
-    <span className={`flex items-center gap-0.5 text-xs font-semibold ${up ? 'text-green-600' : 'text-red-500'}`}>
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"
-        style={{ transform: up ? 'none' : 'rotate(180deg)' }}>
-        <path d="M5 1L9 7H1L5 1Z"/>
-      </svg>
-      {Math.abs(pct)}%
-    </span>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      fill={up ? '#16a34a' : '#dc2626'}
+      style={{ transform: up ? 'none' : 'rotate(180deg)' }}
+    >
+      {/* Seta triangular sólida */}
+      <polygon points="7,1 13,10 1,10" />
+    </svg>
   )
 }
 
@@ -77,7 +124,6 @@ function fmt(date: string | null) {
   return new Date(date).toLocaleDateString('pt-AO', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
-// Gera array de N meses anteriores (incluindo o actual) no formato 'YYYY-MM'
 function lastNMonths(n: number): string[] {
   const months: string[] = []
   const now = new Date()
@@ -88,12 +134,9 @@ function lastNMonths(n: number): string[] {
   return months
 }
 
-// Extrai os últimos 6 meses de dados como array de counts
 function getMonthlyCounts(affiliate: Affiliate): number[] {
   const months = lastNMonths(6)
   if (!affiliate.monthly_sales?.length) {
-    // Sem dados mensais — distribuição simplificada pelas total_sales
-    // Mostra apenas o último mês com o total (fallback visual)
     return months.map((_, i) => (i === months.length - 1 ? affiliate.total_sales || 0 : 0))
   }
   const map: Record<string, number> = {}
@@ -136,11 +179,10 @@ export default function AdminAffiliatesTable({ affiliates }: { affiliates: Affil
     <div>
       {/* Controlos */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        {/* Filtro */}
         <div className="flex gap-1 bg-white rounded-xl p-1 border" style={{ borderColor: 'var(--color-border)' }}>
           {([
-            { key: 'all',      label: 'Todos',     count: affiliates.length },
-            { key: 'active',   label: '🟢 Activos', count: activeCount },
+            { key: 'all',      label: 'Todos',       count: affiliates.length },
+            { key: 'active',   label: '🟢 Activos',   count: activeCount },
             { key: 'inactive', label: '🔴 Inactivos', count: inactiveCount },
           ] as const).map(f => (
             <button
@@ -158,7 +200,6 @@ export default function AdminAffiliatesTable({ affiliates }: { affiliates: Affil
           ))}
         </div>
 
-        {/* Pesquisa */}
         <div className="relative flex-1 min-w-0">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
             width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -189,7 +230,6 @@ export default function AdminAffiliatesTable({ affiliates }: { affiliates: Affil
         </div>
       ) : (
         <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--color-border)' }}>
-          {/* Cabeçalho */}
           <div
             className="hidden sm:grid text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-2.5 border-b"
             style={{
@@ -265,6 +305,7 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
   const monthlyCounts = getMonthlyCounts(affiliate)
   const currentMonth  = monthlyCounts[monthlyCounts.length - 1]
   const prevMonth     = monthlyCounts[monthlyCounts.length - 2]
+  const trendUp       = prevMonth === 0 ? true : currentMonth >= prevMonth
 
   const handleToggle = () => {
     const action = isActive ? 'desactivar' : 'activar'
@@ -304,9 +345,9 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
           <p className="text-xs text-gray-500">{fmt(affiliate.joined_at)}</p>
         </div>
 
-        {/* Vendas + mini gráfico */}
+        {/* Vendas + mini gráfico bars+line */}
         <div className="flex items-center justify-end gap-2">
-          <MiniBarChart data={monthlyCounts} color="var(--color-primary)" />
+          <MiniSalesChart data={monthlyCounts} up={trendUp} />
           <p className="text-sm font-bold text-gray-800 w-6 text-right tabular-nums">
             {affiliate.total_sales || 0}
           </p>
@@ -326,7 +367,7 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
           </p>
         </div>
 
-        {/* Tendência */}
+        {/* Tendência — só seta */}
         <div className="flex justify-center">
           <TrendArrow current={currentMonth} previous={prevMonth} />
         </div>
@@ -359,7 +400,7 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
           </div>
 
           <div className="flex justify-between items-center">
-            {/* Mini gráfico expandido com labels */}
+            {/* Gráfico expandido com labels de semana */}
             <div>
               <p className="text-xs text-gray-400 mb-1">Vendas últimos 6 meses</p>
               <div className="flex items-end gap-1" style={{ height: 40 }}>
@@ -374,8 +415,8 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
                           width: 20,
                           height: `${Math.max((v / max) * 36, v > 0 ? 4 : 2)}px`,
                           background: i === arr.length - 1
-                            ? 'var(--color-primary)'
-                            : 'var(--color-primary-light, #86efac)',
+                            ? (trendUp ? '#16a34a' : '#dc2626')
+                            : (trendUp ? '#86efac' : '#fca5a5'),
                           borderRadius: '3px 3px 0 0',
                           minHeight: v > 0 ? 3 : 1,
                         }}

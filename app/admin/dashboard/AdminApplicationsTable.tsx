@@ -2,7 +2,7 @@
 
 // app/admin/dashboard/AdminApplicationsTable.tsx
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { approveApplication, rejectApplication } from '@/lib/admin-actions'
 
 interface Application {
@@ -20,6 +20,29 @@ interface Application {
   status: 'pending' | 'approved' | 'rejected'
   reject_reason: string | null
   created_at: string
+  // updated_at: quando o status mudou para approved/rejected
+  updated_at?: string
+}
+
+const EXPIRY_MS = 12 * 60 * 60 * 1000 // 12 horas
+
+/** Retorna true se a candidatura já foi decidida (approved/rejected) há mais de 12h */
+function isExpired(app: Application): boolean {
+  if (app.status === 'pending') return false
+  const ref = app.updated_at || app.created_at
+  return Date.now() - new Date(ref).getTime() > EXPIRY_MS
+}
+
+/** Tempo restante até expirar (para candidaturas já decididas mas dentro das 12h) */
+function timeUntilExpiry(app: Application): string {
+  if (app.status === 'pending') return ''
+  const ref = app.updated_at || app.created_at
+  const ms  = EXPIRY_MS - (Date.now() - new Date(ref).getTime())
+  if (ms <= 0) return ''
+  const h = Math.floor(ms / 3_600_000)
+  const m = Math.floor((ms % 3_600_000) / 60_000)
+  if (h > 0) return `${h}h ${m}m`
+  return `${m}m`
 }
 
 function BtnSpinner() {
@@ -31,15 +54,25 @@ function BtnSpinner() {
   )
 }
 
-export default function AdminApplicationsTable({ applications }: { applications: Application[] }) {
-  const pending  = applications.filter(a => a.status === 'pending')
-  const reviewed = applications.filter(a => a.status !== 'pending')
+export default function AdminApplicationsTable({ applications: initial }: { applications: Application[] }) {
+  // Ticker para re-renderizar e recalcular expirações a cada minuto
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 60_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const pending  = initial.filter(a => a.status === 'pending')
+  // Candidaturas decididas e ainda dentro das 12h (visíveis no painel)
+  const recent   = initial.filter(a => a.status !== 'pending' && !isExpired(a))
+  // Expiradas — ocultadas por padrão
+  const expired  = initial.filter(a => a.status !== 'pending' && isExpired(a))
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-lg font-bold text-gray-900">
-          Candidaturas a Afiliado ({applications.length})
+          Candidaturas a Afiliado ({initial.length})
         </h2>
         {pending.length > 0 && (
           <span className="text-sm text-yellow-700 bg-yellow-50 px-3 py-1 rounded-full font-medium">
@@ -48,6 +81,7 @@ export default function AdminApplicationsTable({ applications }: { applications:
         )}
       </div>
 
+      {/* Pendentes — ficam aqui indefinidamente até serem decididas */}
       {pending.length > 0 && (
         <div className="mb-8">
           <h3 className="font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wide">
@@ -59,18 +93,27 @@ export default function AdminApplicationsTable({ applications }: { applications:
         </div>
       )}
 
-      {reviewed.length > 0 && (
-        <div>
-          <h3 className="font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wide">
-            Já analisadas
+      {/* Decididas recentemente — desaparecem ao fim de 12h */}
+      {recent.length > 0 && (
+        <div className="mb-6">
+          <h3 className="font-semibold text-gray-700 text-sm mb-1 uppercase tracking-wide">
+            Analisadas recentemente
           </h3>
+          <p className="text-xs text-gray-400 mb-3">
+            Desaparecem automaticamente 12 horas após a decisão.
+          </p>
           <div className="space-y-3">
-            {reviewed.map(app => <ApplicationCard key={app.id} application={app} />)}
+            {recent.map(app => (
+              <ApplicationCard key={app.id} application={app} expiryLabel={timeUntilExpiry(app)} />
+            ))}
           </div>
         </div>
       )}
 
-      {applications.length === 0 && (
+      {/* Expiradas — colapsadas por padrão */}
+      {expired.length > 0 && <ExpiredSection apps={expired} />}
+
+      {initial.length === 0 && (
         <div className="card text-center py-10">
           <p className="text-4xl mb-3">📋</p>
           <p className="text-gray-500 text-sm">Ainda não há candidaturas submetidas.</p>
@@ -80,12 +123,48 @@ export default function AdminApplicationsTable({ applications }: { applications:
   )
 }
 
-function ApplicationCard({ application: app }: { application: Application }) {
+// ─── Secção colapsada das expiradas ──────────────────────────────────────────
+
+function ExpiredSection({ apps }: { apps: Application[] }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 text-xs text-gray-400 hover:text-gray-600 transition-colors mb-3"
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+        {apps.length} candidatura{apps.length !== 1 ? 's' : ''} expirada{apps.length !== 1 ? 's' : ''} (arquivo)
+      </button>
+      {open && (
+        <div className="space-y-3 opacity-60">
+          {apps.map(app => <ApplicationCard key={app.id} application={app} archived />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Card de candidatura ──────────────────────────────────────────────────────
+
+function ApplicationCard({
+  application: app,
+  expiryLabel,
+  archived = false,
+}: {
+  application: Application
+  expiryLabel?: string
+  archived?: boolean
+}) {
   const [isPending, startTransition] = useTransition()
-  const [status, setStatus]                   = useState(app.status)
-  const [showRejectModal, setShowRejectModal]  = useState(false)
-  const [rejectReason, setRejectReason]        = useState(app.reject_reason || '')
-  const [actionError, setActionError]          = useState('')
+  const [status, setStatus]                  = useState(app.status)
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectReason, setRejectReason]      = useState(app.reject_reason || '')
+  const [actionError, setActionError]        = useState('')
 
   const handleApprove = () => {
     const msg = status === 'rejected'
@@ -133,6 +212,17 @@ function ApplicationCard({ application: app }: { application: Application }) {
               style={{ background: statusBadge.bg, color: statusBadge.color }}>
               {statusBadge.label}
             </span>
+            {/* Contador de tempo restante antes de expirar */}
+            {expiryLabel && (
+              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                expira em {expiryLabel}
+              </span>
+            )}
+            {archived && (
+              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                arquivo
+              </span>
+            )}
           </div>
           <div className="flex gap-4 flex-wrap text-xs text-gray-500">
             <span>📞 {app.phone}</span>
@@ -184,7 +274,6 @@ function ApplicationCard({ application: app }: { application: Application }) {
         </div>
       )}
 
-      {/* Erro inline — mostra mensagem sem crashar a app */}
       {actionError && (
         <div className="rounded-xl p-3 mb-3 bg-red-50 border border-red-200">
           <p className="text-sm text-red-700">⚠️ {actionError}</p>
@@ -197,44 +286,43 @@ function ApplicationCard({ application: app }: { application: Application }) {
         </div>
       )}
 
-      {/* Botões — sempre visíveis, permitem reverter decisões */}
-      <div className="flex gap-2 pt-3 border-t flex-wrap" style={{ borderColor: 'var(--color-border)' }}>
-        {status !== 'approved' && (
-          <button onClick={handleApprove} disabled={isPending}
-            className="btn-primary text-sm py-2 px-4 disabled:opacity-50 flex items-center gap-1">
-            {isPending ? <><BtnSpinner />A processar…</> : '✅ Aprovar'}
-          </button>
-        )}
-        {status === 'approved' ? (
-          <button onClick={() => setShowRejectModal(true)} disabled={isPending}
-            className="btn-outline text-sm py-2 px-4 disabled:opacity-50"
-            style={{ borderColor: '#fca5a5', color: '#dc2626' }}>
-            ✗ Revogar aprovação
-          </button>
-        ) : status !== 'rejected' ? (
-          <button onClick={() => setShowRejectModal(true)} disabled={isPending}
-            className="btn-outline text-sm py-2 px-4 disabled:opacity-50"
-            style={{ borderColor: '#fca5a5', color: '#dc2626' }}>
-            ✗ Rejeitar
-          </button>
-        ) : (
-          <button onClick={() => setShowRejectModal(true)} disabled={isPending}
-            className="btn-outline text-sm py-2 px-4 disabled:opacity-50 text-xs"
-            style={{ borderColor: '#fca5a5', color: '#dc2626' }}>
-            ✏️ Alterar motivo / Rejeitar novamente
-          </button>
-        )}
-      </div>
+      {/* Botões — só aparecem se não estiver arquivada */}
+      {!archived && (
+        <div className="flex gap-2 pt-3 border-t flex-wrap" style={{ borderColor: 'var(--color-border)' }}>
+          {status !== 'approved' && (
+            <button onClick={handleApprove} disabled={isPending}
+              className="btn-primary text-sm py-2 px-4 disabled:opacity-50 flex items-center gap-1">
+              {isPending ? <><BtnSpinner />A processar…</> : '✅ Aprovar'}
+            </button>
+          )}
+          {status === 'approved' ? (
+            <button onClick={() => setShowRejectModal(true)} disabled={isPending}
+              className="btn-outline text-sm py-2 px-4 disabled:opacity-50"
+              style={{ borderColor: '#fca5a5', color: '#dc2626' }}>
+              ✗ Revogar aprovação
+            </button>
+          ) : status !== 'rejected' ? (
+            <button onClick={() => setShowRejectModal(true)} disabled={isPending}
+              className="btn-outline text-sm py-2 px-4 disabled:opacity-50"
+              style={{ borderColor: '#fca5a5', color: '#dc2626' }}>
+              ✗ Rejeitar
+            </button>
+          ) : (
+            <button onClick={() => setShowRejectModal(true)} disabled={isPending}
+              className="btn-outline text-sm py-2 px-4 disabled:opacity-50 text-xs"
+              style={{ borderColor: '#fca5a5', color: '#dc2626' }}>
+              ✏️ Alterar motivo / Rejeitar novamente
+            </button>
+          )}
+        </div>
+      )}
 
-      {/* Modal centrado no viewport com position:fixed */}
+      {/* Modal de rejeição */}
       {showRejectModal && (
         <div
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            top: 0, left: 0, right: 0, bottom: 0,
             zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
