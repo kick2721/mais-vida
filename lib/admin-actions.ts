@@ -540,6 +540,7 @@ export async function approveApplication(applicationId: string) {
     .update({
       status:        'approved',
       reviewed_at:   new Date().toISOString(),
+      updated_at:    new Date().toISOString(),
       reject_reason: null,
       password_temp: null,
     })
@@ -593,6 +594,7 @@ export async function rejectApplication(applicationId: string, reason?: string) 
       status:        'rejected',
       reject_reason: reason || null,
       reviewed_at:   new Date().toISOString(),
+      updated_at:    new Date().toISOString(),
     })
     .eq('id', applicationId)
 
