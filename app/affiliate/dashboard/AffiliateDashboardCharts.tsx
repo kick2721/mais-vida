@@ -135,18 +135,14 @@ function DetailModal({
 
   useEffect(() => {
     setMounted(true)
-    // Lock background scroll
+    // Lock background scroll — only overflow:hidden, no position:fixed
+    // This avoids the scroll-jump when closing the modal
     const scrollY = window.scrollY
     document.body.style.overflow = 'hidden'
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.width = '100%'
     return () => {
       document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.top = ''
-      document.body.style.width = ''
-      window.scrollTo(0, scrollY)
+      // Restore exact scroll position instantly with no animation
+      window.scrollTo({ top: scrollY, behavior: 'instant' as ScrollBehavior })
     }
   }, [])
 
