@@ -20,99 +20,134 @@ interface Affiliate {
 
 const PAGE_SIZE = 50
 
-// ─── Mini chart: barras + linha por cima (estilo profit/loss da referência) ───
+// Meses abreviados em português
+const MONTH_PT: Record<string, string> = {
+  '01': 'Jan', '02': 'Fev', '03': 'Mar', '04': 'Abr',
+  '05': 'Mai', '06': 'Jun', '07': 'Jul', '08': 'Ago',
+  '09': 'Set', '10': 'Out', '11': 'Nov', '12': 'Dez',
+}
 
-function MiniSalesChart({ data, up }: { data: number[]; up: boolean }) {
+// ─── Mini gráfico de linha para a coluna Vendas ───────────────────────────────
+// Linha com pontos e seta no fim, escala automática
+
+function MiniLineChart({ data, up }: { data: number[]; up: boolean }) {
+  const W = 58
+  const H = 24
   const max = Math.max(...data, 1)
-  const W = 56
-  const H = 28
-  const barW = (W - (data.length - 1)) / data.length
-
-  // Pontos da linha (centro-topo de cada barra)
-  const points = data.map((v, i) => {
-    const x = i * (barW + 1) + barW / 2
-    const h = Math.max((v / max) * (H - 4), v > 0 ? 3 : 1)
-    const y = H - h
-    return { x, y }
-  })
-
-  const polyline = points.map(p => `${p.x},${p.y}`).join(' ')
-
   const color = up ? '#16a34a' : '#dc2626'
-  const colorLight = up ? '#86efac' : '#fca5a5'
+
+  const pts = data.map((v, i) => ({
+    x: 3 + (i / (data.length - 1 || 1)) * (W - 10),
+    y: (H - 4) - (v / max) * (H - 8),
+  }))
+
+  const polyline = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const last = pts[pts.length - 1]
+  const prev = pts.length >= 2 ? pts[pts.length - 2] : { x: last.x - 6, y: last.y }
+  const angle = Math.atan2(last.y - prev.y, last.x - prev.x) * (180 / Math.PI)
 
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
-      {/* Barras */}
-      {data.map((v, i) => {
-        const h = Math.max((v / max) * (H - 4), v > 0 ? 3 : 1)
-        const x = i * (barW + 1)
-        const isLast = i === data.length - 1
-        return (
-          <rect
-            key={i}
-            x={x}
-            y={H - h}
-            width={barW}
-            height={h}
-            rx={1.5}
-            fill={isLast ? color : colorLight}
-            opacity={isLast ? 1 : 0.7}
-          />
-        )
-      })}
-      {/* Linha por cima */}
-      <polyline
-        points={polyline}
-        fill="none"
-        stroke="white"
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
       <polyline
         points={polyline}
         fill="none"
         stroke={color}
-        strokeWidth={1}
+        strokeWidth={2}
         strokeLinejoin="round"
         strokeLinecap="round"
       />
-      {/* Seta no fim da linha */}
-      {(() => {
-        const last = points[points.length - 1]
-        const prev = points[points.length - 2] || last
-        const dx = last.x - prev.x
-        const dy = last.y - prev.y
-        const angle = Math.atan2(dy, dx) * (180 / Math.PI)
-        return (
-          <g transform={`translate(${last.x},${last.y}) rotate(${angle})`}>
-            <polygon points="0,0 -5,-2.5 -5,2.5" fill={color} />
-          </g>
-        )
-      })()}
+      {/* Pontos */}
+      {pts.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={1.8} fill={color} />
+      ))}
+      {/* Seta no último ponto */}
+      <g transform={`translate(${last.x.toFixed(1)},${last.y.toFixed(1)}) rotate(${angle})`}>
+        <polygon points="6,0 -2,-3 -2,3" fill={color} />
+      </g>
     </svg>
   )
 }
 
-// ─── Trend arrow — só seta, sem texto ────────────────────────────────────────
+// ─── Gráfico de barras expandido: altura fixa, labels PT, escala automática ───
+
+function ExpandedBarChart({ data, months, up }: { data: number[]; months: string[]; up: boolean }) {
+  const BAR_H_MAX = 52  // altura máxima das barras em px — nunca ultrapassa
+  const BAR_W    = 22
+  const max      = Math.max(...data, 1)
+  const color    = up ? '#16a34a' : '#dc2626'
+  const colorLt  = up ? '#86efac' : '#fca5a5'
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5 }}>
+      {data.map((v, i) => {
+        const barH  = Math.max((v / max) * BAR_H_MAX, v > 0 ? 4 : 2)
+        const [, m] = months[i].split('-')
+        const label = MONTH_PT[m] || m
+        const isLast = i === data.length - 1
+
+        return (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div
+              style={{
+                width: BAR_W,
+                height: barH,
+                background: isLast ? color : colorLt,
+                borderRadius: '3px 3px 0 0',
+              }}
+            />
+            {/* Label debaixo, nunca tapada pelas barras */}
+            <span style={{ fontSize: 10, color: '#9ca3af', lineHeight: 1, whiteSpace: 'nowrap' }}>
+              {label}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Seta de tendência estilo gráfico de mercado ──────────────────────────────
 
 function TrendArrow({ current, previous }: { current: number; previous: number }) {
   if (previous === 0 && current === 0)
-    return <span className="text-gray-300">—</span>
+    return <span style={{ color: '#d1d5db', fontSize: 14, lineHeight: 1 }}>—</span>
 
   const up = previous === 0 ? true : current >= previous
+  const color = up ? '#16a34a' : '#dc2626'
 
   return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill={up ? '#16a34a' : '#dc2626'}
-      style={{ transform: up ? 'none' : 'rotate(180deg)' }}
-    >
-      {/* Seta triangular sólida */}
-      <polygon points="7,1 13,10 1,10" />
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      {up ? (
+        <>
+          {/* Linha zigzag a subir */}
+          <polyline
+            points="2,17 7,11 11,14 19,4"
+            stroke={color} strokeWidth="2.2"
+            strokeLinejoin="round" strokeLinecap="round"
+          />
+          {/* Cabeça da seta */}
+          <polyline
+            points="14,3 19,4 18,9"
+            stroke={color} strokeWidth="2.2"
+            strokeLinejoin="round" strokeLinecap="round"
+          />
+        </>
+      ) : (
+        <>
+          {/* Linha zigzag a descer */}
+          <polyline
+            points="2,5 7,11 11,8 19,18"
+            stroke={color} strokeWidth="2.2"
+            strokeLinejoin="round" strokeLinecap="round"
+          />
+          {/* Cabeça da seta */}
+          <polyline
+            points="14,19 19,18 18,13"
+            stroke={color} strokeWidth="2.2"
+            strokeLinejoin="round" strokeLinecap="round"
+          />
+        </>
+      )}
     </svg>
   )
 }
@@ -302,6 +337,7 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
   const [isActive, setIsActive]      = useState(affiliate.is_active)
   const [expanded, setExpanded]      = useState(false)
 
+  const months6       = lastNMonths(6)
   const monthlyCounts = getMonthlyCounts(affiliate)
   const currentMonth  = monthlyCounts[monthlyCounts.length - 1]
   const prevMonth     = monthlyCounts[monthlyCounts.length - 2]
@@ -319,7 +355,6 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
 
   return (
     <>
-      {/* Linha principal */}
       <div
         className="grid items-center px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors group"
         style={{ gridTemplateColumns: '2fr 1fr 80px 1fr 1fr 1fr 80px 80px' }}
@@ -345,9 +380,9 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
           <p className="text-xs text-gray-500">{fmt(affiliate.joined_at)}</p>
         </div>
 
-        {/* Vendas + mini gráfico bars+line */}
+        {/* Vendas: linha com seta + número */}
         <div className="flex items-center justify-end gap-2">
-          <MiniSalesChart data={monthlyCounts} up={trendUp} />
+          <MiniLineChart data={monthlyCounts} up={trendUp} />
           <p className="text-sm font-bold text-gray-800 w-6 text-right tabular-nums">
             {affiliate.total_sales || 0}
           </p>
@@ -367,7 +402,7 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
           </p>
         </div>
 
-        {/* Tendência — só seta */}
+        {/* Tendência */}
         <div className="flex justify-center">
           <TrendArrow current={currentMonth} previous={prevMonth} />
         </div>
@@ -388,7 +423,7 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
       {/* Painel expandido */}
       {expanded && (
         <div className="px-4 pb-4 pt-3 border-t bg-gray-50" style={{ borderColor: 'var(--color-border)' }}>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
             <DetailItem label="Nome completo"  value={affiliate.profiles?.full_name} />
             <DetailItem label="Telefone"       value={affiliate.profiles?.phone} />
             <DetailItem label="BI / NIF"       value={affiliate.profiles?.national_id} />
@@ -399,40 +434,18 @@ function AffiliateRow({ affiliate }: { affiliate: Affiliate }) {
             <DetailItem label="Saldo actual"   value={`${(affiliate.balance || 0).toLocaleString()} Kz`} />
           </div>
 
-          <div className="flex justify-between items-center">
-            {/* Gráfico expandido com labels de semana */}
+          <div className="flex justify-between items-end gap-4">
+            {/* Gráfico de barras: altura fixa, labels PT, nunca tapa as letras */}
             <div>
-              <p className="text-xs text-gray-400 mb-1">Vendas últimos 6 meses</p>
-              <div className="flex items-end gap-1" style={{ height: 40 }}>
-                {getMonthlyCounts(affiliate).map((v, i, arr) => {
-                  const max = Math.max(...arr, 1)
-                  const months = lastNMonths(6)
-                  const [, m] = months[i].split('-')
-                  return (
-                    <div key={i} className="flex flex-col items-center gap-0.5">
-                      <div
-                        style={{
-                          width: 20,
-                          height: `${Math.max((v / max) * 36, v > 0 ? 4 : 2)}px`,
-                          background: i === arr.length - 1
-                            ? (trendUp ? '#16a34a' : '#dc2626')
-                            : (trendUp ? '#86efac' : '#fca5a5'),
-                          borderRadius: '3px 3px 0 0',
-                          minHeight: v > 0 ? 3 : 1,
-                        }}
-                      />
-                      <span className="text-gray-400" style={{ fontSize: 9 }}>{m}</span>
-                    </div>
-                  )
-                })}
-              </div>
+              <p className="text-xs text-gray-400 mb-2">Vendas últimos 6 meses</p>
+              <ExpandedBarChart data={monthlyCounts} months={months6} up={trendUp} />
             </div>
 
             {/* Botão toggle */}
             <button
               onClick={e => { e.stopPropagation(); handleToggle() }}
               disabled={isPending}
-              className="text-xs px-4 py-2 rounded-xl font-semibold transition-all disabled:opacity-50"
+              className="flex-shrink-0 text-xs px-4 py-2 rounded-xl font-semibold transition-all disabled:opacity-50"
               style={
                 isActive
                   ? { background: '#fee2e2', color: '#b91c1c' }
