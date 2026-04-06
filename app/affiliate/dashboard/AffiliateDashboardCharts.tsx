@@ -139,18 +139,24 @@ function DetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{ background: 'rgba(0,0,0,0.5)' }}
+      className="fixed z-50 flex items-center justify-center p-4"
+      style={{
+        background: 'rgba(0,0,0,0.5)',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      }}
       onClick={onClose}
     >
       <div
-        className="bg-white w-full sm:max-w-lg sm:rounded-2xl flex flex-col"
+        className="bg-white w-full max-w-lg rounded-2xl flex flex-col"
         style={{ maxHeight: '85vh' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Sticky header */}
         <div
-          className="flex items-center justify-between px-5 py-4 border-b bg-white sm:rounded-t-2xl flex-shrink-0"
+          className="flex items-center justify-between px-5 py-4 border-b bg-white rounded-t-2xl flex-shrink-0"
           style={{ borderColor: 'var(--color-border)' }}
         >
           <h3 className="font-display text-lg font-bold text-gray-900">{title}</h3>
