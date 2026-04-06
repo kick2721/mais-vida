@@ -6,10 +6,9 @@ import { logoutUser } from '@/lib/actions'
 import { BUSINESS } from '@/lib/constants'
 import AdminSalesTable from './AdminSalesTable'
 import AdminAffiliatesTable from './AdminAffiliatesTable'
-import IssueCardButton from './IssueCardButton'
-import WithdrawalActions from './WithdrawalActions'
 import AdminApplicationsTable from './AdminApplicationsTable'
 import AdminCommissionsSection from './AdminCommissionsSection'
+import AdminCardsSection from './AdminCardsSection'
 import Logo from '@/app/components/ui/Logo'
 import { cleanupExpiredReceipts } from '@/lib/receipt-cleanup'
 
@@ -21,13 +20,11 @@ export default async function AdminDashboardPage({
   const params = await searchParams
   const activeTab = params.tab || 'sales'
 
-  // Limpar comprovativos expirados em segundo plano (lazy cleanup)
-  // Corre silenciosamente cada vez que o admin abre o painel
   cleanupExpiredReceipts().catch(err =>
     console.error('[Cleanup] Erro no cleanup automático:', err)
   )
 
-  const supabase = await createServerSupabaseClient()
+  const supabase      = await createServerSupabaseClient()
   const supabaseAdmin = await createServerSupabaseAdminClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -41,47 +38,59 @@ export default async function AdminDashboardPage({
 
   if (!profile || profile.role !== 'admin') redirect('/login')
 
-  // ─── KPIs ─────────────────────────────────────────────────────────────────
-  const { count: totalSales } = await supabaseAdmin
-    .from('sales')
-    .select('id', { count: 'exact', head: true })
+  // ─── Datas para comparação mês actual vs mês anterior ─────────────────────
+  const now            = new Date()
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
+  const prevMonthEnd   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString()
 
-  const { count: pendingSales } = await supabaseAdmin
-    .from('sales')
-    .select('id', { count: 'exact', head: true })
-    .in('status', ['pending', 'pending_review'])
+  // ─── KPIs — totais ────────────────────────────────────────────────────────
+  const [
+    { count: totalSales },
+    { count: pendingSales },
+    { count: confirmedSales },
+    { count: totalAffiliates },
+    { count: pendingCards },
+    { count: pendingApplications },
+    { count: totalCommissions },
+    { count: paidWithdrawals },
+  ] = await Promise.all([
+    supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }).in('status', ['pending', 'pending_review']),
+    supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }).eq('status', 'confirmed'),
+    supabaseAdmin.from('affiliates').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    supabaseAdmin.from('member_cards').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabaseAdmin.from('affiliate_applications').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabaseAdmin.from('commissions').select('id', { count: 'exact', head: true }),
+    supabaseAdmin.from('withdrawal_requests').select('id', { count: 'exact', head: true }).eq('status', 'paid'),
+  ])
 
-  const { count: confirmedSales } = await supabaseAdmin
+  // ─── Receita total (vendas confirmadas) ───────────────────────────────────
+  const { data: revenueData } = await supabaseAdmin
     .from('sales')
-    .select('id', { count: 'exact', head: true })
+    .select('amount')
     .eq('status', 'confirmed')
 
-  const { count: totalAffiliates } = await supabaseAdmin
-    .from('affiliates')
-    .select('id', { count: 'exact', head: true })
-    .eq('is_active', true)
+  const totalRevenue = (revenueData || []).reduce((sum: number, s: any) => sum + (s.amount || 0), 0)
 
-  const { count: pendingCards } = await supabaseAdmin
-    .from('member_cards')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'pending')
+  // ─── KPIs — variação mês actual vs mês anterior ───────────────────────────
+  const [
+    { count: salesThisMonth },
+    { count: salesPrevMonth },
+    { data: revenueThisMonthData },
+    { data: revenuePrevMonthData },
+  ] = await Promise.all([
+    supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }).gte('created_at', thisMonthStart),
+    supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }).gte('created_at', prevMonthStart).lte('created_at', prevMonthEnd),
+    supabaseAdmin.from('sales').select('amount').eq('status', 'confirmed').gte('created_at', thisMonthStart),
+    supabaseAdmin.from('sales').select('amount').eq('status', 'confirmed').gte('created_at', prevMonthStart).lte('created_at', prevMonthEnd),
+  ])
 
-  const { count: pendingApplications } = await supabaseAdmin
-    .from('affiliate_applications')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'pending')
+  const revenueThisMonth = (revenueThisMonthData || []).reduce((s: number, r: any) => s + (r.amount || 0), 0)
+  const revenuePrevMonth = (revenuePrevMonthData || []).reduce((s: number, r: any) => s + (r.amount || 0), 0)
 
-  // ─── COMMISSIONS KPI ──────────────────────────────────────────────────────
-  const { count: totalCommissions } = await supabaseAdmin
-    .from('commissions')
-    .select('id', { count: 'exact', head: true })
-
-  const { count: paidWithdrawals } = await supabaseAdmin
-    .from('withdrawal_requests')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'paid')
-  // Query simplificada: sem JOIN a customers (compras anónimas não têm customer_id)
-  // Afiliado resolvido por referral_code directamente
+  // ─── SALES DATA ───────────────────────────────────────────────────────────
+  // Sem limit — paginação feita no cliente (AdminSalesTable)
   const { data: salesRaw, error: salesError } = await supabaseAdmin
     .from('sales')
     .select(`
@@ -91,25 +100,21 @@ export default async function AdminDashboardPage({
       created_at, confirmed_at, notes
     `)
     .order('created_at', { ascending: false })
-    .limit(200)
 
   if (salesError) {
     console.error('[Admin] Erro ao carregar vendas:', salesError)
   }
 
-  // Gerar signed URLs para todos os comprovativos via receipt_path
+  // Signed URLs para comprovativos
   const sales = await Promise.all((salesRaw || []).map(async (sale: any) => {
-    // Sempre regerar a URL a partir do receipt_path (URL pré-guardada pode expirar)
     if (sale.receipt_path) {
-      // O ficheiro no storage tem path 'receipts/filename.jpeg' dentro do bucket 'receipts'
-      // Por isso o path para createSignedUrl deve INCLUIR o prefixo 'receipts/'
       const storagePath = sale.receipt_path.startsWith('receipts/')
-        ? sale.receipt_path              // já tem o prefixo correcto
-        : `receipts/${sale.receipt_path}` // adiciona o prefixo
+        ? sale.receipt_path
+        : `receipts/${sale.receipt_path}`
 
       const { data: signed, error: signError } = await supabaseAdmin.storage
         .from('receipts')
-        .createSignedUrl(storagePath, 60 * 60 * 6) // 6 horas
+        .createSignedUrl(storagePath, 60 * 60 * 6)
 
       if (signError) {
         console.error('[Admin] Erro signed URL:', signError, '| path:', sale.receipt_path)
@@ -120,7 +125,7 @@ export default async function AdminDashboardPage({
     return sale
   }))
 
-  // Enriquecer vendas com dados do afiliado (via referral_code)
+  // Enriquecer vendas com dados do afiliado
   const salesWithAffiliate = await Promise.all(sales.map(async (sale: any) => {
     if (!sale.referral_code) return sale
     const { data: aff } = await supabaseAdmin
@@ -132,14 +137,38 @@ export default async function AdminDashboardPage({
   }))
 
   // ─── AFFILIATES DATA ──────────────────────────────────────────────────────
-  const { data: affiliates } = await supabaseAdmin
+  const { data: affiliatesRaw } = await supabaseAdmin
     .from('affiliates')
     .select(`
       id, referral_code, total_sales, total_earned, total_paid, balance,
       is_active, joined_at,
       profiles ( full_name, phone, national_id )
     `)
-    .order('joined_at', { ascending: false })
+    .order('total_sales', { ascending: false })
+
+  // Vendas mensais por afiliado (últimos 6 meses) para mini-gráfico e tendência
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString()
+
+  const { data: monthlySalesRaw } = await supabaseAdmin
+    .from('sales')
+    .select('referral_code, created_at')
+    .gte('created_at', sixMonthsAgo)
+    .not('referral_code', 'is', null)
+
+  // Agrupar por afiliado e mês
+  const monthlySalesByCode: Record<string, Record<string, number>> = {}
+  for (const s of (monthlySalesRaw || []) as any[]) {
+    if (!s.referral_code) continue
+    const month = s.created_at.slice(0, 7) // 'YYYY-MM'
+    if (!monthlySalesByCode[s.referral_code]) monthlySalesByCode[s.referral_code] = {}
+    monthlySalesByCode[s.referral_code][month] = (monthlySalesByCode[s.referral_code][month] || 0) + 1
+  }
+
+  const affiliates = (affiliatesRaw || []).map((aff: any) => {
+    const byMonth = monthlySalesByCode[aff.referral_code] || {}
+    const monthly_sales = Object.entries(byMonth).map(([month, count]) => ({ month, count: count as number }))
+    return { ...aff, monthly_sales }
+  })
 
   // ─── COMMISSIONS DATA ─────────────────────────────────────────────────────
   const { data: commissions } = await supabaseAdmin
@@ -165,10 +194,9 @@ export default async function AdminDashboardPage({
       )
     `)
     .order('requested_at', { ascending: false })
-    .limit(50)
+    .limit(200)
 
   // ─── CARDS DATA ───────────────────────────────────────────────────────────
-  // Cartões ligados a vendas — buscar info do cliente via venda
   const { data: cardsRaw } = await supabaseAdmin
     .from('member_cards')
     .select(`
@@ -176,9 +204,7 @@ export default async function AdminDashboardPage({
       sale_id
     `)
     .order('created_at', { ascending: false })
-    .limit(50)
 
-  // Enriquecer cartões com dados da venda associada
   const cards = await Promise.all((cardsRaw || []).map(async (card: any) => {
     if (!card.sale_id) return card
     const { data: sale } = await supabaseAdmin
@@ -195,16 +221,25 @@ export default async function AdminDashboardPage({
     .select('*')
     .order('created_at', { ascending: false })
 
-  const kpis = [
-    { label: 'Vendas Totais',     value: totalSales          || 0, sub: `${pendingSales ?? 0} pendentes`,                              color: 'var(--color-primary)', icon: 'dollar' },
-    { label: 'Afiliados Activos', value: totalAffiliates     || 0, sub: 'na plataforma',                                               color: '#1e40af',              icon: '👥' },
-    { label: 'Cartões Pendentes', value: pendingCards        || 0, sub: 'para emitir',                                                 color: '#d97706',              icon: 'card' },
-    { label: 'Comissões',         value: totalCommissions    || 0, sub: `${paidWithdrawals ?? 0} retiros pagos`,                        color: '#7c3aed',              icon: '💰' },
-    { label: 'Candidaturas',      value: pendingApplications || 0, sub: 'pendentes de análise',                                        color: '#dc2626',              icon: '📋' },
-  ]
+  // ─── KPI helpers ──────────────────────────────────────────────────────────
+  function trendPct(current: number, previous: number): number | null {
+    if (previous === 0) return null
+    return Math.round(((current - previous) / previous) * 100)
+  }
+
+  const salesTrend   = trendPct(salesThisMonth || 0, salesPrevMonth || 0)
+  const revenueTrend = trendPct(revenueThisMonth, revenuePrevMonth)
+
+  // Badge counts para tabs
+  const tabBadges: Record<string, number> = {
+    sales:        pendingSales        || 0,
+    cards:        pendingCards        || 0,
+    applications: pendingApplications || 0,
+  }
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--color-surface)' }}>
+
       {/* Header */}
       <header className="bg-white border-b" style={{ borderColor: 'var(--color-border)' }}>
         <div className="section-container flex items-center justify-between h-16">
@@ -233,68 +268,141 @@ export default async function AdminDashboardPage({
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          {kpis.map(kpi => (
-            <div key={kpi.label} className="card">
-              <div className="flex items-start justify-between mb-2">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{kpi.label}</p>
-                {kpi.icon === 'card' ? (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="5" width="20" height="14" rx="2"/>
-                    <line x1="2" y1="10" x2="22" y2="10"/>
-                    <line x1="6" y1="15" x2="10" y2="15"/>
-                  </svg>
-                ) : kpi.icon === 'dollar' ? (
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="1" x2="12" y2="23"/>
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                  </svg>
-                ) : (
-                  <span className="text-xl">{kpi.icon}</span>
-                )}
-              </div>
-              <p className="font-display text-3xl font-bold" style={{ color: kpi.color }}>
-                {kpi.value}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">{kpi.sub}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+
+          {/* Receita total */}
+          <KpiCard
+            label="Receita Total"
+            value={`${totalRevenue.toLocaleString()} Kz`}
+            sub={`este mês: ${revenueThisMonth.toLocaleString()} Kz`}
+            trend={revenueTrend}
+            color="var(--color-primary)"
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            }
+          />
+
+          {/* Vendas totais */}
+          <KpiCard
+            label="Vendas Totais"
+            value={String(totalSales || 0)}
+            sub={`este mês: ${salesThisMonth || 0}`}
+            trend={salesTrend}
+            color="var(--color-primary)"
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+            }
+          />
+
+          {/* Pendentes */}
+          <KpiCard
+            label="Pendentes"
+            value={String(pendingSales || 0)}
+            sub="para rever"
+            color="#d97706"
+            urgent={!!(pendingSales && pendingSales > 0)}
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            }
+          />
+
+          {/* Afiliados */}
+          <KpiCard
+            label="Afiliados Activos"
+            value={String(totalAffiliates || 0)}
+            sub="na plataforma"
+            color="#1e40af"
+            icon={<span className="text-lg">👥</span>}
+          />
+
+          {/* Cartões pendentes */}
+          <KpiCard
+            label="Cartões Pendentes"
+            value={String(pendingCards || 0)}
+            sub="para emitir"
+            color="#d97706"
+            urgent={!!(pendingCards && pendingCards > 0)}
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <line x1="2" y1="10" x2="22" y2="10"/>
+                <line x1="6" y1="15" x2="10" y2="15"/>
+              </svg>
+            }
+          />
+
+          {/* Candidaturas */}
+          <KpiCard
+            label="Candidaturas"
+            value={String(pendingApplications || 0)}
+            sub="pendentes"
+            color="#dc2626"
+            urgent={!!(pendingApplications && pendingApplications > 0)}
+            icon={<span className="text-lg">📋</span>}
+          />
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-white rounded-2xl p-1 border overflow-x-auto" style={{ borderColor: 'var(--color-border)' }}>
-          {[
-            { key: 'sales',        label: 'Vendas',       emoji: '💳' },
-            { key: 'cards',        label: 'Cartões',      emoji: null },
-            { key: 'affiliates',   label: 'Afiliados',    emoji: '👥' },
-            { key: 'commissions',  label: 'Comissões',    emoji: '💰' },
-            { key: 'applications', label: 'Candidaturas', emoji: '📋' },
-          ].map(tab => (
-            <a
-              key={tab.key}
-              href={`/admin/dashboard?tab=${tab.key}`}
-              className="flex-shrink-0 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-sm font-semibold transition-all"
-              style={
-                activeTab === tab.key
-                  ? { background: 'var(--color-primary)', color: 'white' }
-                  : { color: '#6b7280' }
-              }
-            >
-              {tab.emoji ? (
-                <span>{tab.emoji}</span>
-              ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="5" width="20" height="14" rx="2"/>
-                  <line x1="2" y1="10" x2="22" y2="10"/>
-                  <line x1="6" y1="15" x2="10" y2="15"/>
-                </svg>
-              )}
-              <span className="hidden sm:inline">{tab.label}</span>
-            </a>
-          ))}
+        {/* Tabs — sticky */}
+        <div
+          className="sticky top-0 z-10 -mx-4 px-4 pb-3 pt-1"
+          style={{ background: 'var(--color-surface)' }}
+        >
+          <div
+            className="flex gap-1 bg-white rounded-2xl p-1 border overflow-x-auto"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
+            {[
+              { key: 'sales',        label: 'Vendas',       emoji: '💳' },
+              { key: 'cards',        label: 'Cartões',      emoji: null },
+              { key: 'affiliates',   label: 'Afiliados',    emoji: '👥' },
+              { key: 'commissions',  label: 'Comissões',    emoji: '💰' },
+              { key: 'applications', label: 'Candidaturas', emoji: '📋' },
+            ].map(tab => {
+              const badge = tabBadges[tab.key] || 0
+              return (
+                <a
+                  key={tab.key}
+                  href={`/admin/dashboard?tab=${tab.key}`}
+                  className="flex-shrink-0 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-sm font-semibold transition-all relative"
+                  style={
+                    activeTab === tab.key
+                      ? { background: 'var(--color-primary)', color: 'white' }
+                      : { color: '#6b7280' }
+                  }
+                >
+                  {tab.emoji ? (
+                    <span>{tab.emoji}</span>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="5" width="20" height="14" rx="2"/>
+                      <line x1="2" y1="10" x2="22" y2="10"/>
+                      <line x1="6" y1="15" x2="10" y2="15"/>
+                    </svg>
+                  )}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  {badge > 0 && (
+                    <span
+                      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full text-white flex items-center justify-center font-bold"
+                      style={{ fontSize: 10, background: '#ef4444', padding: '0 4px' }}
+                    >
+                      {badge > 99 ? '99+' : badge}
+                    </span>
+                  )}
+                </a>
+              )
+            })}
+          </div>
         </div>
 
-        {/* Tabs content */}
+        {/* Conteúdo das tabs */}
         {activeTab === 'sales' && (
           <AdminSalesTable sales={salesWithAffiliate} adminId={user.id} />
         )}
@@ -302,7 +410,7 @@ export default async function AdminDashboardPage({
           <AdminCardsSection cards={cards} adminId={user.id} />
         )}
         {activeTab === 'affiliates' && (
-          <AdminAffiliatesTable affiliates={affiliates || []} />
+          <AdminAffiliatesTable affiliates={affiliates} />
         )}
         {activeTab === 'commissions' && (
           <AdminCommissionsSection commissions={commissions || []} withdrawals={withdrawals || []} adminId={user.id} />
@@ -315,87 +423,54 @@ export default async function AdminDashboardPage({
   )
 }
 
-// ─── CARDS SECTION ────────────────────────────────────────────────────────────
-function AdminCardsSection({ cards, adminId }: { cards: any[]; adminId: string }) {
-  const pending = cards.filter(c => c.status === 'pending')
-  const issued  = cards.filter(c => c.status === 'issued')
+// ─── KPI Card component ───────────────────────────────────────────────────────
 
+function KpiCard({
+  label,
+  value,
+  sub,
+  color,
+  icon,
+  trend,
+  urgent = false,
+}: {
+  label: string
+  value: string
+  sub: string
+  color: string
+  icon: React.ReactNode
+  trend?: number | null
+  urgent?: boolean
+}) {
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-display text-lg font-bold text-gray-900">
-          Cartões ({cards.length})
-        </h2>
-        <span className="text-sm text-yellow-700 bg-yellow-50 px-3 py-1 rounded-full font-medium">
-          {pending.length} pendentes de emissão
-        </span>
+    <div
+      className="card"
+      style={urgent ? { borderColor: '#fbbf24', borderWidth: 1.5 } : undefined}
+    >
+      <div className="flex items-start justify-between mb-2">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide leading-tight">{label}</p>
+        {icon}
       </div>
-
-      <div className="rounded-2xl p-4 mb-6 border border-yellow-200 bg-yellow-50">
-        <p className="text-sm font-semibold text-yellow-800">📋 Processo de emissão de cartão</p>
-        <p className="text-xs text-yellow-700 mt-1">
-          O cartão digital é preparado manualmente e enviado ao cliente via WhatsApp ou email.
-          Após enviar, marque como &quot;Emitido&quot; para registar a emissão no sistema.
-        </p>
-      </div>
-
-      {pending.length > 0 && (
-        <div className="mb-8">
-          <h3 className="font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wide">
-            ⚠️ Pendentes de emissão
-          </h3>
-          <div className="space-y-3">
-            {pending.map(card => <CardRow key={card.id} card={card} adminId={adminId} />)}
-          </div>
-        </div>
-      )}
-
-      {issued.length > 0 && (
-        <div>
-          <h3 className="font-semibold text-gray-700 text-sm mb-3 uppercase tracking-wide">
-            ✅ Cartões emitidos
-          </h3>
-          <div className="space-y-3">
-            {issued.map(card => <CardRow key={card.id} card={card} adminId={adminId} />)}
-          </div>
-        </div>
-      )}
-
-      {cards.length === 0 && (
-        <div className="card text-center py-10">
-          <p className="text-4xl mb-3">🪪</p>
-          <p className="text-gray-500 text-sm">Ainda não há cartões gerados.</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function CardRow({ card, adminId }: { card: any; adminId: string }) {
-  const saleData = card.sale_data
-  return (
-    <div className="card flex items-center justify-between gap-4 flex-wrap">
-      <div>
-        <p className="font-semibold text-gray-800 text-sm">{saleData?.customer_name || 'Cliente'}</p>
-        <p className="text-xs text-gray-500">{saleData?.customer_phone}</p>
-        <p className="text-xs font-mono text-gray-600 mt-1">Nº {card.card_number}</p>
-      </div>
-      <div className="flex items-center gap-3">
-        {card.status === 'issued' ? (
-          <span className="text-xs px-3 py-1 rounded-full font-medium bg-green-100 text-green-700">
-            ✅ Emitido {card.issued_at && `— ${new Date(card.issued_at).toLocaleDateString('pt-AO')}`}
+      <p className="font-display text-2xl font-bold truncate" style={{ color }}>
+        {value}
+      </p>
+      <div className="flex items-center gap-2 mt-1">
+        <p className="text-xs text-gray-500 truncate">{sub}</p>
+        {trend !== null && trend !== undefined && (
+          <span
+            className="flex-shrink-0 flex items-center gap-0.5 text-xs font-semibold"
+            style={{ color: trend >= 0 ? '#16a34a' : '#dc2626' }}
+          >
+            <svg
+              width="9" height="9" viewBox="0 0 10 10" fill="currentColor"
+              style={{ transform: trend >= 0 ? 'none' : 'rotate(180deg)' }}
+            >
+              <path d="M5 1L9 7H1L5 1Z"/>
+            </svg>
+            {Math.abs(trend)}%
           </span>
-        ) : (
-          <IssueCardButton
-            cardId={card.id}
-            adminId={adminId}
-            customerName={saleData?.customer_name || 'Cliente'}
-            customerPhone={saleData?.customer_phone}
-          />
         )}
       </div>
     </div>
   )
 }
-
-
