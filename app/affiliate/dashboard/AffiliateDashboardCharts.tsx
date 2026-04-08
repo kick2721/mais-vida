@@ -190,8 +190,9 @@ function BarChart({
   const total = data.length
   let step = 1
   if (groupBy === 'day') {
-    if (total > 20) step = 5
-    else if (total > 10) step = 3
+    if (total > 25) step = 7
+    else if (total > 14) step = 5
+    else if (total > 7) step = 2
   }
 
   return (
@@ -227,13 +228,28 @@ function BarChart({
       </div>
 
       {/* X axis labels — smart spacing */}
-      <div className="flex gap-px">
+      <div className="flex gap-px" style={{ minHeight: groupBy === 'day' && total > 14 ? '32px' : '20px' }}>
         {data.map(({ key }, i) => {
           const showLabel = groupBy === 'month' || i % step === 0
           return (
-            <div key={key} className="flex-1 text-center overflow-hidden">
+            <div key={key} className="flex-1 relative" style={{ minWidth: 0 }}>
               {showLabel && (
-                <span className="text-xs text-gray-400 block leading-tight">
+                <span
+                  className="text-xs text-gray-400 block leading-tight"
+                  style={
+                    groupBy === 'day' && total > 14
+                      ? {
+                          position: 'absolute',
+                          left: '50%',
+                          top: 0,
+                          transform: 'translateX(-50%) rotate(-35deg)',
+                          transformOrigin: 'top center',
+                          whiteSpace: 'nowrap',
+                          fontSize: '10px',
+                        }
+                      : { textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+                  }
+                >
                   {formatLabel(key, groupBy, i, total)}
                 </span>
               )}
