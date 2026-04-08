@@ -2,7 +2,7 @@
 
 // app/affiliate/dashboard/AffiliateDashboardCharts.tsx
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 
 interface Sale {
@@ -28,6 +28,64 @@ interface Props {
   saleStatusMap: Record<string, { label: string; color: string; bg: string }>
 }
 
+// ─── Period config ─────────────────────────────────────────────────────────
+
+type Period = '7d' | '30d' | '6m' | '1y'
+
+interface PeriodConfig {
+  label: string
+  getDates: () => { startDate: Date; endDate: Date }
+  // How to group: 'day' | 'week' | 'month'
+  groupBy: 'day' | 'week' | 'month'
+}
+
+const PERIODS: Record<Period, PeriodConfig> = {
+  '7d': {
+    label: '7 dias',
+    groupBy: 'day',
+    getDates: () => {
+      const end = new Date()
+      const start = new Date()
+      start.setDate(start.getDate() - 6)
+      return { startDate: start, endDate: end }
+    },
+  },
+  '30d': {
+    label: '30 dias',
+    groupBy: 'day',
+    getDates: () => {
+      const end = new Date()
+      const start = new Date()
+      start.setDate(start.getDate() - 29)
+      return { startDate: start, endDate: end }
+    },
+  },
+  '6m': {
+    label: '6 meses',
+    groupBy: 'month',
+    getDates: () => {
+      const end = new Date()
+      const start = new Date()
+      start.setMonth(start.getMonth() - 5)
+      start.setDate(1)
+      return { startDate: start, endDate: end }
+    },
+  },
+  '1y': {
+    label: '1 ano',
+    groupBy: 'month',
+    getDates: () => {
+      const end = new Date()
+      const start = new Date()
+      start.setFullYear(start.getFullYear() - 1)
+      start.setDate(1)
+      return { startDate: start, endDate: end }
+    },
+  },
+}
+
+// ─── Date helpers ──────────────────────────────────────────────────────────
+
 function getDayRange(startDate: Date, endDate: Date): string[] {
   const days: string[] = []
   const current = new Date(startDate)
@@ -41,59 +99,116 @@ function getDayRange(startDate: Date, endDate: Date): string[] {
   return days
 }
 
-function formatDayLabel(isoDate: string): string {
-  const [, month, day] = isoDate.split('-')
+function getMonthRange(startDate: Date, endDate: Date): string[] {
+  const months: string[] = []
+  const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
+  const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1)
+  while (current <= end) {
+    months.push(`${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`)
+    current.setMonth(current.getMonth() + 1)
+  }
+  return months
+}
+
+// Format label for X axis based on groupBy
+function formatLabel(key: string, groupBy: 'day' | 'week' | 'month', index: number, total: number): string {
+  if (groupBy === 'month') {
+    // key = 'YYYY-MM'
+    const [year, month] = key.split('-')
+    const date = new Date(Number(year), Number(month) - 1, 1)
+    return date.toLocaleDateString('pt-AO', { month: 'short' })
+  }
+  // groupBy === 'day' — key = 'YYYY-MM-DD'
+  const [, month, day] = key.split('-')
   return `${day}/${month}`
 }
 
-// Count-based chart data (for sales)
-function buildCountData(items: { created_at: string }[], days: string[]) {
+// Format tooltip label (more verbose)
+function formatTooltipLabel(key: string, groupBy: 'day' | 'week' | 'month'): string {
+  if (groupBy === 'month') {
+    const [year, month] = key.split('-')
+    const date = new Date(Number(year), Number(month) - 1, 1)
+    return date.toLocaleDateString('pt-AO', { month: 'long', year: 'numeric' })
+  }
+  const date = new Date(key)
+  return date.toLocaleDateString('pt-AO', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+// ─── Chart data builders ───────────────────────────────────────────────────
+
+function buildDayCountData(items: { created_at: string }[], days: string[]) {
   const map: Record<string, number> = {}
   for (const item of items) {
     const day = item.created_at.split('T')[0]
     map[day] = (map[day] || 0) + 1
   }
-  return days.map(day => ({ day, total: map[day] || 0 }))
+  return days.map(day => ({ key: day, total: map[day] || 0 }))
 }
 
-// Amount-based chart data (for commissions)
-function buildAmountData(items: { created_at: string; amount: number }[], days: string[]) {
+function buildDayAmountData(items: { created_at: string; amount: number }[], days: string[]) {
   const map: Record<string, number> = {}
   for (const item of items) {
     const day = item.created_at.split('T')[0]
     map[day] = (map[day] || 0) + item.amount
   }
-  return days.map(day => ({ day, total: map[day] || 0 }))
+  return days.map(day => ({ key: day, total: map[day] || 0 }))
 }
 
+function buildMonthCountData(items: { created_at: string }[], months: string[]) {
+  const map: Record<string, number> = {}
+  for (const item of items) {
+    const month = item.created_at.slice(0, 7)
+    map[month] = (map[month] || 0) + 1
+  }
+  return months.map(month => ({ key: month, total: map[month] || 0 }))
+}
+
+function buildMonthAmountData(items: { created_at: string; amount: number }[], months: string[]) {
+  const map: Record<string, number> = {}
+  for (const item of items) {
+    const month = item.created_at.slice(0, 7)
+    map[month] = (map[month] || 0) + item.amount
+  }
+  return months.map(month => ({ key: month, total: map[month] || 0 }))
+}
+
+// ─── BarChart component ────────────────────────────────────────────────────
+
 function BarChart({
-  data, color, label, unit,
+  data, color, label, unit, groupBy,
 }: {
-  data: { day: string; total: number }[]
+  data: { key: string; total: number }[]
   color: string
   label: string
   unit: string
+  groupBy: 'day' | 'week' | 'month'
 }) {
   const max = Math.max(...data.map(d => d.total))
-  // Only show label every N days to avoid crowding
-  const step = Math.ceil(data.length / 8)
+
+  // Decide which labels to show to avoid overcrowding
+  // For months: always show all. For days: show every N
+  const total = data.length
+  let step = 1
+  if (groupBy === 'day') {
+    if (total > 20) step = 5
+    else if (total > 10) step = 3
+  }
 
   return (
     <div className="card">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">{label}</p>
       <div className="flex items-end gap-px h-40 mb-2">
-        {data.map(({ day, total }) => {
+        {data.map(({ key, total }) => {
           const hasValue = total > 0
-          // If max is 0 (no data yet), show flat line. Otherwise scale properly.
           const heightPct = max > 0 ? (total / max) * 100 : 0
 
           return (
-            <div key={day} className="flex-1 flex flex-col items-center justify-end group relative h-full">
+            <div key={key} className="flex-1 flex flex-col items-center justify-end group relative h-full">
               {hasValue && (
                 <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-10
                   opacity-0 group-hover:opacity-100 transition-opacity
                   bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap pointer-events-none">
-                  {formatDayLabel(day)}: {total} {unit}
+                  {formatTooltipLabel(key, groupBy)}: {total.toLocaleString()} {unit}
                 </div>
               )}
               <div
@@ -110,19 +225,56 @@ function BarChart({
           )
         })}
       </div>
-      {/* X axis labels */}
+
+      {/* X axis labels — smart spacing */}
       <div className="flex gap-px">
-        {data.map(({ day }, i) => (
-          <div key={day} className="flex-1 text-center overflow-hidden">
-            {i % step === 0 && (
-              <span className="text-xs text-gray-400">{formatDayLabel(day)}</span>
-            )}
-          </div>
-        ))}
+        {data.map(({ key }, i) => {
+          const showLabel = groupBy === 'month' || i % step === 0
+          return (
+            <div key={key} className="flex-1 text-center overflow-hidden">
+              {showLabel && (
+                <span className="text-xs text-gray-400 block leading-tight">
+                  {formatLabel(key, groupBy, i, total)}
+                </span>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
+
+// ─── PeriodSelector ────────────────────────────────────────────────────────
+
+function PeriodSelector({
+  value,
+  onChange,
+}: {
+  value: Period
+  onChange: (p: Period) => void
+}) {
+  return (
+    <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+      {(Object.keys(PERIODS) as Period[]).map((p) => (
+        <button
+          key={p}
+          onClick={() => onChange(p)}
+          className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-all"
+          style={
+            value === p
+              ? { background: 'white', color: '#111827', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+              : { color: '#6b7280' }
+          }
+        >
+          {PERIODS[p].label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ─── DetailModal ───────────────────────────────────────────────────────────
 
 function DetailModal({
   title, onClose, children,
@@ -135,13 +287,10 @@ function DetailModal({
 
   useEffect(() => {
     setMounted(true)
-    // Lock background scroll — only overflow:hidden, no position:fixed
-    // This avoids the scroll-jump when closing the modal
     const scrollY = window.scrollY
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = ''
-      // Restore exact scroll position instantly with no animation
       window.scrollTo({ top: scrollY, behavior: 'instant' as ScrollBehavior })
     }
   }, [])
@@ -152,10 +301,7 @@ function DetailModal({
     <div
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        top: 0, left: 0, right: 0, bottom: 0,
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
@@ -214,26 +360,62 @@ function DetailModal({
   return createPortal(modalContent, document.body)
 }
 
+// ─── Main export ───────────────────────────────────────────────────────────
+
 export default function AffiliateDashboardCharts({ sales, commissions, saleStatusMap }: Props) {
   const [modal, setModal] = useState<'sales' | 'commissions' | null>(null)
+  const [period, setPeriod] = useState<Period>('30d')
 
-  const startDate = new Date('2026-04-01')
-  const endDate = new Date()
-  endDate.setDate(endDate.getDate() + 7)
-  const days = getDayRange(startDate, endDate)
-  const endLabel = endDate.toLocaleDateString('pt-AO', { day: '2-digit', month: 'short' })
+  const { startDate, endDate, groupBy } = useMemo(() => {
+    const cfg = PERIODS[period]
+    const { startDate, endDate } = cfg.getDates()
+    return { startDate, endDate, groupBy: cfg.groupBy }
+  }, [period])
 
-  const salesChartData    = buildCountData(sales, days)
-  const commissionsChartData = buildAmountData(commissions, days)
+  // Filter items to the selected period
+  const filteredSales = useMemo(() =>
+    sales.filter(s => new Date(s.created_at) >= startDate && new Date(s.created_at) <= endDate),
+    [sales, startDate, endDate]
+  )
+  const filteredCommissions = useMemo(() =>
+    commissions.filter(c => new Date(c.created_at) >= startDate && new Date(c.created_at) <= endDate),
+    [commissions, startDate, endDate]
+  )
+
+  // Build chart data
+  const { salesChartData, commissionsChartData, periodLabel } = useMemo(() => {
+    if (groupBy === 'month') {
+      const months = getMonthRange(startDate, endDate)
+      return {
+        salesChartData: buildMonthCountData(filteredSales, months),
+        commissionsChartData: buildMonthAmountData(filteredCommissions, months),
+        periodLabel: `${months[0].split('-').reverse().join('/')} – hoje`,
+      }
+    } else {
+      const days = getDayRange(startDate, endDate)
+      const fmt = (d: Date) => d.toLocaleDateString('pt-AO', { day: '2-digit', month: 'short' })
+      return {
+        salesChartData: buildDayCountData(filteredSales, days),
+        commissionsChartData: buildDayAmountData(filteredCommissions, days),
+        periodLabel: `${fmt(startDate)} – ${fmt(endDate)}`,
+      }
+    }
+  }, [groupBy, startDate, endDate, filteredSales, filteredCommissions])
 
   return (
     <>
+      {/* Period selector — shared, above both charts */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <p className="text-xs text-gray-400 font-medium">{periodLabel}</p>
+        <PeriodSelector value={period} onChange={setPeriod} />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Sales chart */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-display text-lg font-bold text-gray-900">
-              Vendas Referidas ({sales.length})
+              Vendas Referidas ({filteredSales.length})
             </h2>
             <button
               onClick={() => setModal('sales')}
@@ -247,8 +429,9 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
           <BarChart
             data={salesChartData}
             color="var(--color-primary)"
-            label={`vendas por dia · 01/abr – ${endLabel}`}
+            label={`vendas · ${PERIODS[period].label}`}
             unit="vendas"
+            groupBy={groupBy}
           />
         </div>
 
@@ -256,7 +439,7 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-display text-lg font-bold text-gray-900">
-              Comissões ({commissions.length})
+              Comissões ({filteredCommissions.length})
             </h2>
             <button
               onClick={() => setModal('commissions')}
@@ -270,13 +453,14 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
           <BarChart
             data={commissionsChartData}
             color="#7c3aed"
-            label={`AOA por dia · 01/abr – ${endLabel}`}
+            label={`AOA · ${PERIODS[period].label}`}
             unit="AOA"
+            groupBy={groupBy}
           />
         </div>
       </div>
 
-      {/* Sales modal */}
+      {/* Sales modal — always shows all sales, not just filtered */}
       {modal === 'sales' && (
         <DetailModal title={`Vendas Referidas (${sales.length})`} onClose={() => setModal(null)}>
           <div>
