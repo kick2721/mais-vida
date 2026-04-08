@@ -4,11 +4,7 @@ import { redirect } from 'next/navigation'
 import { createServerSupabaseClient, createServerSupabaseAdminClient } from '@/lib/supabase-server'
 import { logoutUser } from '@/lib/actions'
 import { BUSINESS } from '@/lib/constants'
-import AdminSalesTable from './AdminSalesTable'
-import AdminAffiliatesTable from './AdminAffiliatesTable'
-import AdminApplicationsTable from './AdminApplicationsTable'
-import AdminCommissionsSection from './AdminCommissionsSection'
-import AdminCardsSection from './AdminCardsSection'
+import AdminTabsClient from './AdminTabsClient'
 import Logo from '@/app/components/ui/Logo'
 import { cleanupExpiredReceipts } from '@/lib/receipt-cleanup'
 
@@ -350,74 +346,17 @@ export default async function AdminDashboardPage({
           />
         </div>
 
-        {/* Tabs — sticky */}
-        <div
-          className="sticky top-0 z-10 -mx-4 px-4 pb-3 pt-1"
-          style={{ background: 'var(--color-surface)' }}
-        >
-          <div
-            className="flex gap-1 bg-white rounded-2xl p-1 border overflow-x-auto"
-            style={{ borderColor: 'var(--color-border)' }}
-          >
-            {[
-              { key: 'sales',        label: 'Vendas',       emoji: '💳' },
-              { key: 'cards',        label: 'Cartões',      emoji: null },
-              { key: 'affiliates',   label: 'Afiliados',    emoji: '👥' },
-              { key: 'commissions',  label: 'Comissões',    emoji: '💰' },
-              { key: 'applications', label: 'Candidaturas', emoji: '📋' },
-            ].map(tab => {
-              const badge = tabBadges[tab.key] || 0
-              return (
-                <a
-                  key={tab.key}
-                  href={`/admin/dashboard?tab=${tab.key}`}
-                  className="flex-shrink-0 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-sm font-semibold transition-all relative"
-                  style={
-                    activeTab === tab.key
-                      ? { background: 'var(--color-primary)', color: 'white' }
-                      : { color: '#6b7280' }
-                  }
-                >
-                  {tab.emoji ? (
-                    <span>{tab.emoji}</span>
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="5" width="20" height="14" rx="2"/>
-                      <line x1="2" y1="10" x2="22" y2="10"/>
-                      <line x1="6" y1="15" x2="10" y2="15"/>
-                    </svg>
-                  )}
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  {badge > 0 && (
-                    <span
-                      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full text-white flex items-center justify-center font-bold"
-                      style={{ fontSize: 10, background: '#ef4444', padding: '0 4px' }}
-                    >
-                      {badge > 99 ? '99+' : badge}
-                    </span>
-                  )}
-                </a>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Conteúdo das tabs */}
-        {activeTab === 'sales' && (
-          <AdminSalesTable sales={salesWithAffiliate} adminId={user.id} />
-        )}
-        {activeTab === 'cards' && (
-          <AdminCardsSection cards={cards} adminId={user.id} />
-        )}
-        {activeTab === 'affiliates' && (
-          <AdminAffiliatesTable affiliates={affiliates} />
-        )}
-        {activeTab === 'commissions' && (
-          <AdminCommissionsSection commissions={commissions || []} withdrawals={withdrawals || []} adminId={user.id} />
-        )}
-        {activeTab === 'applications' && (
-          <AdminApplicationsTable applications={(applications as any[]) || []} />
-        )}
+        <AdminTabsClient
+          initialTab={(activeTab as any) || 'sales'}
+          sales={salesWithAffiliate}
+          affiliates={affiliates}
+          commissions={commissions || []}
+          withdrawals={withdrawals || []}
+          cards={cards}
+          applications={(applications as any[]) || []}
+          adminId={user.id}
+          tabBadges={tabBadges}
+        />
       </div>
     </div>
   )
