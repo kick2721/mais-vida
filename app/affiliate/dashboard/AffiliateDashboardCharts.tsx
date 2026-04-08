@@ -249,80 +249,70 @@ function BarChart({
   const max = Math.max(...data.map(d => d.total))
   const total = data.length
 
-  // For 30-day view (day groupBy with many points): scrollable so ALL dates show clearly
-  const useScrollMode = groupBy === 'day' && total > 14
-  const barMinWidth = 20 // px per bar in scroll mode
+  // For 30-day view (day groupBy with many points): show all bars, label only every 7 days
+  const useCompactMode = groupBy === 'day' && total > 14
 
-  if (useScrollMode) {
+  if (useCompactMode) {
     return (
       <div className="card">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{label}</p>
-        <div style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch' as any }}>
-          <div style={{ minWidth: `${total * barMinWidth}px` }}>
-            {/* Bars */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', height: '130px', gap: '2px', marginBottom: '4px' }}>
-              {data.map(({ key, total: val }) => {
-                const hasValue = val > 0
-                const heightPct = max > 0 ? (val / max) * 100 : 0
-                return (
-                  <div
-                    key={key}
-                    title={`${formatTooltipLabel(key, groupBy, weekLabelMap)}: ${val.toLocaleString()} ${unit}`}
+        {/* Bars */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', height: '130px', gap: '2px', marginBottom: '4px' }}>
+          {data.map(({ key, total: val }) => {
+            const hasValue = val > 0
+            const heightPct = max > 0 ? (val / max) * 100 : 0
+            return (
+              <div
+                key={key}
+                title={`${formatTooltipLabel(key, groupBy, weekLabelMap)}: ${val.toLocaleString()} ${unit}`}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  height: '100%',
+                  cursor: hasValue ? 'pointer' : 'default',
+                }}
+              >
+                <div
+                  style={{
+                    width: '100%',
+                    height: hasValue ? `${heightPct}%` : '2px',
+                    background: hasValue ? color : '#e5e7eb',
+                    borderRadius: '3px 3px 0 0',
+                    minHeight: hasValue ? '4px' : '2px',
+                    transition: 'height 0.3s ease',
+                  }}
+                />
+              </div>
+            )
+          })}
+        </div>
+        {/* X-axis labels — every 7 days + last day */}
+        <div style={{ display: 'flex', gap: '2px', height: '20px' }}>
+          {data.map(({ key }, i) => {
+            const showLabel = i === 0 || (i + 1) % 7 === 0 || i === total - 1
+            return (
+              <div key={key} style={{ flex: 1, position: 'relative' }}>
+                {showLabel && (
+                  <span
                     style={{
-                      flex: 1,
-                      minWidth: barMinWidth,
-                      display: 'flex',
-                      alignItems: 'flex-end',
-                      height: '100%',
-                      cursor: hasValue ? 'pointer' : 'default',
+                      position: 'absolute',
+                      left: '50%',
+                      top: 2,
+                      transform: 'translateX(-50%)',
+                      whiteSpace: 'nowrap',
+                      fontSize: '9px',
+                      color: '#9ca3af',
+                      lineHeight: 1,
                     }}
                   >
-                    <div
-                      style={{
-                        width: '100%',
-                        height: hasValue ? `${heightPct}%` : '2px',
-                        background: hasValue ? color : '#e5e7eb',
-                        borderRadius: '3px 3px 0 0',
-                        minHeight: hasValue ? '4px' : '2px',
-                        transition: 'height 0.3s ease',
-                      }}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-            {/* X-axis labels — every 3rd shown, rotated -45deg */}
-            <div style={{ display: 'flex', gap: '2px', height: '38px' }}>
-              {data.map(({ key }, i) => {
-                const showLabel = i % 3 === 0 || i === total - 1
-                return (
-                  <div key={key} style={{ flex: 1, minWidth: barMinWidth, position: 'relative' }}>
-                    {showLabel && (
-                      <span
-                        style={{
-                          position: 'absolute',
-                          left: '50%',
-                          top: 2,
-                          transform: 'translateX(-50%) rotate(-45deg)',
-                          transformOrigin: 'top center',
-                          whiteSpace: 'nowrap',
-                          fontSize: '9px',
-                          color: '#9ca3af',
-                          lineHeight: 1,
-                        }}
-                      >
-                        {formatLabel(key, groupBy, i, total, weekLabelMap)}
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+                    {formatLabel(key, groupBy, i, total, weekLabelMap)}
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
-        <p style={{ fontSize: '9px', color: '#d1d5db', textAlign: 'right', marginTop: '2px' }}>
-          ← deslize para ver todas as datas →
-        </p>
       </div>
     )
   }
