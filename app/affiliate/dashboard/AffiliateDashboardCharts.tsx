@@ -110,13 +110,54 @@ function getMonthRange(startDate: Date, endDate: Date): string[] {
   return months
 }
 
+// Returns week keys like '2026-W01' and a label map for each week
+function getWeekRange(startDate: Date, endDate: Date): { keys: string[]; labelMap: Record<string, string> } {
+  const keys: string[] = []
+  const labelMap: Record<string, string> = {}
+  const current = new Date(startDate)
+  current.setHours(0, 0, 0, 0)
+  const end = new Date(endDate)
+  end.setHours(23, 59, 59, 999)
+  while (current <= end) {
+    const weekStart = new Date(current)
+    const weekEnd = new Date(current)
+    weekEnd.setDate(weekEnd.getDate() + 6)
+    if (weekEnd > end) weekEnd.setTime(end.getTime())
+    const key = weekStart.toISOString().split('T')[0]
+    if (!keys.includes(key)) {
+      keys.push(key)
+      const fmtDay = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+      labelMap[key] = `${fmtDay(weekStart)}–${fmtDay(weekEnd)}`
+    }
+    current.setDate(current.getDate() + 7)
+  }
+  return { keys, labelMap }
+}
+
+function getISOWeekKey(dateStr: string, startDate: Date): string {
+  // Returns the Monday of the week containing dateStr, clamped to startDate
+  const d = new Date(dateStr)
+  d.setHours(0, 0, 0, 0)
+  const start = new Date(startDate)
+  start.setHours(0, 0, 0, 0)
+  // Find the Monday on or before d, but not before startDate
+  const dayOfWeek = d.getDay() === 0 ? 6 : d.getDay() - 1 // Mon=0
+  const monday = new Date(d)
+  monday.setDate(d.getDate() - dayOfWeek)
+  if (monday < start) monday.setTime(start.getTime())
+  return monday.toISOString().split('T')[0]
+}
+
 // Format label for X axis based on groupBy
-function formatLabel(key: string, groupBy: 'day' | 'week' | 'month', index: number, total: number): string {
+function formatLabel(key: string, groupBy: 'day' | 'week' | 'month', index: number, total: number, weekLabelMap?: Record<string, string>): string {
   if (groupBy === 'month') {
     // key = 'YYYY-MM'
     const [year, month] = key.split('-')
     const date = new Date(Number(year), Number(month) - 1, 1)
     return date.toLocaleDateString('pt-AO', { month: 'short' })
+  }
+  if (groupBy === 'week') {
+    return weekLabelMap?.[key] ?? key
   }
   // groupBy === 'day' — key = 'YYYY-MM-DD'
   const [, month, day] = key.split('-')
@@ -124,11 +165,14 @@ function formatLabel(key: string, groupBy: 'day' | 'week' | 'month', index: numb
 }
 
 // Format tooltip label (more verbose)
-function formatTooltipLabel(key: string, groupBy: 'day' | 'week' | 'month'): string {
+function formatTooltipLabel(key: string, groupBy: 'day' | 'week' | 'month', weekLabelMap?: Record<string, string>): string {
   if (groupBy === 'month') {
     const [year, month] = key.split('-')
     const date = new Date(Number(year), Number(month) - 1, 1)
     return date.toLocaleDateString('pt-AO', { month: 'long', year: 'numeric' })
+  }
+  if (groupBy === 'week') {
+    return `Semana de ${weekLabelMap?.[key] ?? key}`
   }
   const date = new Date(key)
   return date.toLocaleDateString('pt-AO', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -172,36 +216,125 @@ function buildMonthAmountData(items: { created_at: string; amount: number }[], m
   return months.map(month => ({ key: month, total: map[month] || 0 }))
 }
 
+function buildWeekCountData(items: { created_at: string }[], weekKeys: string[], startDate: Date) {
+  const map: Record<string, number> = {}
+  for (const item of items) {
+    const wk = getISOWeekKey(item.created_at.split('T')[0], startDate)
+    map[wk] = (map[wk] || 0) + 1
+  }
+  return weekKeys.map(k => ({ key: k, total: map[k] || 0 }))
+}
+
+function buildWeekAmountData(items: { created_at: string; amount: number }[], weekKeys: string[], startDate: Date) {
+  const map: Record<string, number> = {}
+  for (const item of items) {
+    const wk = getISOWeekKey(item.created_at.split('T')[0], startDate)
+    map[wk] = (map[wk] || 0) + item.amount
+  }
+  return weekKeys.map(k => ({ key: k, total: map[k] || 0 }))
+}
+
 // ─── BarChart component ────────────────────────────────────────────────────
 
 function BarChart({
-  data, color, label, unit, groupBy,
+  data, color, label, unit, groupBy, weekLabelMap,
 }: {
   data: { key: string; total: number }[]
   color: string
   label: string
   unit: string
   groupBy: 'day' | 'week' | 'month'
+  weekLabelMap?: Record<string, string>
 }) {
   const max = Math.max(...data.map(d => d.total))
-
-  // Decide which labels to show to avoid overcrowding
-  // For months: always show all. For days: show every N
   const total = data.length
-  let step = 1
-  if (groupBy === 'day') {
-    if (total > 25) step = 7
-    else if (total > 14) step = 5
-    else if (total > 7) step = 2
+
+  // For 30-day view (day groupBy with many points): scrollable so ALL dates show clearly
+  const useScrollMode = groupBy === 'day' && total > 14
+  const barMinWidth = 20 // px per bar in scroll mode
+
+  if (useScrollMode) {
+    return (
+      <div className="card">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{label}</p>
+        <div style={{ overflowX: 'auto', overflowY: 'visible', WebkitOverflowScrolling: 'touch' as any }}>
+          <div style={{ minWidth: `${total * barMinWidth}px` }}>
+            {/* Bars */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', height: '130px', gap: '2px', marginBottom: '4px' }}>
+              {data.map(({ key, total: val }) => {
+                const hasValue = val > 0
+                const heightPct = max > 0 ? (val / max) * 100 : 0
+                return (
+                  <div
+                    key={key}
+                    title={`${formatTooltipLabel(key, groupBy, weekLabelMap)}: ${val.toLocaleString()} ${unit}`}
+                    style={{
+                      flex: 1,
+                      minWidth: barMinWidth,
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      height: '100%',
+                      cursor: hasValue ? 'pointer' : 'default',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '100%',
+                        height: hasValue ? `${heightPct}%` : '2px',
+                        background: hasValue ? color : '#e5e7eb',
+                        borderRadius: '3px 3px 0 0',
+                        minHeight: hasValue ? '4px' : '2px',
+                        transition: 'height 0.3s ease',
+                      }}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+            {/* X-axis labels — every 3rd shown, rotated -45deg */}
+            <div style={{ display: 'flex', gap: '2px', height: '38px' }}>
+              {data.map(({ key }, i) => {
+                const showLabel = i % 3 === 0 || i === total - 1
+                return (
+                  <div key={key} style={{ flex: 1, minWidth: barMinWidth, position: 'relative' }}>
+                    {showLabel && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          left: '50%',
+                          top: 2,
+                          transform: 'translateX(-50%) rotate(-45deg)',
+                          transformOrigin: 'top center',
+                          whiteSpace: 'nowrap',
+                          fontSize: '9px',
+                          color: '#9ca3af',
+                          lineHeight: 1,
+                        }}
+                      >
+                        {formatLabel(key, groupBy, i, total, weekLabelMap)}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+        <p style={{ fontSize: '9px', color: '#d1d5db', textAlign: 'right', marginTop: '2px' }}>
+          ← deslize para ver todas as datas →
+        </p>
+      </div>
+    )
   }
 
+  // Normal mode for 7d, 6m, 1y
   return (
     <div className="card">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">{label}</p>
       <div className="flex items-end gap-px h-40 mb-2">
-        {data.map(({ key, total }) => {
-          const hasValue = total > 0
-          const heightPct = max > 0 ? (total / max) * 100 : 0
+        {data.map(({ key, total: val }) => {
+          const hasValue = val > 0
+          const heightPct = max > 0 ? (val / max) * 100 : 0
 
           return (
             <div key={key} className="flex-1 flex flex-col items-center justify-end group relative h-full">
@@ -209,7 +342,7 @@ function BarChart({
                 <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-10
                   opacity-0 group-hover:opacity-100 transition-opacity
                   bg-gray-800 text-white text-xs rounded px-2 py-1 whitespace-nowrap pointer-events-none">
-                  {formatTooltipLabel(key, groupBy)}: {total.toLocaleString()} {unit}
+                  {formatTooltipLabel(key, groupBy, weekLabelMap)}: {val.toLocaleString()} {unit}
                 </div>
               )}
               <div
@@ -227,35 +360,30 @@ function BarChart({
         })}
       </div>
 
-      {/* X axis labels — smart spacing */}
-      <div className="flex gap-px" style={{ minHeight: groupBy === 'day' && total > 14 ? '32px' : '20px' }}>
-        {data.map(({ key }, i) => {
-          const showLabel = groupBy === 'month' || i % step === 0
-          return (
-            <div key={key} className="flex-1 relative" style={{ minWidth: 0 }}>
-              {showLabel && (
-                <span
-                  className="text-xs text-gray-400 block leading-tight"
-                  style={
-                    groupBy === 'day' && total > 14
-                      ? {
-                          position: 'absolute',
-                          left: '50%',
-                          top: 0,
-                          transform: 'translateX(-50%) rotate(-35deg)',
-                          transformOrigin: 'top center',
-                          whiteSpace: 'nowrap',
-                          fontSize: '10px',
-                        }
-                      : { textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
-                  }
-                >
-                  {formatLabel(key, groupBy, i, total)}
-                </span>
-              )}
-            </div>
-          )
-        })}
+      {/* X axis labels */}
+      <div className="flex gap-px" style={{ minHeight: groupBy === 'week' ? '36px' : '20px' }}>
+        {data.map(({ key }, i) => (
+          <div key={key} className="flex-1 relative" style={{ minWidth: 0 }}>
+            <span
+              className="text-xs text-gray-400 block leading-tight"
+              style={
+                groupBy === 'week'
+                  ? {
+                      position: 'absolute',
+                      left: '50%',
+                      top: 0,
+                      transform: 'translateX(-50%) rotate(-30deg)',
+                      transformOrigin: 'top center',
+                      whiteSpace: 'nowrap',
+                      fontSize: '9px',
+                    }
+                  : { textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+              }
+            >
+              {formatLabel(key, groupBy, i, total, weekLabelMap)}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -399,13 +527,23 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
   )
 
   // Build chart data
-  const { salesChartData, commissionsChartData, periodLabel } = useMemo(() => {
+  const { salesChartData, commissionsChartData, periodLabel, weekLabelMap } = useMemo(() => {
     if (groupBy === 'month') {
       const months = getMonthRange(startDate, endDate)
       return {
         salesChartData: buildMonthCountData(filteredSales, months),
         commissionsChartData: buildMonthAmountData(filteredCommissions, months),
         periodLabel: `${months[0].split('-').reverse().join('/')} – hoje`,
+        weekLabelMap: undefined,
+      }
+    } else if (groupBy === 'week') {
+      const { keys, labelMap } = getWeekRange(startDate, endDate)
+      const fmt = (d: Date) => d.toLocaleDateString('pt-AO', { day: '2-digit', month: 'short' })
+      return {
+        salesChartData: buildWeekCountData(filteredSales, keys, startDate),
+        commissionsChartData: buildWeekAmountData(filteredCommissions, keys, startDate),
+        periodLabel: `${fmt(startDate)} – ${fmt(endDate)}`,
+        weekLabelMap: labelMap,
       }
     } else {
       const days = getDayRange(startDate, endDate)
@@ -414,6 +552,7 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
         salesChartData: buildDayCountData(filteredSales, days),
         commissionsChartData: buildDayAmountData(filteredCommissions, days),
         periodLabel: `${fmt(startDate)} – ${fmt(endDate)}`,
+        weekLabelMap: undefined,
       }
     }
   }, [groupBy, startDate, endDate, filteredSales, filteredCommissions])
@@ -448,6 +587,7 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
             label={`vendas · ${PERIODS[period].label}`}
             unit="vendas"
             groupBy={groupBy}
+            weekLabelMap={weekLabelMap}
           />
         </div>
 
@@ -472,6 +612,7 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
             label={`AOA · ${PERIODS[period].label}`}
             unit="AOA"
             groupBy={groupBy}
+            weekLabelMap={weekLabelMap}
           />
         </div>
       </div>
