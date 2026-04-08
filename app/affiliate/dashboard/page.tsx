@@ -1,5 +1,6 @@
 // app/affiliate/dashboard/page.tsx
 import AffiliateDashboardCharts from './AffiliateDashboardCharts'
+import WithdrawalHistory from './WithdrawalHistory'
 // Painel do Afiliado — Etapa 6
 
 import { redirect } from 'next/navigation'
@@ -160,41 +161,7 @@ export default async function AffiliateDashboardPage() {
 
         <AffiliateDashboardCharts sales={sales || []} commissions={commissions || []} saleStatusMap={saleStatusMap} />
 
-        {/* Historial de Retiros */}
-        {withdrawals && withdrawals.length > 0 && (
-          <div className="mt-8">
-            <h2 className="font-display text-lg font-bold text-gray-900 mb-4">
-              Histórico de Retiros
-            </h2>
-            <div className="space-y-3">
-              {withdrawals.map((w) => (
-                <div key={w.id} className="card flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs text-gray-500">
-                      Solicitado em {new Date(w.requested_at).toLocaleDateString('pt-AO', {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                      })}
-                    </p>
-                    {w.reviewed_at && (
-                      <p className="text-xs text-gray-400">
-                        {w.status === 'paid' ? 'Pago' : 'Revisto'} em {new Date(w.reviewed_at).toLocaleDateString('pt-AO')}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <p className="font-bold text-gray-800">{w.amount.toLocaleString()} {w.currency}</p>
-                    <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{
-                      background: w.status === 'paid' ? '#dcfce7' : w.status === 'rejected' || w.status === 'cancelled' ? '#fee2e2' : '#fef3c7',
-                      color:      w.status === 'paid' ? '#166534' : w.status === 'rejected' || w.status === 'cancelled' ? '#991b1b' : '#92400e',
-                    }}>
-                      {w.status === 'paid' ? '✅ Pago' : w.status === 'rejected' || w.status === 'cancelled' ? '✗ Rejeitado' : '⏳ Pendente'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <WithdrawalHistory withdrawals={withdrawals || []} />
       </div>
     </div>
   )
