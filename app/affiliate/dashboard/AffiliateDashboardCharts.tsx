@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
+import { exportToExcel, fmtDate } from '@/lib/export-excel'
 
 interface Sale {
   id: string
@@ -500,6 +501,27 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
   const [modal, setModal] = useState<'sales' | 'commissions' | null>(null)
   const [period, setPeriod] = useState<Period>('30d')
 
+  function handleExportSales() {
+    const rows = sales.map(s => ({
+      'Cliente':   s.customer_name  || '—',
+      'Telefone':  s.customer_phone || '—',
+      'Valor':     s.amount ?? 0,
+      'Moeda':     s.currency || 'Kz',
+      'Estado':    saleStatusMap[s.status]?.label || s.status,
+      'Data':      fmtDate(s.created_at),
+    }))
+    exportToExcel(rows, `minhas-vendas-${new Date().toISOString().slice(0,10)}`)
+  }
+
+  function handleExportCommissions() {
+    const rows = commissions.map(c => ({
+      'Valor':  c.amount,
+      'Moeda':  c.currency || 'AOA',
+      'Data':   fmtDate(c.created_at),
+    }))
+    exportToExcel(rows, `minhas-comissoes-${new Date().toISOString().slice(0,10)}`)
+  }
+
   const { startDate, endDate, groupBy } = useMemo(() => {
     const cfg = PERIODS[period]
     const { startDate, endDate } = cfg.getDates()
@@ -562,6 +584,7 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
             <h2 className="font-display text-lg font-bold text-gray-900">
               Vendas Referidas ({filteredSales.length})
             </h2>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setModal('sales')}
               disabled={sales.length === 0}
@@ -570,6 +593,19 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
             >
               Ver detalhes
             </button>
+            <button
+              onClick={handleExportSales}
+              disabled={sales.length === 0}
+              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold border disabled:opacity-40"
+              style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
+              title="Exportar vendas para Excel"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Excel
+            </button>
+          </div>
           </div>
           <BarChart
             data={salesChartData}
@@ -587,6 +623,7 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
             <h2 className="font-display text-lg font-bold text-gray-900">
               Comissões ({filteredCommissions.length})
             </h2>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setModal('commissions')}
               disabled={commissions.length === 0}
@@ -595,6 +632,19 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
             >
               Ver detalhes
             </button>
+            <button
+              onClick={handleExportCommissions}
+              disabled={commissions.length === 0}
+              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold border disabled:opacity-40"
+              style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
+              title="Exportar comissões para Excel"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Excel
+            </button>
+          </div>
           </div>
           <BarChart
             data={commissionsChartData}
