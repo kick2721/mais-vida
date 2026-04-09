@@ -3,6 +3,7 @@
 // app/affiliate/dashboard/WithdrawalHistory.tsx
 
 import { useState } from 'react'
+import { exportToExcel, fmtDate } from '@/lib/export-excel'
 
 interface Withdrawal {
   id: string
@@ -23,15 +24,39 @@ export default function WithdrawalHistory({ withdrawals }: { withdrawals: Withdr
   const totalPages = Math.ceil(withdrawals.length / PAGE_SIZE)
   const paginated = withdrawals.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
+  function handleExport() {
+    const rows = withdrawals.map(w => ({
+      'Valor':          w.amount,
+      'Moeda':          w.currency,
+      'Estado':         w.status === 'paid' ? 'Pago' : w.status === 'rejected' || w.status === 'cancelled' ? 'Rejeitado' : 'Pendente',
+      'Solicitado em':  fmtDate(w.requested_at),
+      'Revisto em':     fmtDate(w.reviewed_at),
+    }))
+    exportToExcel(rows, `retiros-${new Date().toISOString().slice(0,10)}`)
+  }
+
   return (
     <div className="mt-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-lg font-bold text-gray-900">
           Histórico de Retiros
         </h2>
-        <span className="text-xs text-gray-400">
-          {withdrawals.length} {withdrawals.length === 1 ? 'retiro' : 'retiros'} no total
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-400">
+            {withdrawals.length} {withdrawals.length === 1 ? 'retiro' : 'retiros'} no total
+          </span>
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold border"
+            style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
+            title="Exportar retiros para Excel"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Excel
+          </button>
+        </div>
       </div>
 
       <div className="space-y-3">
