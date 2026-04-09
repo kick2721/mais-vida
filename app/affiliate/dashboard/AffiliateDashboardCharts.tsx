@@ -503,6 +503,7 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
 
   function handleExportSales() {
     const rows = sales.map(s => ({
+      'Tipo':      'Venda',
       'Cliente':   s.customer_name  || '—',
       'Telefone':  s.customer_phone || '—',
       'Valor':     s.amount ?? 0,
@@ -510,16 +511,16 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
       'Estado':    saleStatusMap[s.status]?.label || s.status,
       'Data':      fmtDate(s.created_at),
     }))
-    exportToExcel(rows, `minhas-vendas-${new Date().toISOString().slice(0,10)}`)
-  }
-
-  function handleExportCommissions() {
-    const rows = commissions.map(c => ({
-      'Valor':  c.amount,
-      'Moeda':  c.currency || 'AOA',
-      'Data':   fmtDate(c.created_at),
+    const commRows = commissions.map(c => ({
+      'Tipo':      'Comissão',
+      'Cliente':   '—',
+      'Telefone':  '—',
+      'Valor':     c.amount,
+      'Moeda':     c.currency || 'AOA',
+      'Estado':    '—',
+      'Data':      fmtDate(c.created_at),
     }))
-    exportToExcel(rows, `minhas-comissoes-${new Date().toISOString().slice(0,10)}`)
+    exportToExcel([...rows, ...commRows], `vendas-comissoes-${new Date().toISOString().slice(0,10)}`)
   }
 
   const { startDate, endDate, groupBy } = useMemo(() => {
@@ -571,10 +572,24 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
 
   return (
     <>
-      {/* Period selector — shared, above both charts */}
+      {/* Period selector + botón Excel compartido */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <p className="text-xs text-gray-400 font-medium">{periodLabel}</p>
-        <PeriodSelector value={period} onChange={setPeriod} />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportSales}
+            disabled={sales.length === 0 && commissions.length === 0}
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold border disabled:opacity-40"
+            style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
+            title="Exportar vendas e comissões para Excel"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Excel
+          </button>
+          <PeriodSelector value={period} onChange={setPeriod} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -592,18 +607,6 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
               style={{ background: 'var(--color-primary)', color: 'white' }}
             >
               Ver detalhes
-            </button>
-            <button
-              onClick={handleExportSales}
-              disabled={sales.length === 0}
-              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold border disabled:opacity-40"
-              style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
-              title="Exportar vendas para Excel"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Excel
             </button>
           </div>
           </div>
@@ -631,18 +634,6 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
               style={{ background: '#7c3aed', color: 'white' }}
             >
               Ver detalhes
-            </button>
-            <button
-              onClick={handleExportCommissions}
-              disabled={commissions.length === 0}
-              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl font-semibold border disabled:opacity-40"
-              style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
-              title="Exportar comissões para Excel"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Excel
             </button>
           </div>
           </div>
