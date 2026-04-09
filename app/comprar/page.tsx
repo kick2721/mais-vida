@@ -35,6 +35,8 @@ function ComprarForm() {
   const [error, setError]         = useState('')
   const [success, setSuccess]     = useState(false)
   const [isPending, startTransition] = useTransition()
+  // Estado de validación de BI: null=sin verificar, 'checking'=verificando, 'ok'=libre, 'taken'=ocupado
+  const [biStatus, setBiStatus]   = useState<(null | 'checking' | 'ok' | 'taken')[]>([null])
 
   const totalAmount = quantity * MEMBERSHIP.price
 
@@ -48,14 +50,38 @@ function ComprarForm() {
       }
       return prev.slice(0, q)
     })
+    setBiStatus(prev => {
+      if (q > prev.length) return [...prev, ...Array(q - prev.length).fill(null)]
+      return prev.slice(0, q)
+    })
+  }
+
+  // Verificar en Supabase si el BI ya tiene cartão activo o pedido pendiente
+  const checkBi = async (nationalId: string, index: number) => {
+    const trimmed = nationalId.trim()
+    if (!trimmed || trimmed.length < 5) {
+      setBiStatus(prev => prev.map((s, i) => i === index ? null : s))
+      return
+    }
+    setBiStatus(prev => prev.map((s, i) => i === index ? 'checking' : s))
+    const supabase = createBrowserSupabaseClient()
+    const { data } = await supabase
+      .from('sales')
+      .select('id, status')
+      .eq('national_id', trimmed)
+      .in('status', ['confirmed', 'pending_review', 'pending'])
+      .limit(1)
+    const taken = !!(data && data.length > 0)
+    setBiStatus(prev => prev.map((s, i) => i === index ? (taken ? 'taken' : 'ok') : s))
   }
 
   const setHolder = (index: number, field: keyof CardHolder) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setHolders(prev => prev.map((h, i) => i === index ? {
-        ...h,
-        [field]: field === 'receipt' ? (e.target.files?.[0] ?? null) : e.target.value
-      } : h))
+      const value = field === 'receipt' ? (e.target.files?.[0] ?? null) : e.target.value
+      setHolders(prev => prev.map((h, i) => i === index ? { ...h, [field]: value } : h))
+      if (field === 'national_id') {
+        checkBi(e.target.value, index)
+      }
     }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -72,6 +98,12 @@ function ComprarForm() {
       }
       if (!holders[i].national_id.trim()) {
         setError(`Por favor preencha o BI/Passaporte do Cartão ${i + 1}.`); return
+      }
+      if (biStatus[i] === 'taken') {
+        setError(`Cartão ${i + 1}: este BI/Passaporte já tem um cartão activo ou pedido em curso.`); return
+      }
+      if (biStatus[i] === 'checking') {
+        setError(`Cartão ${i + 1}: aguarde a verificação do BI/Passaporte.`); return
       }
       if (!holders[i].receipt) {
         setError(`Por favor anexe o comprovativo do Cartão ${i + 1}.`); return
@@ -310,11 +342,36 @@ function ComprarForm() {
                     <label className="input-label">Nº do BI ou Passaporte</label>
                     <input type="text" required value={holder.national_id}
                       onChange={setHolder(i, 'national_id')}
-                      className="input-field font-mono" placeholder="Ex: 005847291AN014"
-                      disabled={isPending} autoComplete="off" />
-                    <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                      Aceita BI angolano ou passaporte de qualquer país.
-                    </p>
+                      className="input-field font-mono"
+                      placeholder="Ex: 005847291AN014"
+                      disabled={isPending} autoComplete="off"
+                      style={biStatus[i] === 'taken' ? { borderColor: '#ef4444', background: '#fef2f2' } :
+                             biStatus[i] === 'ok'    ? { borderColor: '#16a34a', background: '#f0fdf4' } : {}}
+                    />
+                    {biStatus[i] === 'checking' && (
+                      <p className="text-xs mt-1 flex items-center gap-1" style={{ color: '#6b7280' }}>
+                        <svg className="animate-spin" width="12" height="12" viewBox="0 0 16 16" fill="none">
+                          <circle cx="8" cy="8" r="6" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2"/>
+                          <path d="M14 8A6 6 0 0 0 8 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        A verificar…
+                      </p>
+                    )}
+                    {biStatus[i] === 'taken' && (
+                      <p className="text-xs mt-1 font-semibold" style={{ color: '#ef4444' }}>
+                        ⚠️ Este BI/Passaporte já tem um cartão activo ou pedido em curso.
+                      </p>
+                    )}
+                    {biStatus[i] === 'ok' && (
+                      <p className="text-xs mt-1 font-semibold" style={{ color: '#16a34a' }}>
+                        ✓ Disponível
+                      </p>
+                    )}
+                    {biStatus[i] === null && (
+                      <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                        Aceita BI angolano ou passaporte de qualquer país.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="input-label">Comprovativo de pagamento</label>
