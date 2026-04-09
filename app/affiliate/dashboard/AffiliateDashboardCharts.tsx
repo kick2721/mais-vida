@@ -502,25 +502,23 @@ export default function AffiliateDashboardCharts({ sales, commissions, saleStatu
   const [period, setPeriod] = useState<Period>('30d')
 
   function handleExportSales() {
-    const rows = sales.map(s => ({
-      'Tipo':      'Venda',
-      'Cliente':   s.customer_name  || '—',
-      'Telefone':  s.customer_phone || '—',
-      'Valor':     s.amount ?? 0,
-      'Moeda':     s.currency || 'Kz',
-      'Estado':    saleStatusMap[s.status]?.label || s.status,
-      'Data':      fmtDate(s.created_at),
-    }))
-    const commRows = commissions.map(c => ({
-      'Tipo':      'Comissão',
-      'Cliente':   '—',
-      'Telefone':  '—',
-      'Valor':     c.amount,
-      'Moeda':     c.currency || 'AOA',
-      'Estado':    '—',
-      'Data':      fmtDate(c.created_at),
-    }))
-    exportToExcel([...rows, ...commRows], `vendas-comissoes-${new Date().toISOString().slice(0,10)}`)
+    // Cada fila = venda + comissão correspondente (mesma posição)
+    const maxRows = Math.max(sales.length, commissions.length)
+    const rows = Array.from({ length: maxRows }, (_, i) => {
+      const s = sales[i]
+      const c = commissions[i]
+      return {
+        'Cliente':         s?.customer_name  || '—',
+        'Telefone':        s?.customer_phone || '—',
+        'Valor Venda':     s?.amount         ?? '',
+        'Moeda':           s ? (s.currency || 'Kz') : '',
+        'Estado Venda':    s ? (saleStatusMap[s.status]?.label || s.status) : '',
+        'Data Venda':      s ? fmtDate(s.created_at) : '',
+        'Comissão (AOA)':  c?.amount         ?? '',
+        'Data Comissão':   c ? fmtDate(c.created_at) : '',
+      }
+    })
+    exportToExcel(rows, `vendas-comissoes-${new Date().toISOString().slice(0,10)}`)
   }
 
   const { startDate, endDate, groupBy } = useMemo(() => {
