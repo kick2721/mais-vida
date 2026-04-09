@@ -5,6 +5,7 @@
 
 import { useState, useMemo } from 'react'
 import IssueCardButton from './IssueCardButton'
+import { exportToExcel, fmtDate } from '@/lib/export-excel'
 
 interface CardData {
   id: string
@@ -71,6 +72,20 @@ export default function AdminCardsSection({
   function handleFilter(f: typeof filter) {
     setFilter(f)
     setPage(1)
+  }
+
+  function handleExport() {
+    const rows = cards.map(c => ({
+      'Nº Cartão':   c.card_number || '—',
+      'Cliente':     c.sale_data?.customer_name  || '—',
+      'Telefone':    c.sale_data?.customer_phone || '—',
+      'Email':       c.sale_data?.customer_email || '—',
+      'BI':          c.sale_data?.national_id    || '—',
+      'Estado':      c.status === 'issued' ? 'Emitido' : 'Pendente',
+      'Emitido em':  fmtDate(c.issued_at),
+      'Criado em':   fmtDate(c.created_at),
+    }))
+    exportToExcel(rows, `cartoes-${new Date().toISOString().slice(0,10)}`)
   }
 
   return (
@@ -146,6 +161,19 @@ export default function AdminCardsSection({
             </button>
           )}
         </div>
+
+        <button
+          onClick={handleExport}
+          disabled={cards.length === 0}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all flex-shrink-0 disabled:opacity-40"
+          style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
+          title="Exportar todos os cartões para Excel"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Excel
+        </button>
       </div>
 
       {/* Tabela */}

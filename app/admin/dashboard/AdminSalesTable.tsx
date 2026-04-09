@@ -4,6 +4,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { confirmSale, cancelSale, reactivateSale } from '@/lib/admin-actions'
+import { exportToExcel, fmtDate } from '@/lib/export-excel'
 
 const PAGE_SIZE = 50
 
@@ -121,6 +122,24 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
     cancelled:      sales.filter(s => s.status === 'cancelled').length,
   }), [sales])
 
+  function handleExport() {
+    const rows = sales.map(s => ({
+      'Nome':           s.customer_name   || '—',
+      'Telefone':       s.customer_phone  || '—',
+      'Email':          s.customer_email  || '—',
+      'BI':             s.national_id     || '—',
+      'Valor':          s.amount ?? 0,
+      'Moeda':          s.currency        || 'Kz',
+      'Estado':         STATUS_MAP[s.status]?.label || s.status,
+      'Pagamento':      PAYMENT_LABEL[s.payment_method] || s.payment_method || '—',
+      'Afiliado':       s.affiliate_data?.profiles?.full_name || s.referral_code || '—',
+      'Data':           fmtDate(s.created_at),
+      'Confirmada em':  fmtDate(s.confirmed_at),
+      'Notas':          s.notes || '—',
+    }))
+    exportToExcel(rows, `vendas-${new Date().toISOString().slice(0,10)}`)
+  }
+
   return (
     <div>
       {/* Alerta pendentes */}
@@ -170,6 +189,19 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">✕</button>
           )}
         </div>
+
+        <button
+          onClick={handleExport}
+          disabled={sales.length === 0}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all flex-shrink-0 disabled:opacity-40"
+          style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
+          title="Exportar todas as vendas para Excel"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Excel
+        </button>
       </div>
 
       {/* Tabela */}

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import WithdrawalActions from './WithdrawalActions'
+import { exportToExcel, fmtDate } from '@/lib/export-excel'
 
 interface CommissionItem {
   id: string
@@ -95,6 +96,35 @@ export default function AdminCommissionsSection({ commissions, withdrawals, admi
     })
   }
 
+  function handleExportCommissions() {
+    const rows = commissions.map(c => ({
+      'Afiliado':    c.affiliates?.profiles?.full_name || '—',
+      'Código':      c.affiliates?.referral_code       || '—',
+      'Telefone':    c.affiliates?.profiles?.phone     || '—',
+      'Valor':       c.amount,
+      'Moeda':       c.currency || 'AOA',
+      'Estado':      c.status === 'paid' ? 'Paga' : c.status === 'approved' ? 'Aprovada' : c.status,
+      'Data':        fmtDate(c.created_at),
+      'Paga em':     fmtDate(c.paid_at),
+    }))
+    exportToExcel(rows, `comissoes-${new Date().toISOString().slice(0,10)}`)
+  }
+
+  function handleExportWithdrawals() {
+    const rows = withdrawals.map(w => ({
+      'Afiliado':    w.affiliates?.profiles?.full_name || '—',
+      'Código':      w.affiliates?.referral_code       || '—',
+      'Telefone':    w.affiliates?.profiles?.phone     || '—',
+      'Valor':       w.amount,
+      'Moeda':       w.currency || 'AOA',
+      'IBAN':        w.iban     || '—',
+      'Estado':      w.status === 'paid' ? 'Pago' : w.status === 'pending' ? 'Pendente' : w.status,
+      'Solicitado em': fmtDate(w.requested_at),
+      'Revisto em':    fmtDate(w.reviewed_at),
+    }))
+    exportToExcel(rows, `retiros-${new Date().toISOString().slice(0,10)}`)
+  }
+
   return (
     <div className="space-y-8">
 
@@ -116,6 +146,18 @@ export default function AdminCommissionsSection({ commissions, withdrawals, admi
                 {showHistory ? '▲ Ocultar' : '▼ Ver'} histórico ({doneWithdrawals.length})
               </button>
             )}
+            <button
+              onClick={handleExportWithdrawals}
+              disabled={withdrawals.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all disabled:opacity-40"
+              style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
+              title="Exportar retiros para Excel"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Excel
+            </button>
           </div>
         </div>
 
@@ -206,16 +248,30 @@ export default function AdminCommissionsSection({ commissions, withdrawals, admi
               {commissions.length} comissões
             </span>
           </div>
-          {grouped.length > 2 && (
-            <input
-              type="text"
-              placeholder="Pesquisar afiliado…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="text-sm border rounded-xl px-3 py-2 w-52 focus:outline-none focus:ring-2 focus:ring-purple-300"
-              style={{ borderColor: 'var(--color-border)' }}
-            />
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {grouped.length > 2 && (
+              <input
+                type="text"
+                placeholder="Pesquisar afiliado…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="text-sm border rounded-xl px-3 py-2 w-52 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                style={{ borderColor: 'var(--color-border)' }}
+              />
+            )}
+            <button
+              onClick={handleExportCommissions}
+              disabled={commissions.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all disabled:opacity-40"
+              style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
+              title="Exportar comissões para Excel"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Excel
+            </button>
+          </div>
         </div>
 
         {filteredGroups.length > 0 ? (

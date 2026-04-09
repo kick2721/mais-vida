@@ -4,6 +4,7 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { approveApplication, rejectApplication } from '@/lib/admin-actions'
+import { exportToExcel, fmtDate } from '@/lib/export-excel'
 
 interface Application {
   id: string
@@ -68,17 +69,52 @@ export default function AdminApplicationsTable({ applications: initial }: { appl
   // Expiradas — ocultadas por padrão
   const expired  = initial.filter(a => a.status !== 'pending' && isExpired(a))
 
+  // Exporta as visíveis: pendentes + decididas recentes (dentro das 12h)
+  function handleExport() {
+    const visible = [...pending, ...recent]
+    const rows = visible.map(a => ({
+      'Nome':          a.full_name,
+      'Telefone':      a.phone,
+      'BI':            a.national_id,
+      'Ocupação':      a.occupation      || '—',
+      'Rede':          a.network_size    || '—',
+      'Motivação':     a.motivation,
+      'Instagram':     a.instagram       || '—',
+      'Facebook':      a.facebook        || '—',
+      'TikTok':        a.tiktok          || '—',
+      'Outro social':  a.other_social    || '—',
+      'Estado':        a.status === 'pending' ? 'Pendente' : a.status === 'approved' ? 'Aprovada' : 'Rejeitada',
+      'Motivo rejeição': a.reject_reason || '—',
+      'Data candidatura': fmtDate(a.created_at),
+    }))
+    exportToExcel(rows, `candidaturas-${new Date().toISOString().slice(0,10)}`)
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-lg font-bold text-gray-900">
           Candidaturas a Afiliado ({initial.length})
         </h2>
-        {pending.length > 0 && (
-          <span className="text-sm text-yellow-700 bg-yellow-50 px-3 py-1 rounded-full font-medium">
-            {pending.length} pendentes de análise
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {pending.length > 0 && (
+            <span className="text-sm text-yellow-700 bg-yellow-50 px-3 py-1 rounded-full font-medium">
+              {pending.length} pendentes de análise
+            </span>
+          )}
+          <button
+            onClick={handleExport}
+            disabled={pending.length === 0 && recent.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all disabled:opacity-40"
+            style={{ borderColor: '#16a34a', color: '#16a34a', background: '#f0fdf4' }}
+            title="Exporta pendentes e decididas recentes (dentro das 12h)"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Excel
+          </button>
+        </div>
       </div>
 
       {/* Pendentes — ficam aqui indefinidamente até serem decididas */}
