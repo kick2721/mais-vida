@@ -7,16 +7,16 @@ import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 
 const PHOTOS = [
-  { src: '/clinica-1.jpg',  caption: 'Receção' },
-  { src: '/clinica-10.jpg', caption: 'Consultório' },
-  { src: '/clinica-8.jpg',  caption: 'Área de espera do laboratório' },
-  { src: '/clinica-9.jpg',  caption: 'Sala de observação' },
-  { src: '/clinica-2.jpg',  caption: 'Área de espera da receção' },
-  { src: '/clinica-3.jpg',  caption: 'Área de espera da receção' },
-  { src: '/clinica-4.jpg',  caption: 'Hall de entrada' },
-  { src: '/clinica-5.jpg',  caption: 'Área de recreação infantil' },
-  { src: '/clinica-6.jpg',  caption: 'Área de recreação infantil' },
-  { src: '/clinica-7.jpg',  caption: 'Laboratório' },
+  { src: '/clinica-1.webp',  caption: 'Receção' },
+  { src: '/clinica-10.webp', caption: 'Consultório' },
+  { src: '/clinica-8.webp',  caption: 'Área de espera do laboratório' },
+  { src: '/clinica-9.webp',  caption: 'Sala de observação' },
+  { src: '/clinica-2.webp',  caption: 'Área de espera da receção' },
+  { src: '/clinica-3.webp',  caption: 'Área de espera da receção' },
+  { src: '/clinica-4.webp',  caption: 'Hall de entrada' },
+  { src: '/clinica-5.webp',  caption: 'Área de recreação infantil' },
+  { src: '/clinica-6.webp',  caption: 'Área de recreação infantil' },
+  { src: '/clinica-7.webp',  caption: 'Laboratório' },
 ]
 
 export default function ClinicGallerySection() {

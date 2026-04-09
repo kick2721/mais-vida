@@ -146,7 +146,7 @@ export default function HeroSection() {
 
               <div className="card-frente rounded-2xl overflow-hidden">
                 <Image
-                  src="/cartao-frente.png"
+                  src="/cartao-frente.webp"
                   alt="Cartão de Membro +Vida — Frente"
                   width={380}
                   height={252}
@@ -157,7 +157,7 @@ export default function HeroSection() {
 
               <div className="card-verso rounded-2xl overflow-hidden">
                 <Image
-                  src="/cartao-verso.png"
+                  src="/cartao-verso.webp"
                   alt="Cartão de Membro +Vida — Verso"
                   width={380}
                   height={252}
@@ -181,7 +181,7 @@ export default function HeroSection() {
           <div className="md:hidden w-full max-w-sm mx-auto flex flex-col gap-4">
             <div className="rounded-2xl overflow-hidden shadow-xl" style={{ transform: 'rotate(-1deg)' }}>
               <Image
-                src="/cartao-frente.png"
+                src="/cartao-frente.webp"
                 alt="Cartão de Membro +Vida — Frente"
                 width={340}
                 height={225}
@@ -191,7 +191,7 @@ export default function HeroSection() {
             </div>
             <div className="rounded-2xl overflow-hidden shadow-lg" style={{ transform: 'rotate(1deg)', marginLeft: '16px' }}>
               <Image
-                src="/cartao-verso.png"
+                src="/cartao-verso.webp"
                 alt="Cartão de Membro +Vida — Verso"
                 width={340}
                 height={225}
