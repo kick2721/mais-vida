@@ -76,7 +76,7 @@ export default function ReceptionForm() {
         setAffiliateResults(results || [])
         setShowDropdown(true)
       })
-    }, 300)
+    }, 150)
     return () => clearTimeout(timer)
   }, [affiliateQuery])
 
