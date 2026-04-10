@@ -89,7 +89,7 @@ function ComprarForm() {
     setError('')
 
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-    const MAX_SIZE_MB = 3
+    const MAX_SIZE_MB = 2
     const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
 
     for (let i = 0; i < holders.length; i++) {
@@ -119,14 +119,22 @@ function ComprarForm() {
     startTransition(async () => {
       const supabase = createBrowserSupabaseClient()
 
-      // Upload comprovativo por cartão e construir rows
+      // Upload comprovativo por cartão via API route segura (validação MIME real)
       const rows = []
       for (const h of holders) {
         const receiptFile = h.receipt!
         const ext = receiptFile.name.split('.').pop()
         const filePath = `receipts/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-        const { error: uploadError } = await supabase.storage.from('receipts').upload(filePath, receiptFile)
-        if (uploadError) { setError('Erro ao enviar comprovativo. Tente novamente.'); return }
+
+        const fd = new FormData()
+        fd.append('file', receiptFile)
+        fd.append('filePath', filePath)
+        const uploadRes = await fetch('/api/upload-receipt', { method: 'POST', body: fd })
+        if (!uploadRes.ok) {
+          const data = await uploadRes.json().catch(() => ({}))
+          setError(data.error || 'Erro ao enviar comprovativo. Tente novamente.'); return
+        }
+
         rows.push({
           customer_name:  h.full_name,
           customer_email: contact.email,
@@ -379,7 +387,7 @@ function ComprarForm() {
                       onChange={setHolder(i, 'receipt')}
                       className="input-field" disabled={isPending} />
                     <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                      JPG, PNG, WEBP ou PDF · Máx. 3MB
+                      JPG, PNG, WEBP ou PDF · Máx. 2MB
                     </p>
                   </div>
                 </div>
