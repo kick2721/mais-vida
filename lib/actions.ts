@@ -19,22 +19,42 @@ export async function sendPasswordResetEmail(email: string): Promise<{ error?: s
     return { error: 'Email inválido.' }
   }
 
+  const normalizedEmail = email.toLowerCase().trim()
+
   try {
     const adminSupabase = await createServerSupabaseAdminClient()
+
+    // Rate limit: 1 pedido por email nos últimos 30 dias
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+    const { count } = await adminSupabase
+      .from('password_reset_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('email', normalizedEmail)
+      .gte('created_at', since)
+
+    if ((count ?? 0) >= 1) {
+      return {
+        error: 'Já enviámos um link de recuperação para este email no último mês. Se ainda não consegue aceder, contacte o administrador.',
+      }
+    }
+
+    // Registar tentativa antes de enviar
+    await adminSupabase
+      .from('password_reset_attempts')
+      .insert({ email: normalizedEmail })
+
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mais-vida.com'
     const redirectTo = `${siteUrl}/reset-password`
 
     // Gerar o link de reset via Admin API
     const { data, error } = await adminSupabase.auth.admin.generateLink({
       type: 'recovery',
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       options: { redirectTo },
     })
 
     if (error) {
-      // Não revelar se o email existe ou não (segurança)
       console.error('[PasswordReset] generateLink error:', error.message)
-      // Devolvemos sucesso na mesma para não expor se o email existe
       return {}
     }
 
@@ -44,7 +64,7 @@ export async function sendPasswordResetEmail(email: string): Promise<{ error?: s
 
     // Enviar via Resend
     await sendEmail({
-      to: email,
+      to: normalizedEmail,
       template: 'password_reset',
       data: { resetUrl: data.properties.action_link },
     })
