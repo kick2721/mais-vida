@@ -257,7 +257,7 @@ export default async function AdminDashboardPage({
         </div>
       </header>
 
-      <div className="section-container py-8">
+      <div className="section-container py-8 pb-24">
         <div className="mb-8">
           <h1 className="font-display text-2xl font-bold text-gray-900">Painel Administrativo</h1>
           <p className="text-gray-500 text-sm mt-1">Gestão de vendas, afiliados, cartões e comissões</p>
