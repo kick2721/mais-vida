@@ -179,7 +179,7 @@ export default function AdminCardsSection({
       {/* Tabela */}
       {filtered.length === 0 ? (
         <div className="card text-center py-12">
-          <p className="text-4xl mb-3">🪪</p>
+          <p className="text-4xl mb-3">🆔</p>
           <p className="text-gray-500 text-sm">
             {search || filter !== 'all' ? 'Nenhum cartão encontrado.' : 'Ainda não há cartões gerados.'}
           </p>
