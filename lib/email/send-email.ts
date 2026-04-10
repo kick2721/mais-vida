@@ -117,7 +117,7 @@ function buildEmailContent(
       const subject = `O seu ${MEMBERSHIP.cardName} foi emitido!`
       const html = baseLayout(subject, `
         <p>Olá, <strong>${data.customerName}</strong>!</p>
-        <p>O seu <strong>${MEMBERSHIP.cardName}</strong> foi emitido com sucesso! 🪪</p>
+        <p>O seu <strong>${MEMBERSHIP.cardName}</strong> foi emitido com sucesso! 🆔</p>
         <div class="highlight">
           <p><strong>Número do cartão:</strong> <span style="font-family:monospace;font-size:16px;letter-spacing:1px">${data.cardNumber}</span></p>
           <p><strong>Estado:</strong> <span class="badge badge-green">✅ Activo</span></p>
