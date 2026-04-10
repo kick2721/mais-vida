@@ -261,7 +261,7 @@ function ApplicationCard({
           </div>
           <div className="flex gap-4 flex-wrap text-xs text-gray-500">
             <span>📞 {app.phone}</span>
-            <span>🪪 {app.national_id}</span>
+            <span>🆔 {app.national_id}</span>
             {app.occupation && <span>💼 {app.occupation}</span>}
             {app.network_size && <span>👥 {app.network_size}</span>}
             <span>📅 {new Date(app.created_at).toLocaleDateString('pt-AO')}</span>
