@@ -5,10 +5,6 @@
 import { BUSINESS, MEMBERSHIP } from '@/lib/constants'
 
 type EmailTemplate =
-  | 'purchase_confirmed'
-  | 'card_issued'
-  | 'commission_paid'
-  | 'welcome'
   | 'password_reset'
   | 'affiliate_approved'
   | 'affiliate_rejected'
@@ -93,76 +89,9 @@ function buildEmailContent(
 
   switch (template) {
 
-    // ── Compra confirmada ──────────────────────────────────────────────────
-    case 'purchase_confirmed': {
-      const subject = `Pagamento confirmado — ${MEMBERSHIP.name}`
-      const html = baseLayout(subject, `
-        <p>Olá, <strong>${data.customerName}</strong>!</p>
-        <p>O seu pagamento foi confirmado com sucesso. A sua membresía <strong>${MEMBERSHIP.name}</strong> está agora activa. 🎉</p>
-        <div class="highlight">
-          <p><strong>Valor pago:</strong> ${(data.amount || 0).toLocaleString()} ${data.currency || 'AOA'}</p>
-          <p><strong>Estado:</strong> <span class="badge badge-green">✅ Confirmado</span></p>
-        </div>
-        <p>O seu cartão digital está a ser preparado e será enviado para o seu WhatsApp em até 48 horas úteis.</p>
-        <div class="divider"></div>
-        <p style="text-align:center">
-          <a href="${siteUrl}/seguimento" class="btn">Ver estado do pedido →</a>
-        </p>
-      `)
-      return { subject, html }
-    }
 
-    // ── Cartão emitido ─────────────────────────────────────────────────────
-    case 'card_issued': {
-      const subject = `O seu ${MEMBERSHIP.cardName} foi emitido!`
-      const html = baseLayout(subject, `
-        <p>Olá, <strong>${data.customerName}</strong>!</p>
-        <p>O seu <strong>${MEMBERSHIP.cardName}</strong> foi emitido com sucesso! 🆔</p>
-        <div class="highlight">
-          <p><strong>Número do cartão:</strong> <span style="font-family:monospace;font-size:16px;letter-spacing:1px">${data.cardNumber}</span></p>
-          <p><strong>Estado:</strong> <span class="badge badge-green">✅ Activo</span></p>
-        </div>
-        <p>Apresente este número (ou o cartão digital enviado por WhatsApp) em qualquer serviço da clínica para usufruir dos seus descontos.</p>
-        <p>Dúvidas? Fale connosco: <strong>${BUSINESS.phone.main}</strong></p>
-      `)
-      return { subject, html }
-    }
 
-    // ── Comissão paga ──────────────────────────────────────────────────────
-    case 'commission_paid': {
-      const subject = `Comissão paga — ${BUSINESS.name}`
-      const html = baseLayout(subject, `
-        <p>Olá, <strong>${data.affiliateName}</strong>!</p>
-        <p>A sua comissão foi processada e paga com sucesso. 💰</p>
-        <div class="highlight">
-          <p><strong>Valor pago:</strong> ${(data.amount || 0).toLocaleString()} ${data.currency || 'AOA'}</p>
-          <p><strong>Data:</strong> ${data.paidAt || new Date().toLocaleDateString('pt-AO')}</p>
-          <p><strong>Estado:</strong> <span class="badge badge-green">💰 Paga</span></p>
-        </div>
-        <p>Pode verificar o historial completo das suas comissões no painel do afiliado.</p>
-        <div class="divider"></div>
-        <p style="text-align:center">
-          <a href="${siteUrl}/affiliate/dashboard" class="btn">Ver painel de afiliado →</a>
-        </p>
-      `)
-      return { subject, html }
-    }
 
-    // ── Bem-vindo ──────────────────────────────────────────────────────────
-    case 'welcome': {
-      const subject = `Bem-vindo(a) ao ${BUSINESS.name}!`
-      const html = baseLayout(subject, `
-        <p>Olá, <strong>${data.customerName}</strong>!</p>
-        <p>A sua conta foi criada com sucesso na plataforma <strong>${BUSINESS.name}</strong>.</p>
-        <p>Para completar a sua adesão ao ${MEMBERSHIP.name}, efectue o pagamento de
-        <strong>${MEMBERSHIP.price.toLocaleString()} ${MEMBERSHIP.currency}</strong> usando um dos métodos disponíveis.</p>
-        <div class="divider"></div>
-        <p style="text-align:center">
-          <a href="${siteUrl}/comprar" class="btn">Completar adesão →</a>
-        </p>
-      `)
-      return { subject, html }
-    }
 
     // ── Recuperação de password ────────────────────────────────────────────
     // Este template bypassa os emails do Supabase (que têm limite reduzido)
