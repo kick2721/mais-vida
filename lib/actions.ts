@@ -273,3 +273,33 @@ export async function requestWithdrawal(iban: string, accountHolder: string) {
 
   return { success: true }
 }
+
+// ─── CONSULTA PÚBLICA DE SEGUIMENTO DE VENDA ──────────────────────────────────
+// Usa service role para bypasear RLS de forma controlada
+// Só devolve campos seguros — nunca receipt_path, national_id, customer_email
+export async function consultarSeguimento(
+  email: string,
+  nationalId: string
+): Promise<{ results?: { customer_name: string; customer_phone: string; amount: number; currency: string; status: string; created_at: string; confirmed_at: string | null }[]; notFound?: boolean; error?: string }> {
+  if (!email?.trim() || !nationalId?.trim()) {
+    return { error: 'Por favor preencha o email e o BI / Passaporte.' }
+  }
+
+  try {
+    const supabase = await createServerSupabaseAdminClient()
+
+    const { data, error } = await supabase
+      .from('sales')
+      .select('customer_name, customer_phone, amount, currency, status, created_at, confirmed_at')
+      .eq('customer_email', email.trim().toLowerCase())
+      .eq('national_id', nationalId.trim().toUpperCase())
+      .order('created_at', { ascending: false })
+
+    if (error) return { error: 'Erro ao consultar. Tente novamente.' }
+    if (!data || data.length === 0) return { notFound: true }
+
+    return { results: data }
+  } catch {
+    return { error: 'Erro inesperado. Tente novamente.' }
+  }
+}
