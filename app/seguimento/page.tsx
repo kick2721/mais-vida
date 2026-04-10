@@ -9,7 +9,7 @@ import Link from 'next/link'
 import Logo from '@/app/components/ui/Logo'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
-import { createBrowserSupabaseClient } from '@/lib/supabase-client'
+import { consultarSeguimento } from '@/lib/actions'
 import { BUSINESS } from '@/lib/constants'
 
 interface SaleResult {
@@ -63,26 +63,19 @@ export default function SeguimentoPage() {
     }
 
     startTransition(async () => {
-      const supabase = createBrowserSupabaseClient()
+      const { results, notFound, error: serverError } = await consultarSeguimento(email, nationalId)
 
-      const { data, error: dbError } = await supabase
-        .from('sales')
-        .select('customer_name, customer_phone, amount, currency, status, created_at, confirmed_at')
-        .eq('customer_email', email.trim().toLowerCase())
-        .eq('national_id', nationalId.trim().toUpperCase())
-        .order('created_at', { ascending: false })
-
-      if (dbError) {
-        setError('Erro ao consultar. Tente novamente.')
+      if (serverError) {
+        setError(serverError)
         return
       }
 
-      if (!data || data.length === 0) {
+      if (notFound) {
         setNotFound(true)
         return
       }
 
-      setResults(data as SaleResult[])
+      setResults(results ?? [])
     })
   }
 
