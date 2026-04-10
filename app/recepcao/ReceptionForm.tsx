@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect } from 'react'
+import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
 import { searchAffiliate, registerManualSale } from '@/lib/receptionist-actions'
+import { createBrowserSupabaseClient } from '@/lib/supabase-client'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import { MEMBERSHIP, BUSINESS } from '@/lib/constants'
 
@@ -31,6 +32,19 @@ export default function ReceptionForm() {
   const [showDropdown,      setShowDropdown]      = useState(false)
   const [searchPending,     startSearchTransition] = useTransition()
   const searchRef = useRef<HTMLDivElement>(null)
+
+  // BI duplicate check
+  type BiStatus = null | 'checking' | 'ok' | 'taken'
+  const [biStatus, setBiStatus] = useState<BiStatus>(null)
+
+  const checkBi = useCallback(async (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed || trimmed.length < 5) { setBiStatus(null); return }
+    setBiStatus('checking')
+    const supabase = createBrowserSupabaseClient()
+    const { data } = await supabase.rpc('check_national_id_exists', { p_national_id: trimmed })
+    setBiStatus(data === true ? 'taken' : 'ok')
+  }, [])
 
   // Submit
   const [isPending, startTransition] = useTransition()
@@ -85,6 +99,8 @@ export default function ReceptionForm() {
     if (!customerName.trim())  { setError('Nome do cliente é obrigatório.');        return }
     if (!customerPhone.trim()) { setError('Telefone do cliente é obrigatório.');     return }
     if (!nationalId.trim())    { setError('BI / Passaporte é obrigatório.');         return }
+    if (biStatus === 'taken')   { setError('Este BI/Passaporte já tem um cartão activo ou pedido em curso.'); return }
+    if (biStatus === 'checking') { setError('Aguarde a verificação do BI/Passaporte.'); return }
 
     startTransition(async () => {
       const result = await registerManualSale({
@@ -113,6 +129,7 @@ export default function ReceptionForm() {
     setNationalId('')
     setPaymentMethod('cash')
     clearAffiliate()
+    setBiStatus(null)
     setError('')
     setStep('form')
   }
@@ -210,12 +227,21 @@ export default function ReceptionForm() {
             type="text"
             required
             value={nationalId}
-            onChange={e => setNationalId(e.target.value)}
-            className="input-field font-mono"
+            onChange={e => { setNationalId(e.target.value); checkBi(e.target.value) }}
+            className={`input-field font-mono ${biStatus === "taken" ? "border-red-400 bg-red-50" : biStatus === "ok" ? "border-green-400" : ""}`}
             placeholder="Ex: 005847291AN014"
             disabled={isPending}
             autoComplete="off"
           />
+          {biStatus === 'checking' && (
+            <p className="text-xs mt-1 text-amber-600">A verificar BI/Passaporte…</p>
+          )}
+          {biStatus === 'taken' && (
+            <p className="text-xs mt-1 text-red-600">⚠️ Este BI/Passaporte já tem um cartão activo ou pedido em curso.</p>
+          )}
+          {biStatus === 'ok' && (
+            <p className="text-xs mt-1 text-green-600">✓ BI/Passaporte disponível.</p>
+          )}
         </div>
       </div>
 
