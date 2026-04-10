@@ -1,17 +1,15 @@
 'use client'
 
 // app/candidatura-estado/page.tsx
-// Consultar estado da candidatura — com campo de senha igual ao login
-// Se aprovado e conta existe, faz login automático no painel de afiliado
+// Consultar estado da candidatura — só por identificador (sem senha)
+// Se aprovado, mostra botão para criar palavra-passe em /criar-conta
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import Logo from '@/app/components/ui/Logo'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
-import { consultarCandidaturaComSenha } from '@/lib/actions'
-import { createBrowserSupabaseClient } from '@/lib/supabase-client'
+import { consultarCandidatura } from '@/lib/actions'
 
 interface ApplicationResult {
   full_name: string
@@ -22,9 +20,7 @@ interface ApplicationResult {
 }
 
 export default function CandidaturaEstadoPage() {
-  const router = useRouter()
   const [identifier, setIdentifier] = useState('')
-  const [password, setPassword]     = useState('')
   const [result, setResult]         = useState<ApplicationResult | null>(null)
   const [notFound, setNotFound]     = useState(false)
   const [error, setError]           = useState('')
@@ -40,37 +36,14 @@ export default function CandidaturaEstadoPage() {
       setError('Por favor introduza o seu telefone, BI ou email.')
       return
     }
-    if (!password) {
-      setError('Por favor introduza a sua palavra-passe.')
-      return
-    }
 
     startTransition(async () => {
-      const res = await consultarCandidaturaComSenha(identifier.trim(), password)
+      const res = await consultarCandidatura(identifier.trim())
 
       if (res.error)    { setError(res.error); return }
       if (res.notFound) { setNotFound(true);   return }
       if (!res.result)  { setError('Erro inesperado. Tente novamente.'); return }
 
-      // Se aprovado e tem conta -> fazer login e redirecionar
-      if (res.result.status === 'approved' && res.email) {
-        const supabase = createBrowserSupabaseClient()
-        const { error: authError } = await supabase.auth.signInWithPassword({
-          email: res.email,
-          password,
-        })
-
-        if (authError) {
-          setResult(res.result)
-          setError('Palavra-passe incorrecta. Verifique e tente novamente.')
-          return
-        }
-
-        router.push('/affiliate/dashboard')
-        return
-      }
-
-      // Pendente, rejeitado, ou aprovado sem conta -> mostrar estado
       setResult(res.result)
     })
   }
@@ -87,7 +60,7 @@ export default function CandidaturaEstadoPage() {
     approved: {
       icon: '✅',
       label: 'Aprovada!',
-      description: 'Parabéns! A sua candidatura foi aprovada. Entre no painel de afiliado com as suas credenciais.',
+      description: 'Parabéns! A sua candidatura foi aprovada. Crie a sua palavra-passe para entrar no painel de afiliado.',
       color: '#166534',
       bg: '#dcfce7',
       border: '#86efac',
@@ -133,7 +106,7 @@ export default function CandidaturaEstadoPage() {
             Consultar a minha candidatura
           </h1>
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            Introduza os mesmos dados que usou ao candidatar-se.
+            Introduza o telefone, BI ou email que usou ao candidatar-se.
           </p>
         </div>
 
@@ -159,31 +132,6 @@ export default function CandidaturaEstadoPage() {
                 <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
                   Pode usar qualquer um dos três.
                 </p>
-              </div>
-
-              <div>
-                <label className="input-label" htmlFor="password">Palavra-passe</label>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="input-field"
-                  placeholder="••••••••"
-                  disabled={isPending}
-                />
-              </div>
-
-              <div className="text-right">
-                <Link
-                  href="/forgot-password"
-                  className="text-xs hover:opacity-70"
-                  style={{ color: 'var(--color-primary)' }}
-                >
-                  Esqueci a palavra-passe
-                </Link>
               </div>
 
               {error && (
@@ -214,6 +162,8 @@ export default function CandidaturaEstadoPage() {
 
         {result && (() => {
           const cfg = statusConfig[result.status]
+          // Encode identifier for passing to /criar-conta
+          const encodedId = encodeURIComponent(identifier.trim())
           return (
             <div className="space-y-4">
               <div className="card border-2" style={{ borderColor: cfg.border, background: cfg.bg }}>
@@ -261,13 +211,24 @@ export default function CandidaturaEstadoPage() {
               </div>
 
               {result.status === 'approved' && (
-                <Link href="/login" className="btn-primary w-full text-center block">
-                  Entrar no painel de afiliado →
-                </Link>
+                <div className="space-y-3">
+                  <Link
+                    href={`/criar-conta?id=${encodedId}`}
+                    className="btn-primary w-full text-center block"
+                  >
+                    🔑 Criar a minha palavra-passe →
+                  </Link>
+                  <p className="text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>
+                    Já criou a palavra-passe?{' '}
+                    <Link href="/login" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                      Entrar no painel →
+                    </Link>
+                  </p>
+                </div>
               )}
 
               <button
-                onClick={() => { setResult(null); setIdentifier(''); setPassword(''); setError('') }}
+                onClick={() => { setResult(null); setIdentifier(''); setError('') }}
                 className="btn-outline w-full text-sm"
               >
                 ← Nova pesquisa
@@ -297,3 +258,4 @@ export default function CandidaturaEstadoPage() {
     </div>
   )
 }
+
