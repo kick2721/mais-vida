@@ -479,7 +479,8 @@ export async function approveApplication(applicationId: string) {
     if (newUser?.user) {
       referralCode = 'VIDA-' + newUser.user.id.replace(/-/g, '').substring(0, 6).toUpperCase()
 
-      await new Promise(r => setTimeout(r, 500))
+      // Aguardar que o trigger on_auth_user_created crie o profile
+      await new Promise(r => setTimeout(r, 1500))
 
       await adminSupabase
         .from('profiles')
@@ -491,13 +492,20 @@ export async function approveApplication(applicationId: string) {
         })
         .eq('id', newUser.user.id)
 
-      await adminSupabase
+      const { error: affUpsertError } = await adminSupabase
         .from('affiliates')
         .upsert({
           profile_id:    newUser.user.id,
           referral_code: referralCode,
           is_active:     true,
+          total_sales:   0,
+          total_earned:  0,
+          balance:       0,
         }, { onConflict: 'profile_id' })
+
+      if (affUpsertError) {
+        console.error('[approveApplication] affiliates upsert error:', affUpsertError.message)
+      }
     }
   } else {
     // Conta já existe — garantir que perfil e afiliado estão correctos
