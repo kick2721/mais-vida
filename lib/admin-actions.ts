@@ -109,6 +109,16 @@ export async function confirmSale(saleId: string, adminId: string) {
     console.error('[Cleanup] Erro ao agendar borrado:', cleanupError)
   }
 
+
+  // ── Email ao cliente ──
+  if (sale.customer_email) {
+    await sendEmail({
+      to: sale.customer_email,
+      template: 'purchase_confirmed',
+      data: { customerName: sale.customer_name || 'Cliente' },
+    })
+  }
+
   revalidatePath('/admin/dashboard')
   return { success: true }
 }
@@ -120,7 +130,7 @@ export async function cancelSale(saleId: string, reason?: string) {
   // Buscar dados da venda antes de cancelar
   const { data: sale } = await supabaseAdmin
     .from('sales')
-    .select('id, status, referral_code')
+    .select('id, status, referral_code, customer_name, customer_email')
     .eq('id', saleId)
     .single()
 
@@ -186,6 +196,18 @@ export async function cancelSale(saleId: string, reason?: string) {
     await scheduleReceiptDeletion(saleId)
   } catch (cleanupError) {
     console.error('[Cleanup] Erro ao agendar borrado:', cleanupError)
+  }
+
+  // ── Email ao cliente ──
+  if (sale.customer_email) {
+    await sendEmail({
+      to: sale.customer_email,
+      template: 'purchase_cancelled',
+      data: {
+        customerName: sale.customer_name || 'Cliente',
+        reason: reason || null,
+      },
+    })
   }
 
   revalidatePath('/admin/dashboard')
