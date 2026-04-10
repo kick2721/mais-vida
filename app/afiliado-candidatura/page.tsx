@@ -33,8 +33,6 @@ export default function AffiliateCandidaturePage() {
     phone: '',
     national_id: '',
     email: '',
-    password: '',
-    confirm_password: '',
     occupation: '',
     network_size: '',
     motivation: '',
@@ -43,7 +41,6 @@ export default function AffiliateCandidaturePage() {
     tiktok: '',
     other_social: '',
   })
-  const [showPassword, setShowPassword] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -58,18 +55,6 @@ export default function AffiliateCandidaturePage() {
 
     if (!form.full_name || !form.phone || !form.national_id || !form.email || !form.motivation) {
       setError('Por favor preencha todos os campos obrigatórios.')
-      return
-    }
-    if (!form.password) {
-      setError('Por favor crie uma palavra-passe para aceder à sua conta.')
-      return
-    }
-    if (form.password.length < 6) {
-      setError('A palavra-passe deve ter no mínimo 6 caracteres.')
-      return
-    }
-    if (form.password !== form.confirm_password) {
-      setError('As palavras-passe não coincidem.')
       return
     }
     if (form.motivation.length < 30) {
@@ -104,7 +89,6 @@ export default function AffiliateCandidaturePage() {
           phone:         form.phone,
           national_id:   form.national_id,
           email:         form.email,
-          password_temp: form.password,
           occupation:    form.occupation || null,
           network_size:  form.network_size || null,
           motivation:    form.motivation,
@@ -235,62 +219,11 @@ export default function AffiliateCandidaturePage() {
 
             <div className="border-t" style={{ borderColor: 'var(--color-border)' }} />
 
-            {/* 2. Palavra-passe da conta */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-1"
-                style={{ color: 'var(--color-primary)' }}>
-                2. Palavra-passe da conta
-              </p>
-              <p className="text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>
-                Crie a palavra-passe que irá usar para entrar no seu painel de afiliado quando for aprovado.
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <label className="input-label">Palavra-passe <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={form.password}
-                      onChange={set('password')}
-                      className="input-field pr-12"
-                      placeholder="Mínimo 6 caracteres"
-                      disabled={isPending}
-                      autoComplete="new-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs"
-                      style={{ color: 'var(--color-text-muted)' }}
-                    >
-                      {showPassword ? 'Ocultar' : 'Mostrar'}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="input-label">Confirmar palavra-passe <span className="text-red-500">*</span></label>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={form.confirm_password}
-                    onChange={set('confirm_password')}
-                    className="input-field"
-                    placeholder="Repita a palavra-passe"
-                    disabled={isPending}
-                    autoComplete="new-password"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t" style={{ borderColor: 'var(--color-border)' }} />
-
-            {/* 3. Perfil comercial */}
+            {/* 2. Perfil comercial */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-4"
                 style={{ color: 'var(--color-primary)' }}>
-                3. Perfil comercial
+                2. Perfil comercial
               </p>
               <div className="space-y-4">
                 <div>
@@ -318,7 +251,7 @@ export default function AffiliateCandidaturePage() {
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-1"
                 style={{ color: 'var(--color-primary)' }}>
-                4. Redes sociais
+                3. Redes sociais
               </p>
               <p className="text-xs mb-4" style={{ color: 'var(--color-text-muted)' }}>
                 Partilhe os seus perfis para que possamos avaliar melhor a sua presença digital.
@@ -367,7 +300,7 @@ export default function AffiliateCandidaturePage() {
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-4"
                 style={{ color: 'var(--color-primary)' }}>
-                5. Motivação
+                4. Motivação
               </p>
               <div>
                 <label className="input-label">
