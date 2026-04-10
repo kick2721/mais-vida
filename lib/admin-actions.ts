@@ -102,23 +102,6 @@ export async function confirmSale(saleId: string, adminId: string) {
     }
   }
 
-  // ── Email ao cliente ──
-  try {
-    if (sale.customer_email) {
-      await sendEmail({
-        to: sale.customer_email,
-        template: 'purchase_confirmed',
-        data: {
-          customerName: sale.customer_name || 'Cliente',
-          amount: sale.amount,
-          currency: sale.currency,
-        },
-      })
-    }
-  } catch (emailError) {
-    console.error('[Email] confirmSale error:', emailError)
-  }
-
   // ── Agendar borrado do comprovativo em 60 minutos ──
   try {
     await scheduleReceiptDeletion(saleId)
@@ -269,30 +252,6 @@ export async function issueCard(cardId: string, adminId: string) {
 
   if (error) return { error: 'Erro ao emitir cartão: ' + error.message }
 
-  // Buscar dados do cliente via sale_id
-  try {
-    if (card.sale_id) {
-      const { data: sale } = await supabaseAdmin
-        .from('sales')
-        .select('customer_name, customer_email, amount, currency')
-        .eq('id', card.sale_id)
-        .single()
-
-      if (sale?.customer_email) {
-        await sendEmail({
-          to: sale.customer_email,
-          template: 'card_issued',
-          data: {
-            customerName: sale.customer_name || 'Cliente',
-            cardNumber: card.card_number,
-          },
-        })
-      }
-    }
-  } catch (emailError) {
-    console.error('[Email] issueCard error:', emailError)
-  }
-
   revalidatePath('/admin/dashboard')
   return { success: true, cardNumber: card.card_number }
 }
@@ -392,29 +351,6 @@ export async function payCommission(commissionId: string) {
     .eq('id', commissionId)
 
   if (commError) return { error: 'Erro ao pagar comissão: ' + commError.message }
-
-  // Email ao afiliado
-  try {
-    const affiliateData = commission.affiliates as any
-    if (affiliateData?.profile_id) {
-      const supabaseAdmin = await createServerSupabaseAdminClient()
-      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(affiliateData.profile_id)
-      if (authUser?.user?.email) {
-        await sendEmail({
-          to: authUser.user.email,
-          template: 'commission_paid',
-          data: {
-            affiliateName: affiliateData.profiles?.full_name || 'Afiliado',
-            amount: commission.amount,
-            currency: commission.currency,
-            paidAt: new Date().toLocaleDateString('pt-AO'),
-          },
-        })
-      }
-    }
-  } catch (emailError) {
-    console.error('[Email] payCommission error:', emailError)
-  }
 
   revalidatePath('/admin/dashboard')
   return { success: true }
