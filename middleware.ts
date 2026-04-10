@@ -4,18 +4,20 @@ import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 const ROLE_ROUTES: Record<string, string[]> = {
-  admin: ['/admin'],
-  affiliate: ['/affiliate'],
+  admin:        ['/admin'],
+  affiliate:    ['/affiliate'],
+  receptionist: ['/recepcao'],
 }
 
-const AUTH_ROUTES = ['/affiliate', '/admin']
+const AUTH_ROUTES       = ['/affiliate', '/admin', '/recepcao']
 const GUEST_ONLY_ROUTES = ['/login', '/forgot-password', '/reset-password']
 
 const ALWAYS_PUBLIC = ['/comprar', '/seguimento', '/afiliado-candidatura', '/candidatura-estado', '/criar-conta', '/']
 
 const REDIRECT_MAP: Record<string, string> = {
-  admin: '/admin/dashboard',
-  affiliate: '/affiliate/dashboard',
+  admin:        '/admin/dashboard',
+  affiliate:    '/affiliate/dashboard',
+  receptionist: '/recepcao',
 }
 
 export async function middleware(request: NextRequest) {
@@ -70,9 +72,6 @@ export async function middleware(request: NextRequest) {
   // ── 2. Rotas protegidas: requerem autenticação ───────────────────────
   if (AUTH_ROUTES.some(route => pathname.startsWith(route))) {
     if (!user) {
-      // Server Actions chegam como POST com header 'next-action'
-      // Um redirect 307 num POST de Server Action quebra a app inteira
-      // Nesse caso devolvemos JSON 401 em vez de redirecionar
       const isServerAction =
         request.method === 'POST' &&
         (request.headers.get('next-action') !== null ||
