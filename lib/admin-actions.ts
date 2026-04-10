@@ -573,12 +573,9 @@ export async function rejectApplication(applicationId: string, reason?: string) 
 
   // Email de rejeição
   if (app) {
-    const recipientEmail = app.email
-      || `${app.phone?.replace(/\D/g, '')}@mais-vida.ao`
-
     try {
       await sendEmail({
-        to: recipientEmail,
+        to: app.email,
         template: 'affiliate_rejected',
         data: {
           affiliateName: app.full_name,
