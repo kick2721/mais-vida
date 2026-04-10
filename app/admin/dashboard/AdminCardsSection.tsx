@@ -38,7 +38,7 @@ export default function AdminCardsSection({
   adminId: string
 }) {
   const [search, setSearch]     = useState('')
-  const [filter, setFilter]     = useState<'all' | 'pending' | 'issued'>('all')
+  const [filter, setFilter]     = useState<'all' | 'pending' | 'issued'>('pending')
   const [page, setPage]         = useState(1)
 
   const pendingCount = useMemo(() => cards.filter(c => c.status === 'pending').length, [cards])
@@ -117,9 +117,9 @@ export default function AdminCardsSection({
         {/* Filtro de estado */}
         <div className="flex gap-1 bg-white rounded-xl p-1 border" style={{ borderColor: 'var(--color-border)' }}>
           {([
-            { key: 'all',     label: 'Todos',    count: cards.length },
             { key: 'pending', label: '⚠️ Pendentes', count: pendingCount },
             { key: 'issued',  label: '✅ Emitidos',  count: cards.length - pendingCount },
+            { key: 'all',     label: 'Todos',    count: cards.length },
           ] as const).map(f => (
             <button
               key={f.key}
