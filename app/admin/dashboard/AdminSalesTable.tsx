@@ -371,7 +371,7 @@ function SaleRow({ sale, adminId }: { sale: any; adminId: string }) {
             <DetailItem label="Nome completo"   value={sale.customer_name} />
             <DetailItem label="Telefone"        value={sale.customer_phone} />
             <DetailItem label="Email"           value={sale.customer_email} />
-            <DetailItem label="BI / NIF"        value={sale.national_id} mono />
+            <DetailItem label="BI / Passaporte"        value={sale.national_id} mono />
             <DetailItem label="Método pag."     value={PAYMENT_LABEL[sale.payment_method || ''] || sale.payment_method} />
             <DetailItem label="Valor"           value={`${sale.amount?.toLocaleString()} ${sale.currency}`} />
             <DetailItem label="Data"            value={sale.created_at ? new Date(sale.created_at).toLocaleString('pt-AO') : undefined} />

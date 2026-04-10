@@ -341,7 +341,7 @@ function CardTableRow({ card, adminId }: { card: CardData; adminId: string }) {
             <DetailItem label="Nome completo"  value={sd?.customer_name} />
             <DetailItem label="Telefone"       value={sd?.customer_phone} />
             <DetailItem label="Email"          value={sd?.customer_email} />
-            <DetailItem label="BI / NIF"       value={sd?.national_id} />
+            <DetailItem label="BI / Passaporte"       value={sd?.national_id} />
             <DetailItem label="Nº Cartão"      value={card.card_number} mono />
             <DetailItem label="Emitido em"     value={fmt(card.issued_at)} />
             <DetailItem label="Criado em"      value={fmt(card.created_at)} />
