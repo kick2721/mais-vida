@@ -437,7 +437,7 @@ export async function approveApplication(applicationId: string) {
   // Buscar dados da candidatura
   const { data: app, error: fetchError } = await supabase
     .from('affiliate_applications')
-    .select('id, full_name, phone, national_id, email, password_temp')
+    .select('id, full_name, phone, national_id, email')
     .eq('id', applicationId)
     .single()
 
@@ -447,8 +447,13 @@ export async function approveApplication(applicationId: string) {
     ? app.email.toLowerCase().trim()
     : `${app.phone.replace(/\D/g, '')}@mais-vida.ao`
 
-  const password = app.password_temp
-  if (!password) return { error: 'Candidatura sem palavra-passe definida. O candidato deve resubmeter.' }
+  // Gerar password aleatória segura — o afiliado vai definir a sua própria
+  // palavra-passe na página /criar-conta após ver que foi aprovado
+  const password = Math.random().toString(36).slice(2) +
+    Math.random().toString(36).slice(2).toUpperCase() +
+    Math.floor(Math.random() * 9000 + 1000).toString()
+
+  if (!password) return { error: 'Erro ao gerar credenciais.' }
 
   const adminSupabase = await createServerSupabaseAdminClient()
   const { data: { users } } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 })
