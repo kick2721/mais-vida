@@ -66,12 +66,8 @@ function ComprarForm() {
     setBiStatus(prev => prev.map((s, i) => i === index ? 'checking' : s))
     const supabase = createBrowserSupabaseClient()
     const { data } = await supabase
-      .from('sales')
-      .select('id, status')
-      .eq('national_id', trimmed)
-      .in('status', ['confirmed', 'pending_review', 'pending'])
-      .limit(1)
-    const taken = !!(data && data.length > 0)
+      .rpc('check_national_id_exists', { p_national_id: trimmed })
+    const taken = data === true
     setBiStatus(prev => prev.map((s, i) => i === index ? (taken ? 'taken' : 'ok') : s))
   }
 
