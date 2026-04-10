@@ -156,26 +156,6 @@ export async function consultarCandidatura(identifier: string) {
   }
 }
 
-// ─── CONSULTAR CANDIDATURA COM SENHA ─────────────────────────────────────────
-export async function consultarCandidaturaComSenha(identifier: string, password: string) {
-  if (!identifier || identifier.trim().length < 3) return { error: 'Dados em falta.' }
-  if (!password) return { error: 'Introduza a sua palavra-passe.' }
-
-  const consultaRes = await consultarCandidatura(identifier)
-
-  if (consultaRes.error) return { error: consultaRes.error }
-  if (consultaRes.notFound) return { notFound: true }
-
-  const result = consultaRes.result!
-
-  if (result.status !== 'approved') return { result }
-
-  const resolved = await resolveLoginIdentifier(identifier.trim())
-  if (resolved.error || !resolved.email) return { result, noAccount: true }
-
-  return { result, email: resolved.email }
-}
-
 // ─── RESOLVER EMAIL POR TELEFONE / BI ────────────────────────────────────────
 export async function resolveLoginIdentifier(identifier: string): Promise<{ email?: string; error?: string }> {
   if (!identifier || identifier.trim().length < 3) {
