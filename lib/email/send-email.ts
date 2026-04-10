@@ -6,6 +6,8 @@ import { BUSINESS, MEMBERSHIP } from '@/lib/constants'
 
 type EmailTemplate =
   | 'password_reset'
+  | 'purchase_confirmed'
+  | 'purchase_cancelled'
   | 'affiliate_approved'
   | 'affiliate_rejected'
   | 'affiliate_deactivated'
@@ -92,6 +94,46 @@ function buildEmailContent(
 
 
 
+
+    // ── Compra confirmada ──────────────────────────────────────────────────
+    case 'purchase_confirmed': {
+      const subject = `Compra confirmada! — ${BUSINESS.name}`
+      const html = baseLayout(subject, `
+        <p>Olá, <strong>${data.customerName}</strong>!</p>
+        <p>🎉 A sua compra foi <strong>confirmada</strong> com sucesso.</p>
+        <div class="highlight">
+          <p><strong>O seu cartão de membro +Vida está a ser preparado.</strong></p>
+          <p style="font-size:13px;color:#6b7280">Entraremos em contacto consigo em breve para a entrega do cartão.</p>
+        </div>
+        <div class="highlight highlight-info">
+          <p><strong>Pode acompanhar o estado da sua compra em:</strong></p>
+          <p style="font-size:13px"><a href="${siteUrl}/seguimento" style="color:#4A8C3F">${siteUrl}/seguimento</a></p>
+        </div>
+        <p>Obrigado por escolher a <strong>${BUSINESS.name}</strong>!</p>
+      `)
+      return { subject, html }
+    }
+
+    // ── Compra cancelada ───────────────────────────────────────────────────
+    case 'purchase_cancelled': {
+      const subject = `Compra cancelada — ${BUSINESS.name}`
+      const html = baseLayout(subject, `
+        <p>Olá, <strong>${data.customerName}</strong>!</p>
+        <p>Informamos que a sua compra na plataforma <strong>${BUSINESS.name}</strong> foi <strong>cancelada</strong>.</p>
+        ${data.reason ? `
+        <div class="highlight highlight-danger">
+          <p><strong>Motivo:</strong></p>
+          <p style="font-size:14px">${data.reason}</p>
+        </div>
+        ` : ''}
+        <p>Se tiver alguma questão ou se acha que houve um erro, contacte-nos directamente.</p>
+        <div class="divider"></div>
+        <p style="text-align:center">
+          <a href="https://wa.me/${BUSINESS.phone.whatsapp}" class="btn btn-outline">Contactar a equipa →</a>
+        </p>
+      `)
+      return { subject, html }
+    }
 
     // ── Recuperação de password ────────────────────────────────────────────
     // Este template bypassa os emails do Supabase (que têm limite reduzido)
