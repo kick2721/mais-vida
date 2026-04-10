@@ -23,40 +23,19 @@ export async function searchAffiliate(query: string): Promise<{
 
   if (!profile || profile.role !== 'receptionist') return { error: 'Sem permissão.' }
 
-  const supabaseAdmin = await createServerSupabaseAdminClient()
-  const q = query.trim().toUpperCase()
+  const supabase2 = await createServerSupabaseAdminClient()
 
-  // Buscar por código de afiliado
-  const { data: byCode } = await supabaseAdmin
-    .from('affiliates')
-    .select('id, referral_code, profiles(full_name, phone)')
-    .ilike('referral_code', `%${q}%`)
-    .eq('is_active', true)
-    .limit(5)
+  const { data, error } = await supabase2
+    .rpc('search_active_affiliates', { p_query: query.trim() })
 
-  // Buscar por nome ou telefone via profiles
-  const { data: byName } = await supabaseAdmin
-    .from('affiliates')
-    .select('id, referral_code, profiles!inner(full_name, phone)')
-    .or(`full_name.ilike.%${query.trim()}%,phone.ilike.%${query.trim()}%`)
-    .eq('is_active', true)
-    .limit(5)
+  if (error) return { error: 'Erro na pesquisa.' }
 
-  // Unir e desduplicar por id
-  const all = [...(byCode || []), ...(byName || [])]
-  const seen = new Set<string>()
-  const results = all
-    .filter(a => {
-      if (seen.has(a.id)) return false
-      seen.add(a.id)
-      return true
-    })
-    .map((a: any) => ({
-      id:            a.id,
-      referral_code: a.referral_code,
-      full_name:     a.profiles?.full_name || '',
-      phone:         a.profiles?.phone || '',
-    }))
+  const results = (data || []).map((a: any) => ({
+    id:            a.id,
+    referral_code: a.referral_code,
+    full_name:     a.full_name || '',
+    phone:         a.phone || '',
+  }))
 
   return { results }
 }
