@@ -63,6 +63,8 @@ function LoginForm() {
 
       if (profile?.role === 'admin') {
         router.push('/admin/dashboard')
+      } else if (profile?.role === 'receptionist') {
+        router.push('/recepcao')
       } else if (profile?.role === 'affiliate') {
         // Verificar se o afiliado está activo
         const { data: affiliate } = await supabase
