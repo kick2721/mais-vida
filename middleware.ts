@@ -11,7 +11,7 @@ const ROLE_ROUTES: Record<string, string[]> = {
 const AUTH_ROUTES = ['/affiliate', '/admin']
 const GUEST_ONLY_ROUTES = ['/login', '/forgot-password', '/reset-password']
 
-const ALWAYS_PUBLIC = ['/comprar', '/seguimento', '/afiliado-candidatura', '/candidatura-estado', '/']
+const ALWAYS_PUBLIC = ['/comprar', '/seguimento', '/afiliado-candidatura', '/candidatura-estado', '/criar-conta', '/']
 
 const REDIRECT_MAP: Record<string, string> = {
   admin: '/admin/dashboard',
