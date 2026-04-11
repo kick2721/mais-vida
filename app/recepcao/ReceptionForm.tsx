@@ -23,7 +23,7 @@ export default function ReceptionForm({ receptionistName }: { receptionistName: 
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [nationalId,    setNationalId]    = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
 
   // Affiliate search
   const [affiliateQuery,    setAffiliateQuery]    = useState('')
@@ -233,21 +233,11 @@ export default function ReceptionForm({ receptionistName }: { receptionistName: 
         <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--color-primary)' }}>
           Método de pagamento
         </p>
-        <div className="grid grid-cols-2 gap-3">
-          {(['cash', 'transfer'] as PaymentMethod[]).map(method => (
-            <button
-              key={method}
-              type="button"
-              onClick={() => setPaymentMethod(method)}
-              className="py-3 rounded-xl border-2 text-sm font-semibold transition-all"
-              style={paymentMethod === method
-                ? { background: 'var(--color-primary)', color: '#fff', borderColor: 'var(--color-primary)' }
-                : { background: 'transparent', color: 'var(--color-primary)', borderColor: 'var(--color-primary)', opacity: 0.6 }
-              }
-            >
-              {method === 'cash' ? '💵 Numerário' : '🏦 Transferência'}
-            </button>
-          ))}
+        <div
+          className="py-3 rounded-xl border-2 text-sm font-semibold text-center"
+          style={{ background: 'var(--color-primary)', color: '#fff', borderColor: 'var(--color-primary)' }}
+        >
+          🏦 Transferência
         </div>
       </div>
 
