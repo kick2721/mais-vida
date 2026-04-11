@@ -58,11 +58,13 @@ export async function registerManualSale(formData: {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', user.id)
     .single()
 
   if (!profile || profile.role !== 'receptionist') return { error: 'Sem permissão.' }
+
+  const receptionistName = profile.full_name || user.email || user.id
 
   // Validações básicas
   if (!formData.customer_name?.trim())  return { error: 'Nome do cliente é obrigatório.' }
@@ -112,7 +114,7 @@ export async function registerManualSale(formData: {
       status:         'confirmed',
       confirmed_at:   now,
       confirmed_by:   user.id,
-      notes:          'Venda registada presencialmente na recepção',
+      notes:          `Venda registada presencialmente na recepção pelo recepcionista: ${receptionistName} (ID: ${user.id})`,
     })
     .select('id')
     .single()
