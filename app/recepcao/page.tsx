@@ -52,7 +52,7 @@ export default async function RecepcaoPage() {
           <p className="text-gray-500 text-sm mt-1">Venda presencial — pagamento já recebido</p>
         </div>
 
-        <ReceptionForm />
+        <ReceptionForm receptionistName={profile.full_name || ''} />
       </div>
     </div>
   )
