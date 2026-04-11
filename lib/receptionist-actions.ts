@@ -114,7 +114,7 @@ export async function registerManualSale(formData: {
       status:         'confirmed',
       confirmed_at:   now,
       confirmed_by:   user.id,
-      notes:          `Venda registada presencialmente na recepção pelo recepcionista: ${receptionistName} (ID: ${user.id})`,
+      notes:          `Venda registada na recepção por: ${receptionistName}`,
     })
     .select('id')
     .single()
