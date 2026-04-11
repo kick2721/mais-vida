@@ -17,7 +17,7 @@ interface AffiliateResult {
 
 type Step = 'form' | 'success'
 
-export default function ReceptionForm() {
+export default function ReceptionForm({ receptionistName }: { receptionistName: string }) {
   // Form state
   const [customerName,  setCustomerName]  = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
@@ -336,6 +336,15 @@ export default function ReceptionForm() {
         <span className="text-xl font-bold" style={{ color: 'var(--color-primary)' }}>
           {MEMBERSHIP.price.toLocaleString('pt-AO')} Kz
         </span>
+      </div>
+
+      {/* Recepcionista activo */}
+      <div className="rounded-xl p-3 border flex items-center gap-2"
+        style={{ borderColor: 'var(--color-border)', background: 'rgba(0,0,0,0.03)' }}>
+        <span className="text-base">👤</span>
+        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          Venda registada por: <strong className="text-gray-800">{receptionistName}</strong>
+        </p>
       </div>
 
       {error && (
