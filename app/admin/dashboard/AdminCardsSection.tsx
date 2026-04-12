@@ -20,6 +20,7 @@ interface CardData {
     customer_phone?: string
     customer_email?: string
     national_id?: string
+    date_of_birth?: string
   } | null
 }
 
@@ -81,6 +82,7 @@ export default function AdminCardsSection({
       'Telefone':    c.sale_data?.customer_phone || '—',
       'Email':       c.sale_data?.customer_email || '—',
       'BI':          c.sale_data?.national_id    || '—',
+      'Data Nasc.':  c.sale_data?.date_of_birth  || '—',
       'Estado':      c.status === 'issued' ? 'Emitido' : 'Pendente',
       'Emitido em':  fmtDate(c.issued_at),
       'Criado em':   fmtDate(c.created_at),
@@ -342,6 +344,7 @@ function CardTableRow({ card, adminId }: { card: CardData; adminId: string }) {
             <DetailItem label="Telefone"       value={sd?.customer_phone} />
             <DetailItem label="Email"          value={sd?.customer_email} />
             <DetailItem label="BI / Passaporte"       value={sd?.national_id} />
+            <DetailItem label="Data de Nascimento" value={sd?.date_of_birth} />
             <DetailItem label="Nº Cartão"      value={card.card_number} mono />
             <DetailItem label="Emitido em"     value={fmt(card.issued_at)} />
             <DetailItem label="Criado em"      value={fmt(card.created_at)} />

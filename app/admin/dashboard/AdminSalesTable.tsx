@@ -128,6 +128,7 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
       'Telefone':       s.customer_phone  || '—',
       'Email':          s.customer_email  || '—',
       'BI':             s.national_id     || '—',
+      'Data Nasc.':     s.date_of_birth   || '—',
       'Valor':          s.amount ?? 0,
       'Moeda':          s.currency        || 'Kz',
       'Estado':         STATUS_MAP[s.status]?.label || s.status,
@@ -372,6 +373,7 @@ function SaleRow({ sale, adminId }: { sale: any; adminId: string }) {
             <DetailItem label="Telefone"        value={sale.customer_phone} />
             <DetailItem label="Email"           value={sale.customer_email} />
             <DetailItem label="BI / Passaporte"        value={sale.national_id} mono />
+            <DetailItem label="Data de Nascimento" value={sale.date_of_birth} />
             <DetailItem label="Método pag."     value={PAYMENT_LABEL[sale.payment_method || ''] || sale.payment_method} />
             <DetailItem label="Valor"           value={`${sale.amount?.toLocaleString()} ${sale.currency}`} />
             <DetailItem label="Data"            value={sale.created_at ? new Date(sale.created_at).toLocaleString('pt-AO') : undefined} />
