@@ -56,8 +56,7 @@ export async function POST(request: NextRequest) {
     const adminSupabase = await createServerSupabaseAdminClient()
 
     // Verificar que o utilizador existe e tem role affiliate
-    const { data: { users } } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 })
-    const user = users?.find(u => u.email === email.toLowerCase().trim())
+    const { data: { user } } = await adminSupabase.auth.admin.getUserByEmail(email.toLowerCase().trim())
 
     if (!user) {
       // Resposta genérica — não revelar se o email existe ou não
