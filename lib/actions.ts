@@ -125,50 +125,43 @@ export async function becomeAffiliate() {
 export async function consultarCandidatura(identifier: string) {
   if (!identifier || identifier.trim().length < 3) return { error: 'Dados em falta.' }
 
-  const digitsOnly  = (v: string) => v.replace(/\D/g, '')
-  const normalizeId = (v: string) => v.replace(/\s/g, '').toUpperCase()
-  const normalizePhone = (v: string) => {
-    const d = digitsOnly(v)
-    if (d.startsWith('244') && d.length === 12) return d.slice(3)
-    return d
+  const val = identifier.trim()
+
+  // Rejeitar se começa com +244 ou 244 — pedir ao utilizador que retire o prefixo
+  if (val.startsWith('+244') || val.startsWith('244')) {
+    return { error: 'Por favor introduza o número de telefone sem o prefixo +244. Exemplo: 944 123 456.' }
   }
 
   try {
     const supabase = await createServerSupabaseClient()
 
-    const { data, error } = await supabase
+    const isEmail = val.includes('@')
+    const isBI    = /^[0-9]{9}[A-Za-z]{2}[0-9]{3}$/.test(val.replace(/\s/g, ''))
+
+    let query = supabase
       .from('affiliate_applications')
-      .select('full_name, phone, status, reject_reason, created_at, national_id, email')
-      .order('created_at', { ascending: false })
+      .select('full_name, phone, status, reject_reason, created_at')
+
+    if (isEmail) {
+      query = query.eq('email', val.toLowerCase())
+    } else if (isBI) {
+      query = query.eq('national_id', val.replace(/\s/g, '').toUpperCase())
+    } else {
+      query = query.eq('phone', val)
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle()
 
     if (error) return { error: 'Erro ao consultar. Tente novamente.' }
-    if (!data || data.length === 0) return { notFound: true }
-
-    const val         = identifier.trim()
-    const phoneDigits = normalizePhone(val)
-    const idNorm      = normalizeId(val)
-    const emailNorm   = val.toLowerCase()
-
-    const match = data.find(row => {
-      if (val.includes('@') && row.email) return row.email.toLowerCase() === emailNorm
-      if (phoneDigits.length >= 7 && row.phone) {
-        if (normalizePhone(row.phone) === phoneDigits) return true
-      }
-      if (idNorm.length >= 5 && row.national_id) {
-        if (normalizeId(row.national_id) === idNorm) return true
-      }
-      return false
-    })
-
-    if (!match) return { notFound: true }
+    if (!data)  return { notFound: true }
 
     return {
       result: {
-        full_name:     match.full_name,
-        phone:         match.phone,
-        status:        match.status as 'pending' | 'approved' | 'rejected',
-        reject_reason: match.reject_reason,
-        created_at:    match.created_at,
+        full_name:     data.full_name,
+        phone:         data.phone,
+        status:        data.status as 'pending' | 'approved' | 'rejected',
+        reject_reason: data.reject_reason,
+        created_at:    data.created_at,
       }
     }
   } catch {
