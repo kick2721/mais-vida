@@ -133,7 +133,7 @@ export async function consultarCandidatura(identifier: string) {
   }
 
   try {
-    const supabase = await createServerSupabaseClient()
+    const supabase = await createServerSupabaseAdminClient()
 
     const isEmail = val.includes('@')
     const isBI    = /^[0-9]{9}[A-Za-z]{2}[0-9]{3}$/.test(val.replace(/\s/g, ''))
