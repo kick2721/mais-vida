@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient as createClient } from '@/lib/supabase-server'
+import { Redis } from '@upstash/redis'
+
+const redis = new Redis({
+  url:   process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+})
+
+// Máximo 5 uploads por IP cada hora
+const RATE_LIMIT_MAX      = 5
+const RATE_LIMIT_WINDOW_S = 60 * 60
 
 const MAX_SIZE_BYTES = 2 * 1024 * 1024 // 2MB
 
@@ -27,6 +37,27 @@ function detectMime(buffer: Uint8Array): string | null {
 
 export async function POST(request: NextRequest) {
   try {
+    // ── Rate limiting por IP ──────────────────────────────────────────────
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+              || request.headers.get('x-real-ip')
+              || 'unknown'
+
+    const key   = `upload_rate:${ip}`
+    const count = await redis.incr(key)
+
+    if (count === 1) {
+      // Primera vez — poner expiración de 1 hora
+      await redis.expire(key, RATE_LIMIT_WINDOW_S)
+    }
+
+    if (count > RATE_LIMIT_MAX) {
+      return NextResponse.json(
+        { error: 'Demasiados envios num curto período. Por favor aguarde uma hora e tente novamente.' },
+        { status: 429 }
+      )
+    }
+
+    // ── Resto do processamento ────────────────────────────────────────────
     const formData = await request.formData()
     const file = formData.get('file') as File | null
 
