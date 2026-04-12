@@ -242,9 +242,9 @@ export async function resolveLoginIdentifier(identifier: string): Promise<{ emai
       if (matchMeta?.email) return { email: matchMeta.email }
     }
 
-    return { error: 'Não encontrámos nenhuma conta com esses dados. Verifique o telefone, BI ou email.' }
+    return { error: 'Dados incorrectos. Verifique o telefone, BI ou email e tente novamente.' }
   } catch {
-    return { error: 'Erro ao verificar os dados. Tente novamente.' }
+    return { error: 'Dados incorrectos. Verifique o telefone, BI ou email e tente novamente.' }
   }
 }
 
