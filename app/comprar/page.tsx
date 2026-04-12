@@ -104,6 +104,21 @@ function ComprarForm() {
     const MAX_SIZE_MB = 2
     const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
 
+    // Validação de data de nascimento — verifica formato e que a data exista
+    const validateDob = (dob: string): string | null => {
+      if (!dob.trim() || dob.length < 10) return 'Por favor preencha a data de nascimento no formato DD/MM/AAAA.'
+      if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) return 'Data de nascimento inválida. Use o formato DD/MM/AAAA.'
+      const [d, m, y] = dob.split('/').map(Number)
+      if (m < 1 || m > 12) return 'Mês inválido na data de nascimento.'
+      if (d < 1 || d > 31) return 'Dia inválido na data de nascimento.'
+      const date = new Date(y, m - 1, d)
+      if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d)
+        return 'Data de nascimento inválida (o dia não existe nesse mês).'
+      if (date > new Date()) return 'A data de nascimento não pode ser futura.'
+      if (y < new Date().getFullYear() - 120) return 'Data de nascimento inválida (mais de 120 anos atrás).'
+      return null
+    }
+
     for (let i = 0; i < holders.length; i++) {
       if (!holders[i].full_name.trim()) {
         setError(`Por favor preencha o nome completo do Cartão ${i + 1}.`); return
@@ -111,9 +126,8 @@ function ComprarForm() {
       if (!holders[i].national_id.trim()) {
         setError(`Por favor preencha o BI/Passaporte do Cartão ${i + 1}.`); return
       }
-      if (!holders[i].date_of_birth.trim() || holders[i].date_of_birth.length < 10) {
-        setError(`Por favor preencha a data de nascimento do Cartão ${i + 1} no formato DD/MM/AAAA.`); return
-      }
+      const dobError = validateDob(holders[i].date_of_birth)
+      if (dobError) { setError(`Cartão ${i + 1}: ${dobError}`); return }
       if (biStatus[i] === 'taken') {
         setError(`Cartão ${i + 1}: este BI/Passaporte já tem um cartão activo ou pedido em curso.`); return
       }
