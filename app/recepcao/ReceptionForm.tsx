@@ -23,6 +23,7 @@ export default function ReceptionForm({ receptionistName }: { receptionistName: 
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [nationalId,    setNationalId]    = useState('')
+  const [dateOfBirth,   setDateOfBirth]   = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transfer')
 
   // Affiliate search
@@ -92,6 +93,13 @@ export default function ReceptionForm({ receptionistName }: { receptionistName: 
     setAffiliateResults([])
   }
 
+  const maskDate = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8)
+    if (digits.length <= 2) return digits
+    if (digits.length <= 4) return `${digits.slice(0,2)}/${digits.slice(2)}`
+    return `${digits.slice(0,2)}/${digits.slice(2,4)}/${digits.slice(4)}`
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -99,6 +107,7 @@ export default function ReceptionForm({ receptionistName }: { receptionistName: 
     if (!customerName.trim())  { setError('Nome do cliente é obrigatório.');        return }
     if (!customerPhone.trim()) { setError('Telefone do cliente é obrigatório.');     return }
     if (!nationalId.trim())    { setError('BI / Passaporte é obrigatório.');         return }
+    if (!dateOfBirth.trim() || dateOfBirth.length < 10) { setError('Data de nascimento é obrigatória (DD/MM/AAAA).'); return }
     if (biStatus === 'taken')   { setError('Este BI/Passaporte já tem um cartão activo ou pedido em curso.'); return }
     if (biStatus === 'checking') { setError('Aguarde a verificação do BI/Passaporte.'); return }
 
@@ -108,6 +117,7 @@ export default function ReceptionForm({ receptionistName }: { receptionistName: 
         customer_phone: customerPhone.trim(),
         customer_email: customerEmail.trim(),
         national_id:    nationalId.trim(),
+        date_of_birth:  dateOfBirth.trim(),
         payment_method: paymentMethod,
         referral_code:  selectedAffiliate?.referral_code,
       })
@@ -127,6 +137,7 @@ export default function ReceptionForm({ receptionistName }: { receptionistName: 
     setCustomerPhone('')
     setCustomerEmail('')
     setNationalId('')
+    setDateOfBirth('')
     setPaymentMethod('cash')
     clearAffiliate()
     setBiStatus(null)
@@ -225,6 +236,24 @@ export default function ReceptionForm({ receptionistName }: { receptionistName: 
           {biStatus === 'ok' && (
             <p className="text-xs mt-1 text-green-600">✓ BI/Passaporte disponível.</p>
           )}
+        </div>
+
+        <div>
+          <label className="input-label">Data de nascimento *</label>
+          <input
+            type="text"
+            required
+            value={dateOfBirth}
+            onChange={e => setDateOfBirth(maskDate(e.target.value))}
+            className="input-field"
+            placeholder="DD/MM/AAAA"
+            maxLength={10}
+            disabled={isPending}
+            autoComplete="off"
+          />
+          <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+            Necessária para emissão do cartão.
+          </p>
         </div>
       </div>
 
