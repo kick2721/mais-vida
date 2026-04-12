@@ -14,6 +14,9 @@ export async function confirmSale(saleId: string, adminId: string) {
   const supabase = await createServerSupabaseClient()
   const supabaseAdmin = await createServerSupabaseAdminClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  adminId = user?.id ?? ''
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -256,6 +259,9 @@ export async function reactivateSale(saleId: string, adminId: string) {
 export async function issueCard(cardId: string, adminId: string) {
   const supabase = await createServerSupabaseClient()
   const supabaseAdmin = await createServerSupabaseAdminClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  adminId = user?.id ?? ''
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -601,6 +607,9 @@ export async function payWithdrawal(withdrawalId: string, adminId: string) {
   const supabase = await createServerSupabaseClient()
   const supabaseAdmin = await createServerSupabaseAdminClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  adminId = user?.id ?? ''
+
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', adminId).single()
   if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
 
@@ -638,6 +647,9 @@ export async function payWithdrawal(withdrawalId: string, adminId: string) {
 export async function rejectWithdrawal(withdrawalId: string, adminId: string) {
   const supabase = await createServerSupabaseClient()
   const supabaseAdmin = await createServerSupabaseAdminClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  adminId = user?.id ?? ''
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', adminId).single()
   if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
