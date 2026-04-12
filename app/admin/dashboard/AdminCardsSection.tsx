@@ -5,7 +5,78 @@
 
 import { useState, useMemo } from 'react'
 import IssueCardButton from './IssueCardButton'
-import { exportToExcel, fmtDate } from '@/lib/export-excel'
+import { fmtDate } from '@/lib/export-excel'
+
+async function exportCardsExcel(cards: CardData[], filename: string) {
+  const ExcelJS: any = await new Promise((resolve, reject) => {
+    if ((window as any).ExcelJS) { resolve((window as any).ExcelJS); return }
+    const script = document.createElement('script')
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'
+    script.onload = () => resolve((window as any).ExcelJS)
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+
+  const workbook = new ExcelJS.Workbook()
+  const ws = workbook.addWorksheet('Dados')
+
+  const headers = ['Nº Cartão', 'Cliente', 'Telefone', 'Email', 'BI', 'Data Nasc.', 'Estado', 'Emitido em', 'Criado em']
+  const headerRow = ws.addRow(headers)
+
+  // Estilo cabeçalho
+  headerRow.eachCell((cell: any) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } }
+    cell.alignment = { vertical: 'middle', horizontal: 'center' }
+  })
+
+  // Linhas de dados
+  for (const c of cards) {
+    const isPending = c.status === 'pending'
+    const row = ws.addRow([
+      c.card_number || '—',
+      c.sale_data?.customer_name  || '—',
+      c.sale_data?.customer_phone || '—',
+      c.sale_data?.customer_email || '—',
+      c.sale_data?.national_id    || '—',
+      c.sale_data?.date_of_birth  || '—',
+      isPending ? 'Pendente' : 'Emitido',
+      fmtDate(c.issued_at),
+      fmtDate(c.created_at),
+    ])
+
+    if (isPending) {
+      row.eachCell((cell: any) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } } // verde claro
+        cell.font = { color: { argb: 'FF065F46' } } // verde escuro
+      })
+      // Célula Estado em negrito
+      const estadoCell = row.getCell(7)
+      estadoCell.font = { bold: true, color: { argb: 'FF065F46' } }
+      estadoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6EE7B7' } } // verde mais vivo
+    }
+  }
+
+  // Auto-largura colunas
+  ws.columns.forEach((col: any) => {
+    let maxLen = 10
+    col.eachCell({ includeEmpty: true }, (cell: any) => {
+      const len = cell.value ? String(cell.value).length : 0
+      if (len > maxLen) maxLen = len
+    })
+    col.width = maxLen + 4
+  })
+
+  // Gerar e descarregar
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${filename}.xlsx`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 interface CardData {
   id: string
@@ -76,18 +147,7 @@ export default function AdminCardsSection({
   }
 
   function handleExport() {
-    const rows = cards.map(c => ({
-      'Nº Cartão':   c.card_number || '—',
-      'Cliente':     c.sale_data?.customer_name  || '—',
-      'Telefone':    c.sale_data?.customer_phone || '—',
-      'Email':       c.sale_data?.customer_email || '—',
-      'BI':          c.sale_data?.national_id    || '—',
-      'Data Nasc.':  c.sale_data?.date_of_birth  || '—',
-      'Estado':      c.status === 'issued' ? 'Emitido' : 'Pendente',
-      'Emitido em':  fmtDate(c.issued_at),
-      'Criado em':   fmtDate(c.created_at),
-    }))
-    exportToExcel(rows, `cartoes-${new Date().toISOString().slice(0,10)}`)
+    exportCardsExcel(cards, `cartoes-${new Date().toISOString().slice(0,10)}`)
   }
 
   return (
