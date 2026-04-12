@@ -4,6 +4,52 @@ import { createServerSupabaseClient, createServerSupabaseAdminClient } from './s
 import { revalidatePath } from 'next/cache'
 import { MEMBERSHIP, COMMISSION } from './constants'
 
+// ─── VALIDAÇÃO DE DATA DE NASCIMENTO ─────────────────────────────────────────
+// Verifica formato DD/MM/AAAA, que a data exista no calendário,
+// que não seja futura e que seja razoável (máx 120 anos atrás)
+function validateDateOfBirth(dob: string): { valid: boolean; error?: string } {
+  if (!dob || dob.trim().length === 0) {
+    return { valid: false, error: 'Data de nascimento é obrigatória.' }
+  }
+  const trimmed = dob.trim()
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+    return { valid: false, error: 'Data de nascimento inválida. Use o formato DD/MM/AAAA.' }
+  }
+  const [dayStr, monthStr, yearStr] = trimmed.split('/')
+  const day   = parseInt(dayStr,   10)
+  const month = parseInt(monthStr, 10)
+  const year  = parseInt(yearStr,  10)
+
+  if (month < 1 || month > 12) {
+    return { valid: false, error: 'Mês inválido na data de nascimento.' }
+  }
+  if (day < 1 || day > 31) {
+    return { valid: false, error: 'Dia inválido na data de nascimento.' }
+  }
+
+  // Verifica que a data exista de facto no calendário
+  const date = new Date(year, month - 1, day)
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth()    !== month - 1 ||
+    date.getDate()     !== day
+  ) {
+    return { valid: false, error: 'Data de nascimento inválida (o dia não existe nesse mês).' }
+  }
+
+  const now = new Date()
+  if (date > now) {
+    return { valid: false, error: 'A data de nascimento não pode ser futura.' }
+  }
+
+  const minYear = now.getFullYear() - 120
+  if (year < minYear) {
+    return { valid: false, error: 'Data de nascimento inválida (mais de 120 anos atrás).' }
+  }
+
+  return { valid: true }
+}
+
 // ─── BUSCAR AFILIADO (por nome, código ou telefone) ──────────────────────────
 export async function searchAffiliate(query: string): Promise<{
   results?: { id: string; referral_code: string; full_name: string; phone: string }[]
@@ -71,7 +117,9 @@ export async function registerManualSale(formData: {
   if (!formData.customer_name?.trim())  return { error: 'Nome do cliente é obrigatório.' }
   if (!formData.customer_phone?.trim()) return { error: 'Telefone do cliente é obrigatório.' }
   if (!formData.national_id?.trim())    return { error: 'BI / Passaporte é obrigatório.' }
-  if (!formData.date_of_birth?.trim())  return { error: 'Data de nascimento é obrigatória.' }
+
+  const dobValidation = validateDateOfBirth(formData.date_of_birth)
+  if (!dobValidation.valid) return { error: dobValidation.error }
 
   const supabaseAdmin = await createServerSupabaseAdminClient()
 
