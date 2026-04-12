@@ -119,17 +119,15 @@ function ComprarForm() {
       const rows = []
       for (const h of holders) {
         const receiptFile = h.receipt!
-        const ext = receiptFile.name.split('.').pop()
-        const filePath = `receipts/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
         const fd = new FormData()
         fd.append('file', receiptFile)
-        fd.append('filePath', filePath)
         const uploadRes = await fetch('/api/upload-receipt', { method: 'POST', body: fd })
         if (!uploadRes.ok) {
           const data = await uploadRes.json().catch(() => ({}))
           setError(data.error || 'Erro ao enviar comprovativo. Tente novamente.'); return
         }
+        const uploadData = await uploadRes.json()
 
         rows.push({
           customer_name:  h.full_name,
@@ -138,7 +136,7 @@ function ComprarForm() {
           national_id:    h.national_id,
           amount:         MEMBERSHIP.price,
           currency:       MEMBERSHIP.currency,
-          receipt_path:   filePath,
+          receipt_path:   uploadData.path,
           referral_code:  referralCode || null,
           status:         'pending_review',
         })
