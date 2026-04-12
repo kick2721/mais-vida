@@ -29,11 +29,14 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File | null
-    const filePath = formData.get('filePath') as string | null
 
-    if (!file || !filePath) {
-      return NextResponse.json({ error: 'Ficheiro ou caminho em falta.' }, { status: 400 })
+    if (!file) {
+      return NextResponse.json({ error: 'Ficheiro em falta.' }, { status: 400 })
     }
+
+    // Gerar o nome do ficheiro no servidor — nunca confiar no cliente
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
+    const filePath = `receipts/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
     // 1. Validar tamaño en servidor (no confiar en el cliente)
     if (file.size > MAX_SIZE_BYTES) {
