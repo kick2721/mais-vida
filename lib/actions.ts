@@ -192,28 +192,30 @@ export async function resolveLoginIdentifier(identifier: string): Promise<{ emai
     const phoneVal = normalizePhone(val)
     const idNorm   = normalizeId(val)
 
-    const { data: allProfiles } = await supabase
-      .from('profiles')
-      .select('id, phone, national_id')
-
+    // Busca directa por teléfono — solo 1 fila, sin traer toda la tabla
     if (phoneVal.length >= 7) {
-      const matchPhone = allProfiles?.find(p =>
-        p.phone && normalizePhone(p.phone) === phoneVal
-      )
+      const { data: matchPhone } = await supabase
+        .from('profiles')
+        .select('id, phone')
+        .eq('phone', phoneVal)
+        .maybeSingle()
+
       if (matchPhone) {
-        const supabaseAdmin = await createServerSupabaseAdminClient()
-        const { data: authData } = await supabaseAdmin.auth.admin.getUserById(matchPhone.id)
+        const { data: authData } = await supabase.auth.admin.getUserById(matchPhone.id)
         if (authData?.user?.email) return { email: authData.user.email }
       }
     }
 
+    // Busca directa por BI/Pasaporte — solo 1 fila, sin traer toda la tabla
     if (idNorm.length >= 5) {
-      const matchId = allProfiles?.find(p =>
-        p.national_id && normalizeId(p.national_id) === idNorm
-      )
+      const { data: matchId } = await supabase
+        .from('profiles')
+        .select('id, national_id')
+        .eq('national_id', idNorm)
+        .maybeSingle()
+
       if (matchId) {
-        const supabaseAdmin = await createServerSupabaseAdminClient()
-        const { data: authData } = await supabaseAdmin.auth.admin.getUserById(matchId.id)
+        const { data: authData } = await supabase.auth.admin.getUserById(matchId.id)
         if (authData?.user?.email) return { email: authData.user.email }
       }
     }
