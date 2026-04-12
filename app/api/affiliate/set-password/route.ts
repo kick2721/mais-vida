@@ -2,15 +2,44 @@
 // Permite que um afiliado aprovado defina a sua própria palavra-passe.
 // Usa a Admin API server-side para não expor a service role key ao cliente.
 // Verificações de segurança:
-//   1. O email deve corresponder a um utilizador existente
-//   2. Esse utilizador deve ter role = 'affiliate' no perfil
-//   3. Rate limiting implícito pelo Vercel (não é endpoint de uso massivo)
+//   1. Rate limiting por IP: máx 10 tentativas por 15 minutos (via Upstash Redis)
+//   2. O email deve corresponder a um utilizador existente
+//   3. Esse utilizador deve ter role = 'affiliate' no perfil
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseAdminClient } from '@/lib/supabase-server'
+import { Redis } from '@upstash/redis'
 
-export async function POST(request: Request) {
+const redis = new Redis({
+  url:   process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+})
+
+const RATE_LIMIT_MAX      = 10
+const RATE_LIMIT_WINDOW_S = 15 * 60 // 15 minutos
+
+export async function POST(request: NextRequest) {
   try {
+    // ── Rate limiting por IP ──────────────────────────────────────────────
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+              || request.headers.get('x-real-ip')
+              || 'unknown'
+
+    const key   = `set_password_rate:${ip}`
+    const count = await redis.incr(key)
+
+    if (count === 1) {
+      await redis.expire(key, RATE_LIMIT_WINDOW_S)
+    }
+
+    if (count > RATE_LIMIT_MAX) {
+      return NextResponse.json(
+        { error: 'Demasiadas tentativas. Por favor aguarde 15 minutos e tente novamente.' },
+        { status: 429 }
+      )
+    }
+
+    // ── Validações básicas ────────────────────────────────────────────────
     const { email, newPassword } = await request.json()
 
     if (!email || !newPassword) {
@@ -31,9 +60,10 @@ export async function POST(request: Request) {
     const user = users?.find(u => u.email === email.toLowerCase().trim())
 
     if (!user) {
+      // Resposta genérica — não revelar se o email existe ou não
       return NextResponse.json(
-        { error: 'Conta não encontrada. Verifique os seus dados.' },
-        { status: 404 }
+        { error: 'Dados incorrectos. Verifique o email e tente novamente.' },
+        { status: 401 }
       )
     }
 
@@ -45,9 +75,10 @@ export async function POST(request: Request) {
       .single()
 
     if (!profile || profile.role !== 'affiliate') {
+      // Mesma mensagem genérica — não revelar que a conta existe mas não é afiliado
       return NextResponse.json(
-        { error: 'Esta conta não tem permissão para usar este acesso.' },
-        { status: 403 }
+        { error: 'Dados incorrectos. Verifique o email e tente novamente.' },
+        { status: 401 }
       )
     }
 
