@@ -227,6 +227,9 @@ export async function reactivateSale(saleId: string, adminId: string) {
   const supabase = await createServerSupabaseClient()
   const supabaseAdmin = await createServerSupabaseAdminClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  adminId = user?.id ?? ''
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
