@@ -125,6 +125,11 @@ export async function confirmSale(saleId: string, adminId: string) {
 
 // ─── CANCELAR VENDA ──────────────────────────────────────────────────────────
 export async function cancelSale(saleId: string, reason?: string) {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id ?? '').single()
+  if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
+
   const supabaseAdmin = await createServerSupabaseAdminClient()
 
   // Buscar dados da venda antes de cancelar
