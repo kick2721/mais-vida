@@ -14,6 +14,7 @@ const MAX_CARDS = 5
 interface CardHolder {
   full_name: string
   national_id: string
+  date_of_birth: string
   receipt: File | null
 }
 
@@ -27,7 +28,7 @@ function ComprarForm() {
   }
 
   const [quantity, setQuantity]   = useState(1)
-  const [holders, setHolders]     = useState<CardHolder[]>([{ full_name: '', national_id: '', receipt: null }])
+  const [holders, setHolders]     = useState<CardHolder[]>([{ full_name: '', national_id: '', date_of_birth: '', receipt: null }])
   const [contact, setContact]     = useState({ email: '', phone: '' })
   const [referralCode, setReferralCode] = useState(
     searchParams.get(REFERRAL.urlParam) || getRefFromCookie()
@@ -46,7 +47,7 @@ function ComprarForm() {
     setQuantity(q)
     setHolders(prev => {
       if (q > prev.length) {
-        return [...prev, ...Array(q - prev.length).fill({ full_name: '', national_id: '', receipt: null })]
+        return [...prev, ...Array(q - prev.length).fill({ full_name: '', national_id: '', date_of_birth: '', receipt: null })]
       }
       return prev.slice(0, q)
     })
@@ -71,9 +72,24 @@ function ComprarForm() {
     setBiStatus(prev => prev.map((s, i) => i === index ? (taken ? 'taken' : 'ok') : s))
   }
 
+  const maskDate = (value: string) => {
+    // Keep only digits
+    const digits = value.replace(/\D/g, '').slice(0, 8)
+    if (digits.length <= 2) return digits
+    if (digits.length <= 4) return `${digits.slice(0,2)}/${digits.slice(2)}`
+    return `${digits.slice(0,2)}/${digits.slice(2,4)}/${digits.slice(4)}`
+  }
+
   const setHolder = (index: number, field: keyof CardHolder) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = field === 'receipt' ? (e.target.files?.[0] ?? null) : e.target.value
+      let value: string | File | null
+      if (field === 'receipt') {
+        value = e.target.files?.[0] ?? null
+      } else if (field === 'date_of_birth') {
+        value = maskDate(e.target.value)
+      } else {
+        value = e.target.value
+      }
       setHolders(prev => prev.map((h, i) => i === index ? { ...h, [field]: value } : h))
       if (field === 'national_id') {
         checkBi(e.target.value, index)
@@ -94,6 +110,9 @@ function ComprarForm() {
       }
       if (!holders[i].national_id.trim()) {
         setError(`Por favor preencha o BI/Passaporte do Cartão ${i + 1}.`); return
+      }
+      if (!holders[i].date_of_birth.trim() || holders[i].date_of_birth.length < 10) {
+        setError(`Por favor preencha a data de nascimento do Cartão ${i + 1} no formato DD/MM/AAAA.`); return
       }
       if (biStatus[i] === 'taken') {
         setError(`Cartão ${i + 1}: este BI/Passaporte já tem um cartão activo ou pedido em curso.`); return
@@ -134,6 +153,7 @@ function ComprarForm() {
           customer_email: contact.email,
           customer_phone: contact.phone,
           national_id:    h.national_id,
+          date_of_birth:  h.date_of_birth,
           amount:         MEMBERSHIP.price,
           currency:       MEMBERSHIP.currency,
           receipt_path:   uploadData.path,
@@ -374,6 +394,19 @@ function ComprarForm() {
                         Aceita BI angolano ou passaporte de qualquer país.
                       </p>
                     )}
+                  </div>
+                  <div>
+                    <label className="input-label">Data de nascimento</label>
+                    <input type="text" required value={holder.date_of_birth}
+                      onChange={setHolder(i, 'date_of_birth')}
+                      className="input-field"
+                      placeholder="DD/MM/AAAA"
+                      maxLength={10}
+                      disabled={isPending} autoComplete="off"
+                    />
+                    <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                      Necessária para emissão do cartão.
+                    </p>
                   </div>
                   <div>
                     <label className="input-label">Comprovativo de pagamento</label>
