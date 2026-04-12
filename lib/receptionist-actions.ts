@@ -48,6 +48,7 @@ export async function registerManualSale(formData: {
   customer_phone: string
   customer_email: string
   national_id:    string
+  date_of_birth:  string
   payment_method: 'cash' | 'transfer'
   referral_code?: string
 }): Promise<{ success?: boolean; saleId?: string; error?: string }> {
@@ -70,6 +71,7 @@ export async function registerManualSale(formData: {
   if (!formData.customer_name?.trim())  return { error: 'Nome do cliente é obrigatório.' }
   if (!formData.customer_phone?.trim()) return { error: 'Telefone do cliente é obrigatório.' }
   if (!formData.national_id?.trim())    return { error: 'BI / Passaporte é obrigatório.' }
+  if (!formData.date_of_birth?.trim())  return { error: 'Data de nascimento é obrigatória.' }
 
   const supabaseAdmin = await createServerSupabaseAdminClient()
 
@@ -107,6 +109,7 @@ export async function registerManualSale(formData: {
       customer_phone: formData.customer_phone.trim(),
       customer_email: formData.customer_email?.trim() || null,
       national_id:    formData.national_id.trim().toUpperCase(),
+      date_of_birth:  formData.date_of_birth.trim(),
       amount:         MEMBERSHIP.price,
       currency:       MEMBERSHIP.currency,
       payment_method: formData.payment_method,
