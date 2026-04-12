@@ -92,7 +92,7 @@ export default async function AdminDashboardPage({
     .select(`
       id, amount, currency, status, payment_method,
       payment_proof_url, receipt_path, referral_code,
-      customer_name, customer_email, customer_phone, national_id,
+      customer_name, customer_email, customer_phone, national_id, date_of_birth,
       created_at, confirmed_at, notes
     `)
     .order('created_at', { ascending: false })
@@ -205,7 +205,7 @@ export default async function AdminDashboardPage({
     if (!card.sale_id) return card
     const { data: sale } = await supabaseAdmin
       .from('sales')
-      .select('customer_name, customer_phone, customer_email, national_id')
+      .select('customer_name, customer_phone, customer_email, national_id, date_of_birth')
       .eq('id', card.sale_id)
       .single()
     return { ...card, sale_data: sale || null }
