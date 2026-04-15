@@ -11,9 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt">
       <body className="min-h-screen antialiased">
-        <div style={{ background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(1px)', minHeight: '100vh' }}>
-          {children}
-        </div>
+        {children}
       </body>
     </html>
   );
