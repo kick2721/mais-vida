@@ -220,23 +220,6 @@ export async function resolveLoginIdentifier(identifier: string): Promise<{ emai
       }
     }
 
-    const supabaseAdmin2 = await createServerSupabaseAdminClient()
-    const { data: { users } } = await supabaseAdmin2.auth.admin.listUsers({ perPage: 1000 })
-
-    if (phoneVal.length >= 7) {
-      const matchMeta = users?.find(u =>
-        u.user_metadata?.phone && normalizePhone(u.user_metadata.phone) === phoneVal
-      )
-      if (matchMeta?.email) return { email: matchMeta.email }
-    }
-
-    if (idNorm.length >= 5) {
-      const matchMeta = users?.find(u =>
-        u.user_metadata?.national_id && normalizeId(u.user_metadata.national_id) === idNorm
-      )
-      if (matchMeta?.email) return { email: matchMeta.email }
-    }
-
     return { error: 'Dados incorrectos. Verifique o telefone, BI ou email e tente novamente.' }
   } catch {
     return { error: 'Dados incorrectos. Verifique o telefone, BI ou email e tente novamente.' }
