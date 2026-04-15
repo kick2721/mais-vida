@@ -21,11 +21,17 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [cartaoDropdownOpen, setCartaoDropdownOpen] = useState(false)
   const [mobileCartaoOpen, setMobileCartaoOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const cartaoDropdownRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
   useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
   useEffect(() => { setOpen(false); setDropdownOpen(false); setCartaoDropdownOpen(false) }, [pathname])
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -187,11 +193,11 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full" style={{
-        background: 'rgba(255,255,255,0.97)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(74,140,63,0.15)',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+      <header className="sticky top-0 z-50 w-full transition-all duration-300" style={{
+        background: scrolled ? 'rgba(255,255,255,0.98)' : 'rgba(255,255,255,0.92)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: scrolled ? '1px solid rgba(74,140,63,0.15)' : '1px solid transparent',
+        boxShadow: scrolled ? '0 2px 20px rgba(0,0,0,0.08)' : 'none',
       }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-20">

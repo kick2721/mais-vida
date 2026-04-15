@@ -4,203 +4,243 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
-import { BUSINESS, MEMBERSHIP } from '@/lib/constants'
+import { motion } from 'framer-motion'
+import { ChevronDown, ShoppingCart, Search, Sparkles } from 'lucide-react'
+
+const STATS = [
+  { value: '+10.000', label: 'Clientes activos' },
+  { value: '70%', label: 'Descuento máximo' },
+  { value: '10+', label: 'Especialidades' },
+]
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 28 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+})
 
 export default function HeroSection() {
-  const [cartaoOpen, setCartaoOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   return (
-    <section className="relative overflow-hidden" style={{ background: 'rgba(240,247,239,0.75)' }}>
+    <section style={{ background: 'linear-gradient(160deg, #f8faf7 0%, #ffffff 60%, #f0f7ef 100%)', overflow: 'hidden' }}>
+      <div className="section-container" style={{ paddingTop: '5rem', paddingBottom: '0' }}>
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
-      <style>{`
-        .card-frente {
-          transform: rotate(-2deg);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          box-shadow: 0 20px 60px rgba(74,140,63,0.22), 0 4px 16px rgba(0,0,0,0.12);
-        }
-        .card-frente:hover {
-          transform: rotate(0deg) scale(1.03);
-          box-shadow: 0 28px 70px rgba(74,140,63,0.30), 0 6px 20px rgba(0,0,0,0.15);
-        }
-        .card-verso {
-          transform: rotate(2deg);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          box-shadow: 0 20px 60px rgba(139,26,26,0.15), 0 4px 16px rgba(0,0,0,0.10);
-          margin-left: 24px;
-        }
-        .card-verso:hover {
-          transform: rotate(0deg) scale(1.03);
-          box-shadow: 0 28px 70px rgba(139,26,26,0.22), 0 6px 20px rgba(0,0,0,0.13);
-        }
-        .cartao-dropdown {
-          animation: fadeInDown 0.18s ease;
-        }
-        @keyframes fadeInDown {
-          from { opacity: 0; transform: translateY(-6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+          {/* ── Left: Text ─────────────────────────────────── */}
+          <div>
+            <motion.div {...fadeUp(0.05)}>
+              <span className="badge-primary mb-6 inline-flex">
+                <Sparkles size={12} />
+                Saúde acessível em Angola
+              </span>
+            </motion.div>
 
-      <div className="section-container relative z-10 py-20 md:py-28">
-        <div className="flex flex-col md:flex-row items-center gap-12 md:gap-16">
-
-          {/* ── Texto izquierda ── */}
-          <div className="flex-1 text-center md:text-left">
-            <span
-              className="inline-block text-xs font-semibold uppercase tracking-widest mb-4 px-3 py-1 rounded-full"
-              style={{ background: 'var(--color-primary)', color: '#fff', letterSpacing: '0.15em' }}
+            <motion.h1
+              {...fadeUp(0.15)}
+              className="font-serif font-bold leading-tight mb-6"
+              style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', color: 'var(--color-primary-dark)' }}
             >
-              Centro de Diagnóstico e Especialidades
-            </span>
+              O seu cartão de{' '}
+              <span style={{ color: 'var(--color-primary)', fontStyle: 'italic' }}>
+                saúde privada
+              </span>{' '}
+              a preço justo
+            </motion.h1>
 
-            <h1
-              className="font-display text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
-              style={{ color: 'var(--color-text)' }}
+            <motion.p
+              {...fadeUp(0.25)}
+              className="text-lg mb-10 leading-relaxed"
+              style={{ color: 'var(--color-text-muted)', maxWidth: '460px' }}
             >
-              O seu cartão de saúde{' '}
-              <span style={{ color: 'var(--color-primary)' }}>com descontos reais</span>
-            </h1>
+              Aceda a consultas, exames e tratamentos na Clínica Mais Vida com descontos
+              de até <strong style={{ color: 'var(--color-primary)' }}>70%</strong>.
+              Um cartão, toda a família protegida.
+            </motion.p>
 
-            <p
-              className="text-lg md:text-xl mb-8 max-w-lg mx-auto md:mx-0"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              {BUSINESS.tagline}. Aceda a consultas, exames e muito mais com descontos
-              exclusivos em consultas, exames e muito mais.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-
-              {/* ── Botão duplo: Obter Cartão ── */}
-              <div className="relative">
+            <motion.div {...fadeUp(0.35)} className="flex flex-wrap gap-3 mb-14">
+              {/* Dropdown Obter Cartão */}
+              <div style={{ position: 'relative' }}>
                 <button
-                  onClick={() => setCartaoOpen(o => !o)}
-                  className="btn-primary text-base py-3 px-8 flex items-center gap-2"
+                  onClick={() => setDropdownOpen(o => !o)}
+                  className="btn-primary text-base"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
-                  Obter {MEMBERSHIP.name}
-                  <svg
-                    width="16" height="16" viewBox="0 0 16 16" fill="none"
-                    style={{ transition: 'transform 0.2s', transform: cartaoOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                  >
-                    <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <ShoppingCart size={18} />
+                  Obter Cartão
+                  <ChevronDown
+                    size={16}
+                    style={{ transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'none' }}
+                  />
                 </button>
-
-                {cartaoOpen && (
-                  <div
-                    className="cartao-dropdown absolute left-0 top-full mt-2 z-50 rounded-2xl border shadow-xl overflow-hidden"
-                    style={{ minWidth: '220px', background: '#fff', borderColor: 'var(--color-border)' }}
-                  >
-                    <Link
-                      href="/comprar"
-                      onClick={() => setCartaoOpen(false)}
-                      className="flex items-center gap-3 px-5 py-4 hover:bg-green-50 transition-colors"
-                    >
-                      <span className="text-xl">💳</span>
+                {dropdownOpen && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 50,
+                    background: '#fff', borderRadius: '14px', minWidth: '230px',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.14)',
+                    border: '1px solid var(--color-border)', overflow: 'hidden',
+                  }}>
+                    <Link href="/comprar"
+                      onClick={() => setDropdownOpen(false)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '14px 18px', fontSize: '14px', fontWeight: 500,
+                        color: 'var(--color-primary)', textDecoration: 'none',
+                        borderBottom: '1px solid var(--color-border)',
+                        background: 'rgba(74,140,63,0.04)',
+                      }}>
+                      <ShoppingCart size={16} />
                       <div>
-                        <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                          Comprar Cartão
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                          Adquirir um novo cartão
-                        </p>
+                        <div style={{ fontWeight: 600 }}>Comprar Cartão</div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Adquirir um novo cartão</div>
                       </div>
                     </Link>
-                    <div style={{ height: '1px', background: 'var(--color-border)' }} />
-                    <Link
-                      href="/seguimento"
-                      onClick={() => setCartaoOpen(false)}
-                      className="flex items-center gap-3 px-5 py-4 hover:bg-green-50 transition-colors"
-                    >
-                      <span className="text-xl">📦</span>
+                    <Link href="/seguimento"
+                      onClick={() => setDropdownOpen(false)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '14px 18px', fontSize: '14px', fontWeight: 500,
+                        color: 'var(--color-text)', textDecoration: 'none',
+                      }}>
+                      <Search size={16} />
                       <div>
-                        <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
-                          Ver Estado do Pedido
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                          Consultar um pedido já feito
-                        </p>
+                        <div style={{ fontWeight: 600 }}>Ver Estado do Pedido</div>
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Consultar pedido existente</div>
                       </div>
                     </Link>
                   </div>
                 )}
               </div>
 
-              <Link href="/#beneficios" className="btn-outline text-base py-3 px-8">
-                Ver Benefícios
+              <Link href="/#beneficios" className="btn-outline text-base">
+                Ver benefícios
               </Link>
-            </div>
+            </motion.div>
 
-            <p className="mt-6 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              💳 Apenas{' '}
-              <strong style={{ color: 'var(--color-primary)' }}>
-                {MEMBERSHIP.price.toLocaleString('pt-AO')} {MEMBERSHIP.currencySymbol}
-              </strong>{' '}
-              por ano · Válido {MEMBERSHIP.durationMonths} meses
-            </p>
-          </div>
-
-          {/* ── Tarjetas DESKTOP ── */}
-          <div className="flex-shrink-0 hidden md:flex flex-col items-end justify-center gap-1">
-            <div className="flex flex-col gap-5" style={{ width: 380 }}>
-
-              <div className="card-frente rounded-2xl overflow-hidden">
-                <Image
-                  src="/cartao-frente.webp"
-                  alt="Cartão de Membro +Vida — Frente"
-                  width={380}
-                  height={252}
-                  style={{ width: '100%', height: 'auto', display: 'block' }}
-                  priority
-                />
-              </div>
-
-              <div className="card-verso rounded-2xl overflow-hidden">
-                <Image
-                  src="/cartao-verso.webp"
-                  alt="Cartão de Membro +Vida — Verso"
-                  width={380}
-                  height={252}
-                  style={{ width: '100%', height: 'auto', display: 'block' }}
-                  priority
-                />
-              </div>
-
-            </div>
-
-            {/* Badge debajo, sin tapar nada */}
-            <div
-              className="px-4 py-2 rounded-full text-xs font-bold text-white shadow-lg mt-2"
-              style={{ background: 'var(--color-primary)' }}
+            {/* Stats strip */}
+            <motion.div
+              {...fadeUp(0.45)}
+              className="flex items-center gap-6 flex-wrap"
+              style={{
+                paddingTop: '2rem',
+                borderTop: '1px solid rgba(74,140,63,0.15)',
+              }}
             >
-              ✓ Cartão oficial
-            </div>
+              {STATS.map((s, i) => (
+                <div key={i} className="flex items-center gap-6">
+                  <div>
+                    <div className="font-serif font-bold text-2xl" style={{ color: 'var(--color-primary)' }}>
+                      {s.value}
+                    </div>
+                    <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{s.label}</div>
+                  </div>
+                  {i < STATS.length - 1 && <div className="stat-divider" />}
+                </div>
+              ))}
+            </motion.div>
           </div>
 
-          {/* ── Tarjetas MOBILE ── */}
-          <div className="md:hidden w-full max-w-sm mx-auto flex flex-col gap-4">
-            <div className="rounded-2xl overflow-hidden shadow-xl" style={{ transform: 'rotate(-1deg)' }}>
-              <Image
-                src="/cartao-frente.webp"
-                alt="Cartão de Membro +Vida — Frente"
-                width={340}
-                height={225}
-                style={{ width: '100%', height: 'auto', display: 'block' }}
-                priority
-              />
-            </div>
-            <div className="rounded-2xl overflow-hidden shadow-lg" style={{ transform: 'rotate(1deg)', marginLeft: '16px' }}>
+          {/* ── Right: Cards ───────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+            className="relative flex justify-center items-center"
+            style={{ minHeight: '420px' }}
+          >
+            {/* Back card — CSS float animation */}
+            <div
+              style={{
+                position: 'absolute',
+                right: '10%',
+                top: '8%',
+                transform: 'rotate(6deg)',
+                zIndex: 1,
+                borderRadius: '18px',
+                overflow: 'hidden',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
+                width: '280px',
+                maxWidth: '70vw',
+                animation: 'floatB 4.5s ease-in-out infinite',
+              }}
+            >
               <Image
                 src="/cartao-verso.webp"
-                alt="Cartão de Membro +Vida — Verso"
-                width={340}
-                height={225}
-                style={{ width: '100%', height: 'auto', display: 'block' }}
+                alt="Verso do Cartão Mais Vida"
+                width={420}
+                height={265}
+                style={{ display: 'block', width: '100%', height: 'auto' }}
               />
             </div>
-          </div>
 
+            {/* Front card — CSS float animation */}
+            <div
+              style={{
+                position: 'relative',
+                transform: 'rotate(-4deg)',
+                zIndex: 2,
+                borderRadius: '18px',
+                overflow: 'hidden',
+                boxShadow: '0 30px 80px rgba(0,0,0,0.22)',
+                width: '300px',
+                maxWidth: '75vw',
+                marginTop: '40px',
+                animation: 'floatF 4s ease-in-out infinite',
+              }}
+            >
+              <Image
+                src="/cartao-frente.webp"
+                alt="Frente do Cartão Mais Vida"
+                width={450}
+                height={284}
+                priority
+                style={{ display: 'block', width: '100%', height: 'auto' }}
+              />
+            </div>
+
+            {/* Floating badge */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '10%',
+                left: '5%',
+                zIndex: 10,
+                background: '#fff',
+                borderRadius: '14px',
+                padding: '10px 16px',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.14)',
+                border: '1px solid rgba(74,140,63,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+              }}
+            >
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '50%',
+                background: 'rgba(74,140,63,0.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: '18px' }}>✓</span>
+              </div>
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-primary-dark)' }}>
+                  Válido em Angola
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                  Clínica Mais Vida
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
+      </div>
+
+      {/* Bottom wave separator */}
+      <div style={{ marginTop: '4rem', lineHeight: 0 }}>
+        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
+          <path d="M0 30 C360 60 1080 0 1440 30 L1440 60 L0 60 Z" fill="#ffffff" />
+        </svg>
       </div>
     </section>
   )

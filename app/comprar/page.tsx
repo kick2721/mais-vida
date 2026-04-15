@@ -186,24 +186,28 @@ function ComprarForm() {
   // ── SUCCESS ──────────────────────────────────────────────────────────────
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4"
-        style={{ background: 'rgba(240,247,239,0.6)' }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--color-surface)' }}>
         <div className="w-full max-w-md text-center">
           <div className="flex justify-center mb-8"><Logo size="lg" href="/" /></div>
-          <div className="card">
-            <div className="text-5xl mb-4">✅</div>
-            <h2 className="font-display text-2xl font-bold text-gray-900 mb-3">Pedido recebido!</h2>
+          <div className="card-premium p-10">
+            <div style={{
+              width: '72px', height: '72px', borderRadius: '24px',
+              background: 'rgba(74,140,63,0.10)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 1.5rem', fontSize: '32px',
+            }}>✅</div>
+            <h2 className="font-serif text-2xl font-bold mb-3" style={{ color: 'var(--color-primary-dark)' }}>Pedido recebido!</h2>
             <p className="text-sm mb-2" style={{ color: 'var(--color-text-muted)' }}>
               Recebemos o seu pedido de <strong>{quantity} cartão{quantity > 1 ? 'ões' : ''}</strong> e o comprovativo de pagamento.
             </p>
-            <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
+            <p className="text-sm mb-8" style={{ color: 'var(--color-text-muted)' }}>
               A nossa equipa irá verificar o pagamento e enviar os cartões por{' '}
               <strong>WhatsApp</strong> em até <strong>48 horas úteis</strong>.
             </p>
-            <Link href="/seguimento" className="btn-primary text-sm block mb-3">
+            <Link href="/seguimento" className="btn-primary text-sm mb-3" style={{ display: 'block' }}>
               Ver estado do meu pedido →
             </Link>
-            <Link href="/" className="btn-outline text-sm">Voltar ao início</Link>
+            <Link href="/" className="btn-outline text-sm" style={{ display: 'block', marginTop: '12px' }}>Voltar ao início</Link>
           </div>
         </div>
       </div>
@@ -212,8 +216,7 @@ function ComprarForm() {
 
   // ── FORM ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen px-4 py-10"
-      style={{ background: 'rgba(240,247,239,0.6)' }}>
+    <div className="min-h-screen px-4 py-10" style={{ background: 'var(--color-surface)' }}>
 
       {isPending && <LoadingOverlay message="A enviar pedido…" />}
 
@@ -225,16 +228,33 @@ function ComprarForm() {
           Voltar ao início
         </Link>
 
-        <div className="flex justify-center mb-8"><Logo size="lg" href="/" /></div>
+        <div className="flex justify-center mb-6"><Logo size="lg" href="/" /></div>
 
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
-            style={{ background: 'rgba(74,140,63,0.1)' }}>
-            <span className="text-lg">💳</span>
-            <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>
-              Obter Cartão +Vida
-            </span>
-          </div>
+        <div className="text-center mb-8">
+          <h1 className="font-serif text-3xl font-bold mb-2" style={{ color: 'var(--color-primary-dark)' }}>
+            Obter Cartão +Vida
+          </h1>
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            Preencha os dados abaixo. Processo 100% online.
+          </p>
+        </div>
+
+        {/* Step indicator */}
+        <div className="flex items-center justify-center gap-0 mb-8">
+          {['Quantidade', 'Pagamento', 'Dados'].map((step, i) => (
+            <div key={i} className="flex items-center">
+              <div className="flex flex-col items-center">
+                <div style={{
+                  width: '32px', height: '32px', borderRadius: '50%',
+                  background: 'var(--color-primary)', color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '13px', fontWeight: 700,
+                }}>{i + 1}</div>
+                <span style={{ fontSize: '10px', marginTop: '4px', color: 'var(--color-text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{step}</span>
+              </div>
+              {i < 2 && <div style={{ width: '48px', height: '2px', background: 'rgba(74,140,63,0.25)', margin: '0 4px', marginBottom: '18px' }} />}
+            </div>
+          ))}
         </div>
 
         {/* ── PASSO 0: quantos cartões? ── */}

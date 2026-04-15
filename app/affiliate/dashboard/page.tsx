@@ -92,36 +92,57 @@ export default async function AffiliateDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'rgba(240,247,239,0.6)' }}>
-      <header className="bg-white border-b" style={{ borderColor: 'var(--color-border)' }}>
-        <div className="section-container flex items-center justify-between h-16">
+    <div className="min-h-screen" style={{ background: 'var(--color-surface)' }}>
+      {/* Header */}
+      <header style={{
+        background: '#fff',
+        borderBottom: '1px solid var(--color-border)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.05)',
+        position: 'sticky', top: 0, zIndex: 40,
+      }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between" style={{ height: '64px' }}>
           <div className="flex items-center gap-3">
             <Logo size="sm" href="/" />
-            <span className="text-xs text-gray-500 hidden sm:inline">Painel do Afiliado</span>
+            <div style={{ width: '1px', height: '24px', background: 'var(--color-border)' }} className="hidden sm:block" />
+            <span className="text-xs font-semibold uppercase tracking-widest hidden sm:inline" style={{ color: 'var(--color-primary)' }}>
+              Painel do Afiliado
+            </span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 hidden sm:block">{profile.full_name}</span>
+            <div className="hidden sm:flex items-center gap-2">
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '50%',
+                background: 'rgba(74,140,63,0.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '14px', fontWeight: 700, color: 'var(--color-primary)',
+              }}>
+                {profile.full_name?.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{profile.full_name}</span>
+            </div>
             <form action={logoutUser}>
-              <button type="submit" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
-                Sair →
+              <button type="submit" className="btn-back text-sm">
+                Sair
               </button>
             </form>
           </div>
         </div>
       </header>
 
-      <div className="section-container py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* Welcome */}
         <div className="mb-8">
-          <h1 className="font-display text-2xl font-bold text-gray-900">
+          <h1 className="font-serif text-2xl font-bold mb-1" style={{ color: 'var(--color-primary-dark)' }}>
             Olá, {profile.full_name?.split(' ')[0]} 👋
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Código:{' '}
+          <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            Código de afiliado:{' '}
             <span className="font-bold font-mono" style={{ color: 'var(--color-primary)' }}>
               {affiliate.referral_code}
             </span>
             {!affiliate.is_active && (
-              <span className="ml-2 text-xs text-red-600 font-medium">(Conta inactiva)</span>
+              <span className="ml-2 text-xs text-red-600 font-semibold">(Conta inactiva)</span>
             )}
           </p>
         </div>
@@ -129,30 +150,40 @@ export default async function AffiliateDashboardPage() {
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Total Vendas', value: totalSales, sub: `${confirmedSales} confirmadas`, color: 'var(--color-primary)' },
-            { label: 'Pendentes', value: pendingSales, sub: 'aguardam confirmação', color: '#d97706' },
-            { label: 'Saldo (Kz)', value: balance.toLocaleString(), sub: 'disponível para levantamento', color: 'var(--color-primary)' },
-            { label: 'Total Ganho', value: totalEarned.toLocaleString(), sub: `${totalPaid.toLocaleString()} Kz pagos`, color: '#374151' },
+            { label: 'Total Vendas', value: totalSales, sub: `${confirmedSales} confirmadas`, color: 'var(--color-primary)', icon: '📊' },
+            { label: 'Pendentes', value: pendingSales, sub: 'aguardam confirmação', color: '#d97706', icon: '⏳' },
+            { label: 'Saldo (Kz)', value: balance.toLocaleString(), sub: 'disponível para levantamento', color: 'var(--color-primary)', icon: '💰' },
+            { label: 'Total Ganho', value: totalEarned.toLocaleString(), sub: `${totalPaid.toLocaleString()} Kz pagos`, color: 'var(--color-primary-dark)', icon: '📈' },
           ].map(card => (
-            <div key={card.label} className="card">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{card.label}</p>
-              <p className="font-display text-2xl sm:text-3xl font-bold" style={{ color: card.color }}>{card.value}</p>
-              <p className="text-xs text-gray-500 mt-1">{card.sub}</p>
+            <div key={card.label} className="card-premium" style={{ padding: '1.25rem' }}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>{card.label}</p>
+                <span style={{ fontSize: '18px' }}>{card.icon}</span>
+              </div>
+              <p className="font-serif text-2xl sm:text-3xl font-bold mb-1" style={{ color: card.color }}>{card.value}</p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{card.sub}</p>
             </div>
           ))}
         </div>
 
         {/* Referral link */}
-        <div className="rounded-2xl p-6 mb-4" style={{ background: 'var(--color-primary)', color: 'white' }}>
-          <p className="text-sm font-semibold text-green-200 mb-2">O seu link de afiliado</p>
-          <div className="flex items-center gap-3 flex-wrap">
-            <code className="flex-1 bg-white/20 rounded-xl px-4 py-2 text-sm font-mono break-all">
+        <div className="rounded-2xl p-6 mb-4" style={{
+          background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
+          color: 'white',
+          boxShadow: '0 8px 32px rgba(30,61,24,0.30)',
+        }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.65)' }}>
+            O seu link de afiliado
+          </p>
+          <div className="flex items-center gap-3 flex-wrap mb-3">
+            <code className="flex-1 rounded-xl px-4 py-2.5 text-sm font-mono break-all"
+              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
               {referralLink}
             </code>
             <CopyButton text={referralLink} />
           </div>
-          <p className="text-xs text-green-200 mt-3">
-            Cada venda confirmada gera <strong>{COMMISSION.amount.toLocaleString()} Kz</strong> de comissão.
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.65)' }}>
+            Cada venda confirmada gera <strong style={{ color: '#fff' }}>{COMMISSION.amount.toLocaleString()} Kz</strong> de comissão para si.
           </p>
         </div>
 

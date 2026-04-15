@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -25,16 +25,22 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 112 38% 40%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --color-primary: #4A8C3F;
-    --color-primary-dark: #2d5a24;
+    --color-primary-dark: #1e3d18;
+    --color-primary-light: #6aad5e;
     --color-accent: #8B1A1A;
+    --color-gold: #B8960C;
     --color-highlight: #CC2020;
-    --color-surface: #F0F7EF;
+    --color-surface: #F8FAF7;
+    --color-surface-2: #FFFFFF;
+    --color-dark: #111814;
     --color-text: #1a1a1a;
     --color-text-muted: #6b7280;
     --color-border: #e5e7eb;
+    --shadow-premium: 0 4px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+    --shadow-card: 0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
   }
 
   * { @apply border-border; }
@@ -43,40 +49,41 @@
 
   body {
     @apply text-foreground font-sans antialiased;
-    background-color: #f0f0ee;
-    background-image: url('/fondo.webp');
-    background-size: cover;
-    background-attachment: fixed;
-    background-position: center center;
-    background-repeat: no-repeat;
+    background-color: #ffffff;
     min-height: 100vh;
+    color: var(--color-text);
   }
 
   h1, h2, h3 { @apply font-serif; }
 }
 
 @layer components {
+  /* ─── Buttons ─────────────────────────────────────────── */
   .btn-primary {
-    @apply bg-primary text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply font-semibold px-7 py-3.5 rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
     background-color: var(--color-primary);
-    box-shadow: 0 2px 8px rgba(74,140,63,0.25);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(74,140,63,0.30);
+    letter-spacing: 0.01em;
   }
   .btn-primary:hover:not(:disabled) {
     background-color: var(--color-primary-dark);
-    box-shadow: 0 4px 14px rgba(74,140,63,0.35);
-    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(74,140,63,0.40);
+    transform: translateY(-2px);
   }
   .btn-primary:active:not(:disabled) { transform: translateY(0); }
 
   .btn-outline {
-    @apply border-2 font-semibold px-6 py-3 rounded-lg transition-all duration-200 inline-flex items-center justify-center gap-2;
+    @apply border-2 font-semibold px-7 py-3.5 rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-2;
     border-color: var(--color-primary);
     color: var(--color-primary);
+    background: transparent;
   }
   .btn-outline:hover {
     background-color: var(--color-primary);
     color: #fff;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74,140,63,0.30);
   }
 
   .btn-back {
@@ -85,15 +92,24 @@
   }
   .btn-back:hover { color: var(--color-primary); background: rgba(74,140,63,0.08); }
 
+  /* ─── Cards ───────────────────────────────────────────── */
   .card {
-    @apply rounded-xl p-6;
-    background: rgba(255,255,255,0.97);
-    border: 1px solid rgba(229,231,235,0.8);
-    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    @apply rounded-2xl p-6;
+    background: #fff;
+    border: 1px solid rgba(229,231,235,0.7);
+    box-shadow: var(--shadow-card);
   }
 
+  .card-premium {
+    @apply rounded-2xl p-6;
+    background: #fff;
+    border: 1px solid rgba(74,140,63,0.12);
+    box-shadow: var(--shadow-premium);
+  }
+
+  /* ─── Forms ───────────────────────────────────────────── */
   .input-field {
-    @apply w-full border rounded-lg px-4 py-3 text-sm focus:outline-none transition-all;
+    @apply w-full border rounded-xl px-4 py-3 text-sm focus:outline-none transition-all;
     border-color: var(--color-border);
     background: #fff;
   }
@@ -101,17 +117,18 @@
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(74,140,63,0.12);
   }
-
   .input-label { @apply block text-sm font-medium mb-1.5; color: #374151; }
 
-  .section-container { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16; }
+  /* ─── Layout ──────────────────────────────────────────── */
+  .section-container { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20; }
 
+  /* ─── Navigation ──────────────────────────────────────── */
   .nav-link {
     @apply text-sm font-medium px-3 py-2 rounded-lg transition-all duration-150;
     color: var(--color-text);
   }
-  .nav-link:hover { background: rgba(74,140,63,0.1); color: var(--color-primary); }
-  .nav-link.active { color: var(--color-primary); background: rgba(74,140,63,0.1); font-weight: 600; }
+  .nav-link:hover { background: rgba(74,140,63,0.08); color: var(--color-primary); }
+  .nav-link.active { color: var(--color-primary); background: rgba(74,140,63,0.10); font-weight: 600; }
 
   .nav-link-mobile {
     @apply text-base font-medium px-4 py-3 rounded-xl transition-all duration-150 flex items-center gap-3;
@@ -123,4 +140,61 @@
     border-color: rgba(74,140,63,0.2);
     color: var(--color-primary);
   }
+
+  /* ─── Badges ──────────────────────────────────────────── */
+  .badge-primary {
+    @apply inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full;
+    background: rgba(74,140,63,0.10);
+    color: var(--color-primary);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .badge-gold {
+    @apply inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full;
+    background: rgba(184,150,12,0.12);
+    color: var(--color-gold);
+    letter-spacing: 0.03em;
+  }
+
+  /* ─── Section headers ─────────────────────────────────── */
+  .section-title {
+    @apply font-serif text-3xl sm:text-4xl font-bold mt-3 mb-4;
+    color: var(--color-primary-dark);
+    line-height: 1.2;
+  }
+  .section-desc {
+    @apply text-base max-w-xl mx-auto;
+    color: var(--color-text-muted);
+    line-height: 1.7;
+  }
+
+  /* ─── Glass effect ────────────────────────────────────── */
+  .glass {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.6);
+  }
+
+  /* ─── Stat divider ────────────────────────────────────── */
+  .stat-divider {
+    @apply hidden sm:block w-px h-10 self-center;
+    background: rgba(74,140,63,0.20);
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .bg-dark-green { background-color: var(--color-primary-dark); }
+  .text-primary-dark { color: var(--color-primary-dark); }
+}
+
+/* Card float animations for HeroSection */
+@keyframes floatF {
+  0%, 100% { transform: rotate(-4deg) translateY(0px); }
+  50%       { transform: rotate(-4deg) translateY(-10px); }
+}
+@keyframes floatB {
+  0%, 100% { transform: rotate(6deg) translateY(0px); }
+  50%       { transform: rotate(6deg) translateY(-6px); }
 }

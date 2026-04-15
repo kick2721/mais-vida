@@ -1,77 +1,137 @@
+'use client'
+
 import Link from 'next/link'
-import { COMMISSION, MEMBERSHIP, REFERRAL } from '@/lib/constants'
+import { motion } from 'framer-motion'
+import { Link2, TrendingUp, Clock, Wallet } from 'lucide-react'
+import { COMMISSION, MEMBERSHIP } from '@/lib/constants'
 
 const PERKS = [
-  { icon: '🔗', title: 'Link único', description: `Recebe um código pessoal ${REFERRAL.prefix}XXXXXX para partilhar com a tua rede.` },
-  { icon: '💰', title: `${COMMISSION.amount.toLocaleString('pt-AO')} Kz por venda`, description: 'Por cada cartão vendido através do teu link, recebe uma comissão garantida.' },
-  { icon: '📊', title: 'Painel de controlo', description: 'Acompanha as tuas vendas, comissões e pagamentos em tempo real.' },
-  { icon: '✅', title: 'Sem investimento', description: 'Registo gratuito. Só ganhas quando vendes — sem riscos, sem custos fixos.' },
+  {
+    icon: Link2,
+    title: 'Link exclusivo',
+    description: 'Partilhe o seu link personalizado e acompanhe as vendas em tempo real.',
+  },
+  {
+    icon: TrendingUp,
+    title: `${COMMISSION.amount} Kz por venda`,
+    description: `Cada cartão vendido gera ${COMMISSION.amount} ${COMMISSION.currency} de comissão para si.`,
+  },
+  {
+    icon: Clock,
+    title: 'Sem stock',
+    description: 'Produto 100% digital. Sem investimento inicial, sem risco.',
+  },
+  {
+    icon: Wallet,
+    title: 'Pagamento mensal',
+    description: `Receba as suas comissões todos os meses, a partir de ${COMMISSION.withdrawalMinimum} Kz acumulados.`,
+  },
 ]
 
 export default function AffiliatesSection() {
   return (
-    <section id="afiliados" className="py-20" style={{ background: 'rgba(255,255,255,0.7)' }}>
-      <div className="section-container">
-        <div className="flex flex-col lg:flex-row gap-14 items-center">
+    <section
+      id="afiliados"
+      style={{ background: 'var(--color-primary-dark)', paddingTop: '5rem', paddingBottom: '5rem' }}
+    >
+      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
+        <div className="grid lg:grid-cols-2 gap-14 items-center">
 
-          {/* Texto */}
-          <div className="flex-1">
-            <span className="inline-block text-xs font-semibold uppercase tracking-widest mb-3 px-3 py-1 rounded-full"
-              style={{ background: 'rgba(139,26,26,0.08)', color: 'var(--color-accent)' }}>
-              Programa de Afiliados
+          {/* Left: Text */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+          >
+            <span
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full mb-6"
+              style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.9)', letterSpacing: '0.05em', textTransform: 'uppercase' }}
+            >
+              Programa de afiliados
             </span>
-            <h2 className="font-display text-3xl md:text-4xl font-bold mb-4" style={{ color: 'var(--color-text)' }}>
-              Ganha comissões a{' '}
-              <span style={{ color: 'var(--color-primary)' }}>recomendar saúde</span>
+
+            <h2
+              className="font-serif font-bold mb-6 leading-tight"
+              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', color: '#fff' }}
+            >
+              Ganhe dinheiro a{' '}
+              <span style={{ color: 'rgba(106,173,94,0.9)', fontStyle: 'italic' }}>
+                promover saúde
+              </span>
             </h2>
-            <p className="text-base mb-8 max-w-md" style={{ color: 'var(--color-text-muted)' }}>
-              Partilha o teu link, ajuda as pessoas a aceder a cuidados de saúde com desconto
-              e recebe {COMMISSION.amount.toLocaleString('pt-AO')} Kz por cada {MEMBERSHIP.name} vendido.
+
+            <p className="text-base mb-8 leading-relaxed" style={{ color: 'rgba(255,255,255,0.72)', maxWidth: '420px' }}>
+              Torne-se afiliado Mais Vida e ganhe{' '}
+              <strong style={{ color: '#fff' }}>{COMMISSION.amount} Kz</strong> por cada{' '}
+              {MEMBERSHIP.name} vendido através do seu link. Sem investimento, sem stock.
             </p>
 
-            {/* CTA claramente separado */}
-            <div className="p-5 rounded-2xl border-2 inline-block" style={{ borderColor: 'rgba(74,140,63,0.25)', background: 'rgba(240,247,239,0.8)' }}>
-              <p className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
-                Quero tornar-me afiliado:
+            {/* CTA card */}
+            <div style={{
+              background: '#fff',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.20)',
+              display: 'inline-block',
+              maxWidth: '380px',
+              width: '100%',
+            }}>
+              <p className="font-bold text-lg mb-1" style={{ color: 'var(--color-primary-dark)' }}>
+                Pronto para começar?
               </p>
-              <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
-                Preencha o formulário de candidatura. A nossa equipa analisa e aprova manualmente.
+              <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
+                Candidate-se agora. Aprovação em 24–48h.
               </p>
-              <Link href="/afiliado-candidatura" className="btn-primary text-base py-3 px-8 block text-center">
-                Candidatar-me como Afiliado →
-              </Link>
-              <p className="mt-3 text-xs text-center" style={{ color: 'var(--color-text-muted)' }}>
-                Já foi aprovado?{' '}
-                <Link href="/login" style={{ color: 'var(--color-primary)' }}>Entrar no painel</Link>
-              </p>
-            </div>
-
-            {/* Separador visual claro */}
-            <div className="mt-6 pt-5 border-t" style={{ borderColor: 'var(--color-border)' }}>
-              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                🛒 Quer comprar um cartão para si?{' '}
-                <Link href="/comprar" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
-                  Obter Cartão +Vida →
+              <div className="flex gap-3 flex-wrap">
+                <Link href="/afiliado-candidatura" className="btn-primary text-sm">
+                  Candidatar-me
                 </Link>
-              </p>
-            </div>
-          </div>
-
-          {/* Grid de perks */}
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {PERKS.map((perk, i) => (
-              <div key={i} className="card">
-                <div className="text-3xl mb-3">{perk.icon}</div>
-                <h3 className="font-semibold text-sm mb-1" style={{ color: 'var(--color-text)' }}>
-                  {perk.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                  {perk.description}
-                </p>
+                <Link href="/candidatura-estado" className="btn-outline text-sm" style={{ borderColor: 'var(--color-primary)' }}>
+                  Ver candidatura
+                </Link>
               </div>
-            ))}
-          </div>
+            </div>
+          </motion.div>
 
+          {/* Right: Perks grid */}
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+          >
+            {PERKS.map((p, i) => {
+              const Icon = p.icon
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 + i * 0.1 }}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '16px',
+                    padding: '1.25rem',
+                  }}
+                >
+                  <div style={{
+                    width: '44px', height: '44px', borderRadius: '12px',
+                    background: 'rgba(255,255,255,0.12)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    marginBottom: '0.75rem',
+                  }}>
+                    <Icon size={20} color="rgba(255,255,255,0.9)" />
+                  </div>
+                  <h3 className="font-bold text-sm mb-1" style={{ color: '#fff' }}>{p.title}</h3>
+                  <p className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>{p.description}</p>
+                </motion.div>
+              )
+            })}
+          </motion.div>
         </div>
       </div>
     </section>

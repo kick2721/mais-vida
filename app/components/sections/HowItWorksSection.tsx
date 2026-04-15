@@ -1,101 +1,128 @@
 // app/components/sections/HowItWorksSection.tsx
-// Como funciona — passos de compra e activação
+'use client'
 
-import { MEMBERSHIP } from '@/lib/constants'
+import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { CreditCard, Banknote, Send, CheckCircle2 } from 'lucide-react'
 
 const STEPS = [
   {
-    number: '01',
-    title: 'Preencha o formulário',
-    description: 'Registe os seus dados e os da sua família. O processo é rápido e 100% online.',
+    icon: CreditCard,
+    title: 'Escolha o seu cartão',
+    description: 'Selecione a quantidade de cartões que precisa para a sua família.',
   },
   {
-    number: '02',
-    title: 'Efectue a transferência',
-    description: `Transfira ${MEMBERSHIP.price.toLocaleString('pt-AO')} ${MEMBERSHIP.currencySymbol} para a nossa conta bancária e faça o upload do comprovativo.`,
+    icon: Banknote,
+    title: 'Efectue o pagamento',
+    description: 'Transfira o valor para a conta bancária indicada. Rápido e seguro.',
   },
   {
-    number: '03',
-    title: 'Confirmação em 48h',
-    description: 'A nossa equipa valida o pagamento e activa a sua membresía em até 48 horas úteis.',
+    icon: Send,
+    title: 'Envie o comprovativo',
+    description: 'Carregue a foto do comprovativo de transferência no formulário.',
   },
   {
-    number: '04',
-    title: 'Receba o seu cartão',
-    description: 'O seu Cartão +Vida é emitido e enviado. Comece a poupar imediatamente.',
+    icon: CheckCircle2,
+    title: 'Receba o cartão',
+    description: 'Após validação, o cartão digital chega ao seu e-mail em minutos.',
   },
 ]
 
 export default function HowItWorksSection() {
   return (
-    <section
-      id="como-funciona"
-      className="py-20"
-      style={{ background: 'var(--color-surface)' }}
-    >
-      <div className="section-container">
+    <section id="como-funciona" style={{ background: 'var(--color-surface)', paddingTop: '5rem', paddingBottom: '5rem' }}>
+      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
 
-        {/* Cabeçalho */}
-        <div className="text-center mb-14">
-          <span
-            className="inline-block text-xs font-semibold uppercase tracking-widest mb-3 px-3 py-1 rounded-full"
-            style={{ background: '#fff', color: 'var(--color-primary)' }}
-          >
-            Simples e rápido
-          </span>
-          <h2
-            className="font-display text-3xl md:text-4xl font-bold mb-4"
-            style={{ color: 'var(--color-text)' }}
-          >
-            Como obter o seu cartão
-          </h2>
-          <p className="text-base max-w-xl mx-auto" style={{ color: 'var(--color-text-muted)' }}>
-            Em apenas 4 passos simples, a sua família fica coberta com descontos em saúde.
-          </p>
+        {/* Header */}
+        <motion.div
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="badge-primary mb-4">Simples e rápido</span>
+          <h2 className="section-title">Como obter o seu cartão</h2>
+          <p className="section-desc">Processo 100% online. Em menos de 24h o cartão é seu.</p>
+        </motion.div>
+
+        {/* Steps */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+          {/* Connecting line (desktop) */}
+          <div
+            className="hidden lg:block absolute top-10 left-0 right-0 h-px"
+            style={{ background: 'rgba(74,140,63,0.15)', zIndex: 0, margin: '0 12.5%' }}
+          />
+
+          {STEPS.map((step, i) => {
+            const Icon = step.icon
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.55, delay: i * 0.12, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+                className="flex flex-col items-center text-center relative"
+                style={{ zIndex: 1 }}
+              >
+                {/* Step number ring + icon */}
+                <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                  {/* Outer ring */}
+                  <div style={{
+                    width: '72px', height: '72px', borderRadius: '50%',
+                    background: '#fff',
+                    border: '2px solid rgba(74,140,63,0.20)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 4px 20px rgba(74,140,63,0.12)',
+                  }}>
+                    <div style={{
+                      width: '52px', height: '52px', borderRadius: '50%',
+                      background: 'var(--color-primary)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Icon size={22} color="#fff" strokeWidth={1.8} />
+                    </div>
+                  </div>
+                  {/* Step number badge */}
+                  <div style={{
+                    position: 'absolute', top: '-6px', right: '-6px',
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: 'var(--color-primary-dark)',
+                    color: '#fff', fontSize: '11px', fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid var(--color-surface)',
+                  }}>
+                    {i + 1}
+                  </div>
+                </div>
+
+                <h3 className="font-serif font-bold text-lg mb-2" style={{ color: 'var(--color-primary-dark)' }}>
+                  {step.title}
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)', maxWidth: '200px' }}>
+                  {step.description}
+                </p>
+              </motion.div>
+            )
+          })}
         </div>
 
-        {/* Passos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
-          {STEPS.map((step) => (
-            <div key={step.number} className="card text-center relative">
-              <div
-                className="font-display text-5xl font-bold mb-3 opacity-10 select-none"
-                style={{ color: 'var(--color-primary)' }}
-              >
-                {step.number}
-              </div>
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-4 -mt-8"
-                style={{ background: 'var(--color-primary)' }}
-              >
-                {parseInt(step.number)}
-              </div>
-              <h3
-                className="font-semibold text-base mb-2"
-                style={{ color: 'var(--color-text)' }}
-              >
-                {step.title}
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-                {step.description}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA para obter o cartão */}
-        <div className="text-center mt-2">
-          <a
-            href="/comprar"
-            className="btn-primary inline-block text-base px-8 py-3"
-          >
-            Obter o meu Cartão +Vida →
-          </a>
+        {/* CTA */}
+        <motion.div
+          className="text-center mt-14"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+        >
+          <Link href="/comprar" className="btn-primary text-base">
+            Começar agora
+          </Link>
           <p className="text-xs mt-3" style={{ color: 'var(--color-text-muted)' }}>
-            Os dados de pagamento são fornecidos após preencher o formulário de registo.
+            Cartão válido por 12 meses a partir da data de emissão
           </p>
-        </div>
-
+        </motion.div>
       </div>
     </section>
   )

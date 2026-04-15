@@ -1,10 +1,11 @@
 'use client'
 
 // app/components/sections/ClinicGallerySection.tsx
-// Slider automático con las fotos reales de la clínica
 
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
+import { motion } from 'framer-motion'
+import { ChevronLeft, ChevronRight, Building2 } from 'lucide-react'
 
 const PHOTOS = [
   { src: '/clinica-1.webp',  caption: 'Receção' },
@@ -23,15 +24,9 @@ export default function ClinicGallerySection() {
   const [current, setCurrent] = useState(0)
   const [paused, setPaused] = useState(false)
 
-  const next = useCallback(() => {
-    setCurrent(c => (c + 1) % PHOTOS.length)
-  }, [])
+  const next = useCallback(() => setCurrent(c => (c + 1) % PHOTOS.length), [])
+  const prev = useCallback(() => setCurrent(c => (c - 1 + PHOTOS.length) % PHOTOS.length), [])
 
-  const prev = useCallback(() => {
-    setCurrent(c => (c - 1 + PHOTOS.length) % PHOTOS.length)
-  }, [])
-
-  // Auto-avance cada 4 segundos
   useEffect(() => {
     if (paused) return
     const timer = setInterval(next, 4000)
@@ -39,136 +34,144 @@ export default function ClinicGallerySection() {
   }, [paused, next])
 
   return (
-    <section className="py-20" style={{ background: '#fff' }}>
-      <div className="section-container">
+    <section style={{ background: '#fff', paddingTop: '5rem', paddingBottom: '5rem' }}>
+      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
 
-        {/* Cabecera */}
-        <div className="text-center mb-10">
-          <span
-            className="inline-block text-xs font-semibold uppercase tracking-widest mb-3 px-3 py-1 rounded-full"
-            style={{ background: 'var(--color-surface)', color: 'var(--color-primary)' }}
-          >
+        {/* Header */}
+        <motion.div
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <span className="badge-primary mb-4">
+            <Building2 size={12} />
             Conheça-nos
           </span>
-          <h2
-            className="font-display text-3xl md:text-4xl font-bold mb-3"
-            style={{ color: 'var(--color-text)' }}
-          >
-            As nossas instalações
-          </h2>
-          <p className="text-base max-w-xl mx-auto" style={{ color: 'var(--color-text-muted)' }}>
+          <h2 className="section-title">As nossas instalações</h2>
+          <p className="section-desc">
             Espaços modernos, equipados e pensados para o seu conforto e bem-estar.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Slider principal */}
-        <div
-          className="relative rounded-2xl overflow-hidden"
-          style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.14)' }}
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
+        {/* Slider */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
         >
-          {/* Imagen activa */}
-          <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-            {PHOTOS.map((photo, i) => (
+          <div
+            className="relative rounded-3xl overflow-hidden"
+            style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.16)' }}
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+          >
+            <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+              {PHOTOS.map((photo, i) => (
+                <div
+                  key={photo.src}
+                  className="absolute inset-0"
+                  style={{
+                    opacity: i === current ? 1 : 0,
+                    zIndex: i === current ? 1 : 0,
+                    transition: 'opacity 0.8s ease',
+                    transform: i === current ? 'scale(1)' : 'scale(1.02)',
+                  }}
+                >
+                  <Image
+                    src={photo.src}
+                    alt={photo.caption}
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    priority={i === 0}
+                  />
+                </div>
+              ))}
+
+              {/* Gradient overlay */}
               <div
+                className="absolute bottom-0 left-0 right-0 z-10"
+                style={{ height: '40%', background: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent)' }}
+              />
+
+              {/* Caption */}
+              <div className="absolute bottom-5 left-6 z-20 flex items-center gap-2">
+                <div style={{
+                  width: '6px', height: '6px', borderRadius: '50%',
+                  background: 'var(--color-primary-light)', flexShrink: 0,
+                }} />
+                <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600, letterSpacing: '0.02em' }}>
+                  {PHOTOS[current].caption}
+                </span>
+              </div>
+
+              {/* Counter */}
+              <div className="absolute bottom-5 right-6 z-20">
+                <span className="glass text-xs font-semibold px-3 py-1.5 rounded-full" style={{ color: '#fff', background: 'rgba(0,0,0,0.35)' }}>
+                  {current + 1} / {PHOTOS.length}
+                </span>
+              </div>
+
+              {/* Nav buttons */}
+              <button
+                onClick={prev}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
+                aria-label="Anterior"
+              >
+                <ChevronLeft size={20} style={{ color: 'var(--color-primary-dark)' }} />
+              </button>
+              <button
+                onClick={next}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
+                aria-label="Próximo"
+              >
+                <ChevronRight size={20} style={{ color: 'var(--color-primary-dark)' }} />
+              </button>
+            </div>
+          </div>
+
+          {/* Thumbnails */}
+          <div className="flex gap-2 mt-4 overflow-x-auto pb-1 justify-center flex-wrap">
+            {PHOTOS.map((photo, i) => (
+              <button
                 key={photo.src}
-                className="absolute inset-0 transition-opacity duration-700"
-                style={{ opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 0 }}
+                onClick={() => { setCurrent(i); setPaused(true) }}
+                className="flex-shrink-0 rounded-xl overflow-hidden transition-all"
+                style={{
+                  width: 72, height: 48,
+                  outline: i === current ? '2.5px solid var(--color-primary)' : '2.5px solid transparent',
+                  outlineOffset: '2px',
+                  opacity: i === current ? 1 : 0.5,
+                  transform: i === current ? 'scale(1.05)' : 'scale(1)',
+                  transition: 'all 0.2s',
+                }}
               >
                 <Image
                   src={photo.src}
                   alt={photo.caption}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  priority={i === 0}
+                  width={72}
+                  height={48}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
-              </div>
+              </button>
             ))}
-
-            {/* Overlay gradiente abajo */}
-            <div
-              className="absolute bottom-0 left-0 right-0 h-20 z-10"
-              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.45), transparent)' }}
-            />
-
-            {/* Caption */}
-            <div className="absolute bottom-4 left-6 z-20">
-              <span className="text-white text-sm font-semibold opacity-90">
-                {PHOTOS[current].caption}
-              </span>
-            </div>
-
-            {/* Contador */}
-            <div className="absolute bottom-4 right-6 z-20">
-              <span className="text-white text-xs opacity-70">
-                {current + 1} / {PHOTOS.length}
-              </span>
-            </div>
-
-            {/* Botón anterior */}
-            <button
-              onClick={prev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all"
-              style={{ background: 'rgba(255,255,255,0.85)', color: 'var(--color-text)' }}
-              aria-label="Anterior"
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-
-            {/* Botón siguiente */}
-            <button
-              onClick={next}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all"
-              style={{ background: 'rgba(255,255,255,0.85)', color: 'var(--color-text)' }}
-              aria-label="Próximo"
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M7 4l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
           </div>
-        </div>
 
-        {/* Miniaturas */}
-        <div className="flex gap-2 mt-4 overflow-x-auto pb-1 justify-center flex-wrap">
-          {PHOTOS.map((photo, i) => (
-            <button
-              key={photo.src}
-              onClick={() => { setCurrent(i); setPaused(true) }}
-              className="flex-shrink-0 rounded-lg overflow-hidden transition-all"
+          {/* Progress bar */}
+          <div className="mt-4 h-0.5 rounded-full overflow-hidden mx-auto max-w-xs" style={{ background: 'var(--color-border)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-300"
               style={{
-                width: 72,
-                height: 48,
-                outline: i === current ? '3px solid var(--color-primary)' : '3px solid transparent',
-                outlineOffset: '2px',
-                opacity: i === current ? 1 : 0.55,
+                width: `${((current + 1) / PHOTOS.length) * 100}%`,
+                background: 'var(--color-primary)',
               }}
-            >
-              <Image
-                src={photo.src}
-                alt={photo.caption}
-                width={72}
-                height={48}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            </button>
-          ))}
-        </div>
-
-        {/* Barra de progreso */}
-        <div className="mt-4 h-1 rounded-full overflow-hidden mx-auto max-w-xs" style={{ background: 'var(--color-border)' }}>
-          <div
-            className="h-full rounded-full transition-all duration-300"
-            style={{
-              width: `${((current + 1) / PHOTOS.length) * 100}%`,
-              background: 'var(--color-primary)',
-            }}
-          />
-        </div>
-
+            />
+          </div>
+        </motion.div>
       </div>
     </section>
   )

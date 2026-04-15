@@ -20,7 +20,7 @@ const config: Config = {
           400: "#4A8C3F",
           500: "#3a7030",
           600: "#2d5a26",
-          700: "#23461d",
+          700: "#1e3d18",
           800: "#1a3416",
           900: "#11220e",
         },
@@ -28,7 +28,11 @@ const config: Config = {
           DEFAULT: "#CC2020",
           foreground: "#ffffff",
         },
-        surface: "#F0F7EF",
+        gold: {
+          DEFAULT: "#B8960C",
+          foreground: "#ffffff",
+        },
+        surface: "#F8FAF7",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -68,6 +72,11 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        premium: "0 4px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)",
+        card: "0 2px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
+        "green-lg": "0 6px 20px rgba(74,140,63,0.40)",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -77,10 +86,25 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "fade-up": {
+          from: { opacity: "0", transform: "translateY(24px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-up": "fade-up 0.6s ease-out",
+        "fade-in": "fade-in 0.4s ease-out",
+        float: "float 4s ease-in-out infinite",
       },
     },
   },
