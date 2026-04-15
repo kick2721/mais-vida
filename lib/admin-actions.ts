@@ -472,14 +472,13 @@ export async function approveApplication(applicationId: string) {
     // (pode ter ficado incompleto se foi rejeitado e re-aprovado)
     const existingReferralCode = 'VIDA-' + existingUser.id.replace(/-/g, '').substring(0, 6).toUpperCase()
 
-    // Garantir que o perfil tem role affiliate e referral_code
+    // Garantir que o perfil tem role affiliate e dados actualizados
     await adminSupabase
       .from('profiles')
       .update({
-        role:          'affiliate',
-        phone:         app.phone,
-        national_id:   app.national_id,
-        referral_code: existingReferralCode,
+        role:        'affiliate',
+        phone:       app.phone,
+        national_id: app.national_id,
       })
       .eq('id', existingUser.id)
 

@@ -111,7 +111,7 @@ export async function becomeAffiliate() {
 
   const { error: profileError } = await supabase
     .from('profiles')
-    .update({ role: 'affiliate', referral_code: referralCode })
+    .update({ role: 'affiliate' })
     .eq('id', user.id)
 
   if (profileError) return { error: 'Erro ao actualizar perfil: ' + profileError.message }
