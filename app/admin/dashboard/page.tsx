@@ -62,12 +62,8 @@ export default async function AdminDashboardPage({
   ])
 
   // ─── Receita total (vendas confirmadas) ───────────────────────────────────
-  const { data: revenueData } = await supabaseAdmin
-    .from('sales')
-    .select('amount')
-    .eq('status', 'confirmed')
-
-  const totalRevenue = (revenueData || []).reduce((sum: number, s: any) => sum + (s.amount || 0), 0)
+  const { data: revenueResult } = await supabaseAdmin.rpc('get_confirmed_revenue')
+  const totalRevenue = (revenueResult as number) || 0
 
   // ─── KPIs — variação mês actual vs mês anterior ───────────────────────────
   const [
@@ -121,15 +117,19 @@ export default async function AdminDashboardPage({
     return sale
   }))
 
-  // Enriquecer vendas com dados do afiliado
-  const salesWithAffiliate = await Promise.all(sales.map(async (sale: any) => {
-    if (!sale.referral_code) return sale
-    const { data: aff } = await supabaseAdmin
-      .from('affiliates')
-      .select('id, referral_code, profiles(full_name)')
-      .eq('referral_code', sale.referral_code)
-      .single()
-    return { ...sale, affiliate_data: aff || null }
+  // Prefetch todos os afiliados de uma vez (evita N+1)
+  const { data: affiliatesForSales } = await supabaseAdmin
+    .from('affiliates')
+    .select('id, referral_code, profiles(full_name)')
+
+  const affByCode: Record<string, any> = {}
+  for (const a of (affiliatesForSales || [])) {
+    if (a.referral_code) affByCode[a.referral_code] = a
+  }
+
+  const salesWithAffiliate = sales.map((sale: any) => ({
+    ...sale,
+    affiliate_data: sale.referral_code ? (affByCode[sale.referral_code] || null) : null,
   }))
 
   // ─── AFFILIATES DATA ──────────────────────────────────────────────────────
@@ -197,18 +197,14 @@ export default async function AdminDashboardPage({
     .from('member_cards')
     .select(`
       id, card_number, status, issued_at, issued_by, card_image_url, created_at,
-      sale_id
+      sale_id,
+      sales ( customer_name, customer_phone, customer_email, national_id, date_of_birth )
     `)
     .order('created_at', { ascending: false })
 
-  const cards = await Promise.all((cardsRaw || []).map(async (card: any) => {
-    if (!card.sale_id) return card
-    const { data: sale } = await supabaseAdmin
-      .from('sales')
-      .select('customer_name, customer_phone, customer_email, national_id, date_of_birth')
-      .eq('id', card.sale_id)
-      .single()
-    return { ...card, sale_data: sale || null }
+  const cards = (cardsRaw || []).map((card: any) => ({
+    ...card,
+    sale_data: card.sales || null,
   }))
 
   // ─── APPLICATIONS DATA ────────────────────────────────────────────────────
