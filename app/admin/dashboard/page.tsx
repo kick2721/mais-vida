@@ -8,13 +8,19 @@ import AdminTabsClient from './AdminTabsClient'
 import Logo from '@/app/components/ui/Logo'
 import { cleanupExpiredReceipts } from '@/lib/receipt-cleanup'
 
+const SALES_PAGE_SIZE = 50
+const VALID_SALES_FILTERS = ['all', 'pending_review', 'pending', 'confirmed', 'cancelled']
+
 export default async function AdminDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; salesPage?: string; salesFilter?: string; salesSearch?: string }>
 }) {
   const params = await searchParams
   const activeTab = params.tab || 'sales'
+  const salesPage = Math.max(1, parseInt(params.salesPage || '1', 10))
+  const salesFilter = VALID_SALES_FILTERS.includes(params.salesFilter || '') ? params.salesFilter! : 'pending_review'
+  const salesSearch = params.salesSearch?.trim() || ''
 
   cleanupExpiredReceipts().catch(err =>
     console.error('[Cleanup] Erro no cleanup automático:', err)
@@ -81,50 +87,75 @@ export default async function AdminDashboardPage({
   const revenueThisMonth = (revenueThisMonthData || []).reduce((s: number, r: any) => s + (r.amount || 0), 0)
   const revenuePrevMonth = (revenuePrevMonthData || []).reduce((s: number, r: any) => s + (r.amount || 0), 0)
 
-  // ─── SALES DATA ───────────────────────────────────────────────────────────
-  // Sem limit — paginação feita no cliente (AdminSalesTable)
-  const { data: salesRaw, error: salesError } = await supabaseAdmin
+  // ─── SALES — contagens por estado (para botões de filtro) ───────────────
+  const [
+    { count: countPendingReview },
+    { count: countPending },
+    { count: countConfirmed },
+    { count: countCancelled },
+  ] = await Promise.all([
+    supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }).eq('status', 'pending_review'),
+    supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }).eq('status', 'confirmed'),
+    supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }).eq('status', 'cancelled'),
+  ])
+
+  const salesCounts = {
+    all:            totalSales          || 0,
+    pending_review: countPendingReview  || 0,
+    pending:        countPending        || 0,
+    confirmed:      countConfirmed      || 0,
+    cancelled:      countCancelled      || 0,
+  }
+
+  // ─── SALES DATA — paginação server-side ──────────────────────────────────
+  let salesQuery = supabaseAdmin
     .from('sales')
     .select(`
       id, amount, currency, status, payment_method,
       payment_proof_url, receipt_path, referral_code,
       customer_name, customer_email, customer_phone, national_id, date_of_birth,
       created_at, confirmed_at, notes
-    `)
+    `, { count: 'exact' })
     .order('created_at', { ascending: false })
+    .range((salesPage - 1) * SALES_PAGE_SIZE, salesPage * SALES_PAGE_SIZE - 1)
 
-  if (salesError) {
-    console.error('[Admin] Erro ao carregar vendas:', salesError)
+  if (salesFilter !== 'all') salesQuery = salesQuery.eq('status', salesFilter)
+  if (salesSearch) {
+    salesQuery = salesQuery.or(
+      `customer_name.ilike.%${salesSearch}%,customer_phone.ilike.%${salesSearch}%,customer_email.ilike.%${salesSearch}%,national_id.ilike.%${salesSearch}%,referral_code.ilike.%${salesSearch}%`
+    )
   }
 
-  // Signed URLs para comprovativos
+  const { data: salesRaw, error: salesError, count: salesTotalCount } = await salesQuery
+
+  if (salesError) console.error('[Admin] Erro ao carregar vendas:', salesError)
+
+  // Signed URLs — só para as 50 linhas da página actual
   const sales = await Promise.all((salesRaw || []).map(async (sale: any) => {
     if (sale.receipt_path) {
       const storagePath = sale.receipt_path.startsWith('receipts/')
         ? sale.receipt_path
         : `receipts/${sale.receipt_path}`
-
-      const { data: signed, error: signError } = await supabaseAdmin.storage
+      const { data: signed } = await supabaseAdmin.storage
         .from('receipts')
         .createSignedUrl(storagePath, 60 * 60 * 6)
-
-      if (signError) {
-        console.error('[Admin] Erro signed URL:', signError, '| path:', sale.receipt_path)
-      }
-
       return { ...sale, payment_proof_url: signed?.signedUrl || sale.payment_proof_url || null }
     }
     return sale
   }))
 
-  // Prefetch todos os afiliados de uma vez (evita N+1)
-  const { data: affiliatesForSales } = await supabaseAdmin
-    .from('affiliates')
-    .select('id, referral_code, profiles(full_name)')
-
+  // Prefetch afiliados — só os que aparecem nesta página (máx 50 códigos)
+  const pageReferralCodes = Array.from(new Set((sales).filter((s: any) => s.referral_code).map((s: any) => s.referral_code)))
   const affByCode: Record<string, any> = {}
-  for (const a of (affiliatesForSales || [])) {
-    if (a.referral_code) affByCode[a.referral_code] = a
+  if (pageReferralCodes.length > 0) {
+    const { data: affiliatesForSales } = await supabaseAdmin
+      .from('affiliates')
+      .select('id, referral_code, profiles(full_name)')
+      .in('referral_code', pageReferralCodes)
+    for (const a of (affiliatesForSales || [])) {
+      if (a.referral_code) affByCode[a.referral_code] = a
+    }
   }
 
   const salesWithAffiliate = sales.map((sale: any) => ({
@@ -345,6 +376,11 @@ export default async function AdminDashboardPage({
         <AdminTabsClient
           initialTab={(activeTab as any) || 'sales'}
           sales={salesWithAffiliate}
+          salesTotal={salesTotalCount || 0}
+          salesPage={salesPage}
+          salesFilter={salesFilter}
+          salesSearch={salesSearch}
+          salesCounts={salesCounts}
           affiliates={affiliates}
           commissions={commissions || []}
           withdrawals={withdrawals || []}

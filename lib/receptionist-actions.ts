@@ -185,7 +185,7 @@ export async function registerManualSale(formData: {
   if (validReferralCode) {
     const { data: affiliate } = await supabaseAdmin
       .from('affiliates')
-      .select('id, total_sales, total_earned, balance')
+      .select('id')
       .eq('referral_code', validReferralCode)
       .eq('is_active', true)
       .maybeSingle()
@@ -209,14 +209,13 @@ export async function registerManualSale(formData: {
             status:       'approved',
           })
 
-        await supabaseAdmin
-          .from('affiliates')
-          .update({
-            total_sales:  (affiliate.total_sales  || 0) + 1,
-            total_earned: (affiliate.total_earned || 0) + COMMISSION.amount,
-            balance:      (affiliate.balance      || 0) + COMMISSION.amount,
-          })
-          .eq('id', affiliate.id)
+        // Atómico — sem race condition
+        await supabaseAdmin.rpc('update_affiliate_counters', {
+          p_affiliate_id:  affiliate.id,
+          p_sales_delta:   1,
+          p_earned_delta:  COMMISSION.amount,
+          p_balance_delta: COMMISSION.amount,
+        })
       }
     }
   }

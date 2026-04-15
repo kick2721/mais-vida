@@ -14,6 +14,11 @@ type TabKey = 'sales' | 'cards' | 'affiliates' | 'commissions' | 'applications'
 interface Props {
   initialTab: TabKey
   sales: any[]
+  salesTotal: number
+  salesPage: number
+  salesFilter: string
+  salesSearch: string
+  salesCounts: Record<string, number>
   affiliates: any[]
   commissions: any[]
   withdrawals: any[]
@@ -26,6 +31,11 @@ interface Props {
 export default function AdminTabsClient({
   initialTab,
   sales,
+  salesTotal,
+  salesPage,
+  salesFilter,
+  salesSearch,
+  salesCounts,
   affiliates,
   commissions,
   withdrawals,
@@ -94,7 +104,15 @@ export default function AdminTabsClient({
 
       {/* Conteúdo das tabs — instantâneo, sem navegação */}
       {activeTab === 'sales' && (
-        <AdminSalesTable sales={sales} adminId={adminId} />
+        <AdminSalesTable
+          sales={sales}
+          adminId={adminId}
+          totalCount={salesTotal}
+          currentPage={salesPage}
+          currentFilter={salesFilter}
+          currentSearch={salesSearch}
+          salesCounts={salesCounts}
+        />
       )}
       {activeTab === 'cards' && (
         <AdminCardsSection cards={cards} adminId={adminId} />

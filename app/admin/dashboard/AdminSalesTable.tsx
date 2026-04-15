@@ -2,7 +2,8 @@
 
 // app/admin/dashboard/AdminSalesTable.tsx
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useCallback, useRef } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { confirmSale, cancelSale, reactivateSale } from '@/lib/admin-actions'
 import { exportToExcel, fmtDate } from '@/lib/export-excel'
 
@@ -82,45 +83,45 @@ function fmt(date: string) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function AdminSalesTable({ sales, adminId }: { sales: any[]; adminId: string }) {
-  const [filter, setFilter] = useState<string>('pending_review')
-  const [search, setSearch] = useState('')
-  const [page, setPage]     = useState(1)
+export default function AdminSalesTable({
+  sales, adminId, totalCount, currentPage, currentFilter, currentSearch, salesCounts,
+}: {
+  sales: any[]; adminId: string; totalCount: number
+  currentPage: number; currentFilter: string; currentSearch: string
+  salesCounts: Record<string, number>
+}) {
+  const router   = useRouter()
+  const pathname = usePathname()
+  const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [localSearch, setLocalSearch] = useState(currentSearch)
 
-  const pendingCount = useMemo(
-    () => sales.filter(s => ['pending', 'pending_review'].includes(s.status)).length,
-    [sales]
-  )
+  const navigate = useCallback((updates: Record<string, string>) => {
+    const sp = new URLSearchParams(window.location.search)
+    Object.entries(updates).forEach(([k, v]) => {
+      if (v) sp.set(k, v); else sp.delete(k)
+    })
+    router.push(`${pathname}?${sp.toString()}`)
+  }, [router, pathname])
 
-  const filtered = useMemo(() => {
-    let list = sales
-    if (filter !== 'all') list = list.filter(s => s.status === filter)
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      list = list.filter(s =>
-        (s.customer_name  || '').toLowerCase().includes(q) ||
-        (s.customer_phone || '').includes(q) ||
-        (s.customer_email || '').toLowerCase().includes(q) ||
-        (s.national_id    || '').toLowerCase().includes(q) ||
-        (s.referral_code  || '').toLowerCase().includes(q)
-      )
-    }
-    return list
-  }, [sales, filter, search])
+  function handleFilter(v: string) {
+    navigate({ salesFilter: v === 'pending_review' ? '' : v, salesPage: '', salesSearch: '' })
+    setLocalSearch('')
+  }
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  function handleSearch(v: string) {
+    setLocalSearch(v)
+    if (searchDebounce.current) clearTimeout(searchDebounce.current)
+    searchDebounce.current = setTimeout(() => {
+      navigate({ salesSearch: v, salesPage: '' })
+    }, 400)
+  }
 
-  function handleSearch(v: string) { setSearch(v); setPage(1) }
-  function handleFilter(v: string) { setFilter(v); setPage(1) }
+  function handlePage(p: number) {
+    navigate({ salesPage: p === 1 ? '' : String(p) })
+  }
 
-  const counts: Record<string, number> = useMemo(() => ({
-    all:            sales.length,
-    pending_review: sales.filter(s => s.status === 'pending_review').length,
-    pending:        sales.filter(s => s.status === 'pending').length,
-    confirmed:      sales.filter(s => s.status === 'confirmed').length,
-    cancelled:      sales.filter(s => s.status === 'cancelled').length,
-  }), [sales])
+  const totalPages   = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+  const pendingCount = salesCounts.pending_review || 0
 
   function handleExport() {
     const rows = sales.map(s => ({
@@ -168,10 +169,10 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
           ].map(f => (
             <button key={f.key} onClick={() => handleFilter(f.key)}
               className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap"
-              style={filter === f.key
+              style={currentFilter === f.key
                 ? { background: 'var(--color-primary)', color: 'white' }
                 : { color: '#6b7280' }}>
-              {f.label} <span className="opacity-70">({counts[f.key]})</span>
+              {f.label} <span className="opacity-70">({salesCounts[f.key] ?? 0})</span>
             </button>
           ))}
         </div>
@@ -181,11 +182,11 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
             width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <input type="text" value={search} onChange={e => handleSearch(e.target.value)}
+          <input type="text" value={localSearch} onChange={e => handleSearch(e.target.value)}
             placeholder="Pesquisar por nome, telefone, email, BI ou código afiliado…"
             className="w-full pl-9 pr-4 py-2 rounded-xl border text-sm bg-white outline-none"
             style={{ borderColor: 'var(--color-border)' }} />
-          {search && (
+          {localSearch && (
             <button onClick={() => handleSearch('')}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">✕</button>
           )}
@@ -206,11 +207,11 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
       </div>
 
       {/* Tabela */}
-      {filtered.length === 0 ? (
+      {sales.length === 0 ? (
         <div className="card text-center py-12">
-          <p className="text-5xl mb-3">{filter === 'pending_review' ? '✅' : '🔍'}</p>
+          <p className="text-5xl mb-3">{currentFilter === 'pending_review' ? '✅' : '🔍'}</p>
           <p className="text-gray-500 text-sm">
-            {filter === 'pending_review' ? 'Não há pedidos em revisão. Tudo em dia!' : 'Sem resultados.'}
+            {currentFilter === 'pending_review' ? 'Não há pedidos em revisão. Tudo em dia!' : 'Sem resultados.'}
           </p>
         </div>
       ) : (
@@ -232,7 +233,7 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
           </div>
 
           <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
-            {paginated.map(sale => (
+            {sales.map(sale => (
               <SaleRow key={sale.id} sale={sale} adminId={adminId} />
             ))}
           </div>
@@ -243,24 +244,24 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
           <p className="text-xs text-gray-500">
-            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} de{' '}
-            <span className="font-semibold">{filtered.length}</span> vendas
+            {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, totalCount)} de{' '}
+            <span className="font-semibold">{totalCount}</span> vendas
           </p>
           <div className="flex items-center gap-1">
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            <button onClick={() => handlePage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-sm border transition-all disabled:opacity-30 hover:bg-gray-50"
               style={{ borderColor: 'var(--color-border)' }}>‹</button>
 
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               let p: number
               if (totalPages <= 5) p = i + 1
-              else if (page <= 3) p = i + 1
-              else if (page >= totalPages - 2) p = totalPages - 4 + i
-              else p = page - 2 + i
+              else if (currentPage <= 3) p = i + 1
+              else if (currentPage >= totalPages - 2) p = totalPages - 4 + i
+              else p = currentPage - 2 + i
               return (
-                <button key={p} onClick={() => setPage(p)}
+                <button key={p} onClick={() => handlePage(p)}
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium border transition-all"
-                  style={page === p
+                  style={currentPage === p
                     ? { background: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' }
                     : { borderColor: 'var(--color-border)', color: '#374151' }}>
                   {p}
@@ -268,7 +269,7 @@ export default function AdminSalesTable({ sales, adminId }: { sales: any[]; admi
               )
             })}
 
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+            <button onClick={() => handlePage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-sm border transition-all disabled:opacity-30 hover:bg-gray-50"
               style={{ borderColor: 'var(--color-border)' }}>›</button>
           </div>
