@@ -6,7 +6,7 @@
 import { createServerSupabaseClient, createServerSupabaseAdminClient } from './supabase-server'
 import { revalidatePath } from 'next/cache'
 import { sendEmail } from './email/send-email'
-import { COMMISSION } from './constants'
+import { COMMISSION, MEMBERSHIP } from './constants'
 import { scheduleReceiptDeletion } from './receipt-cleanup'
 
 // ─── CONFIRMAR VENDA ─────────────────────────────────────────────────────────
@@ -262,12 +262,17 @@ export async function issueCard(cardId: string, adminId: string) {
 
   if (!profile || profile.role !== 'admin') return { error: 'Sem permissão.' }
 
+  const issuedAt = new Date()
+  const expiresAt = new Date(issuedAt)
+  expiresAt.setMonth(expiresAt.getMonth() + MEMBERSHIP.durationMonths)
+
   const { data: card, error } = await supabaseAdmin
     .from('member_cards')
     .update({
-      status: 'issued',
-      issued_at: new Date().toISOString(),
-      issued_by: adminId,
+      status:     'issued',
+      issued_at:  issuedAt.toISOString(),
+      issued_by:  adminId,
+      expires_at: expiresAt.toISOString(),
     })
     .eq('id', cardId)
     .eq('status', 'pending')
