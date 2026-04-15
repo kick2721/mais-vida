@@ -34,7 +34,7 @@ export default async function AdminDashboardPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('full_name, role')
     .eq('id', user.id)
     .single()
 
@@ -75,17 +75,17 @@ export default async function AdminDashboardPage({
   const [
     { count: salesThisMonth },
     { count: salesPrevMonth },
-    { data: revenueThisMonthData },
-    { data: revenuePrevMonthData },
+    { data: revenueThisMonthResult },
+    { data: revenuePrevMonthResult },
   ] = await Promise.all([
     supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }).gte('created_at', thisMonthStart),
     supabaseAdmin.from('sales').select('id', { count: 'exact', head: true }).gte('created_at', prevMonthStart).lte('created_at', prevMonthEnd),
-    supabaseAdmin.from('sales').select('amount').eq('status', 'confirmed').gte('created_at', thisMonthStart),
-    supabaseAdmin.from('sales').select('amount').eq('status', 'confirmed').gte('created_at', prevMonthStart).lte('created_at', prevMonthEnd),
+    supabaseAdmin.rpc('get_revenue_in_range', { p_from: thisMonthStart, p_to: new Date().toISOString() }),
+    supabaseAdmin.rpc('get_revenue_in_range', { p_from: prevMonthStart, p_to: prevMonthEnd }),
   ])
 
-  const revenueThisMonth = (revenueThisMonthData || []).reduce((s: number, r: any) => s + (r.amount || 0), 0)
-  const revenuePrevMonth = (revenuePrevMonthData || []).reduce((s: number, r: any) => s + (r.amount || 0), 0)
+  const revenueThisMonth = (revenueThisMonthResult as number) || 0
+  const revenuePrevMonth = (revenuePrevMonthResult as number) || 0
 
   // ─── SALES — contagens por estado (para botões de filtro) ───────────────
   const [

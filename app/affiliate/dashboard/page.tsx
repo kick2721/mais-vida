@@ -19,7 +19,7 @@ export default async function AffiliateDashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('full_name, role')
     .eq('id', user.id)
     .single()
 
@@ -42,12 +42,14 @@ export default async function AffiliateDashboardPage() {
     `)
     .eq('referral_code', affiliate.referral_code)
     .order('created_at', { ascending: false })
+    .limit(500)
 
   const { data: commissions } = await supabase
     .from('commissions')
-    .select('*')
+    .select('id, amount, currency, status, created_at, paid_at, approved_at')
     .eq('affiliate_id', affiliate.id)
     .order('created_at', { ascending: false })
+    .limit(500)
 
   // Verificar se tem pedido de retiro pendente
   const { data: pendingWithdrawal } = await supabase
