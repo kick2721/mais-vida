@@ -92,15 +92,13 @@ export async function confirmSale(saleId: string, adminId: string) {
             status: 'approved', // ← auto-aprovada ao confirmar venda, só falta marcar como paga
           })
 
-        // Actualizar contadores do afiliado
-        await supabaseAdmin
-          .from('affiliates')
-          .update({
-            total_sales:  (affiliate.total_sales  || 0) + 1,
-            total_earned: (affiliate.total_earned || 0) + COMMISSION.amount,
-            balance:      (affiliate.balance      || 0) + COMMISSION.amount,
-          })
-          .eq('id', affiliate.id)
+        // Actualizar contadores do afiliado (atómico, sem race condition)
+        await supabaseAdmin.rpc('update_affiliate_counters', {
+          p_affiliate_id: affiliate.id,
+          p_sales_delta:  1,
+          p_earned_delta: COMMISSION.amount,
+          p_balance_delta: COMMISSION.amount,
+        })
       }
     }
   }
@@ -170,23 +168,13 @@ export async function cancelSale(saleId: string, reason?: string) {
         .update({ status: 'cancelled' })
         .eq('id', commission.id)
 
-      // Reverter contadores do afiliado
-      const { data: affiliate } = await supabaseAdmin
-        .from('affiliates')
-        .select('total_sales, total_earned, balance')
-        .eq('id', commission.affiliate_id)
-        .single()
-
-      if (affiliate) {
-        await supabaseAdmin
-          .from('affiliates')
-          .update({
-            total_sales:  Math.max(0, (affiliate.total_sales  || 0) - 1),
-            total_earned: Math.max(0, (affiliate.total_earned || 0) - commission.amount),
-            balance:      Math.max(0, (affiliate.balance      || 0) - commission.amount),
-          })
-          .eq('id', commission.affiliate_id)
-      }
+      // Reverter contadores do afiliado (atómico)
+      await supabaseAdmin.rpc('update_affiliate_counters', {
+        p_affiliate_id:  commission.affiliate_id,
+        p_sales_delta:   -1,
+        p_earned_delta:  -commission.amount,
+        p_balance_delta: -commission.amount,
+      })
     }
   }
 
@@ -633,14 +621,12 @@ export async function payWithdrawal(withdrawalId: string, adminId: string) {
 
   if (error) return { error: 'Erro ao processar: ' + error.message }
 
-  // Descontar do balance do afiliado
-  const { data: aff } = await supabaseAdmin.from('affiliates').select('balance, total_paid').eq('id', wr.affiliate_id).single()
-  if (aff) {
-    await supabaseAdmin.from('affiliates').update({
-      balance:    Math.max(0, (aff.balance || 0) - wr.amount),
-      total_paid: (aff.total_paid || 0) + wr.amount,
-    }).eq('id', wr.affiliate_id)
-  }
+  // Descontar do balance do afiliado (atómico)
+  await supabaseAdmin.rpc('update_affiliate_counters', {
+    p_affiliate_id:  wr.affiliate_id,
+    p_balance_delta: -wr.amount,
+    p_paid_delta:    wr.amount,
+  })
 
   revalidatePath('/admin/dashboard')
   return { success: true }
