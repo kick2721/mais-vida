@@ -30,7 +30,7 @@ const STEPS = [
 
 export default function HowItWorksSection() {
   return (
-    <section id="como-funciona" className="bg-pattern-soft" style={{ background: 'var(--color-surface)', paddingTop: '5rem', paddingBottom: '5rem' }}>
+    <section id="como-funciona" className="bg-pattern-soft" style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(2px)', paddingTop: '5rem', paddingBottom: '5rem' }}>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
 
         {/* Header */}
