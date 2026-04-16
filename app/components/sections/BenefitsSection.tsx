@@ -2,6 +2,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Stethoscope, ScanLine, FlaskConical, Syringe, BedDouble, Pill, HeartPulse } from 'lucide-react'
 import { BENEFITS, MEMBERSHIP } from '@/lib/constants'
@@ -19,8 +20,12 @@ const item = {
 
 export default function BenefitsSection() {
   return (
-    <section id="beneficios" className="py-24 bg-pattern-dots" style={{ background: 'transparent' }}>
-      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
+    <section id="beneficios" className="py-24" style={{ position: 'relative', overflow: 'hidden' }}>
+      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <Image src="/stock/doctor-1.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.14 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(200deg, rgba(251,253,250,0.93) 0%, rgba(232,243,228,0.88) 100%)' }} />
+      </div>
+      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 
         {/* Header */}
         <motion.div

@@ -3,6 +3,7 @@
 // app/components/sections/FaqSection.tsx
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, HelpCircle } from 'lucide-react'
 
@@ -37,8 +38,12 @@ export default function FaqSection() {
   const [open, setOpen] = useState<number | null>(null)
 
   return (
-    <section id="faq" className="bg-pattern-soft" style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(2px)', paddingTop: '5rem', paddingBottom: '5rem' }}>
-      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
+    <section id="faq" style={{ paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}>
+      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <Image src="/stock/nurse.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.14 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg, rgba(251,253,250,0.95) 0%, rgba(232,243,228,0.90) 100%)' }} />
+      </div>
+      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 
         {/* Header */}
         <motion.div

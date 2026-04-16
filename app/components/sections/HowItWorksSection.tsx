@@ -2,6 +2,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { CreditCard, Banknote, Send, CheckCircle2 } from 'lucide-react'
 
@@ -30,8 +31,12 @@ const STEPS = [
 
 export default function HowItWorksSection() {
   return (
-    <section id="como-funciona" className="bg-pattern-soft" style={{ background: 'rgba(255,255,255,0.55)', backdropFilter: 'blur(2px)', paddingTop: '5rem', paddingBottom: '5rem' }}>
-      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
+    <section id="como-funciona" style={{ paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}>
+      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <Image src="/stock/consultation.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.18 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(245,250,243,0.94) 0%, rgba(232,243,228,0.90) 100%)' }} />
+      </div>
+      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 
         {/* Header */}
         <motion.div

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Link2, TrendingUp, Clock, Wallet } from 'lucide-react'
 import { COMMISSION, MEMBERSHIP } from '@/lib/constants'
@@ -32,9 +33,13 @@ export default function AffiliatesSection() {
   return (
     <section
       id="afiliados"
-      style={{ background: 'var(--color-primary-dark)', paddingTop: '5rem', paddingBottom: '5rem' }}
+      style={{ background: 'var(--color-primary-dark)', paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}
     >
-      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
+      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <Image src="/stock/family.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.22 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(115deg, rgba(30,61,24,0.92) 0%, rgba(30,61,24,0.78) 50%, rgba(30,61,24,0.55) 100%)' }} />
+      </div>
+      <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
         <div className="grid lg:grid-cols-2 gap-14 items-center">
 
           {/* Left: Text */}

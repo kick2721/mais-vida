@@ -21,7 +21,7 @@ export default function HeroSection() {
       {/* Clinic photo bg with strong green/white overlay */}
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         <Image
-          src="/stock/hospital-1.jpg"
+          src="/stock/team.jpg"
           alt=""
           fill
           priority
