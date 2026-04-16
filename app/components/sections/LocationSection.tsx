@@ -188,16 +188,6 @@ export default function LocationSection() {
               )
             })}
 
-            <a
-              href="https://www.google.com/maps/place/%2BVida+Centro+de+Diagn%C3%B3stico+e+Especialidades/data=!4m2!3m1!1s0x0:0x9c5815d98dc97f48"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-primary text-sm text-center mt-2"
-              style={{ textDecoration: 'none' }}
-            >
-              <MapPin size={16} />
-              Abrir no Google Maps
-            </a>
           </motion.div>
         </div>
       </div>
