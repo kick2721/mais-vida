@@ -17,19 +17,19 @@ export default function HeroSection() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   return (
-    <section style={{ background: '#fbfdfa', overflow: 'hidden', position: 'relative' }}>
+    <section style={{ background: '#eef6eb', overflow: 'hidden', position: 'relative' }}>
       {/* Clinic photo bg with strong green/white overlay */}
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         <Image
-          src="/clinica-1.webp"
+          src="/stock/hospital-1.jpg"
           alt=""
           fill
           priority
-          style={{ objectFit: 'cover', opacity: 0.18 }}
+          style={{ objectFit: 'cover', opacity: 0.32 }}
         />
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(110deg, rgba(255,255,255,0.96) 0%, rgba(248,250,247,0.88) 45%, rgba(240,247,239,0.55) 100%)',
+          background: 'linear-gradient(110deg, rgba(251,253,250,0.88) 0%, rgba(236,246,233,0.78) 45%, rgba(210,232,205,0.55) 100%)',
         }} />
         {/* Heartbeat ECG line */}
         <svg

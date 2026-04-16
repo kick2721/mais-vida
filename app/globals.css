@@ -50,11 +50,11 @@
   body {
     @apply text-foreground font-sans antialiased;
     background:
-      radial-gradient(ellipse 70% 50% at 90% 5%, rgba(74,140,63,0.18), transparent 60%),
-      radial-gradient(ellipse 60% 45% at 5% 40%, rgba(184,150,12,0.10), transparent 60%),
-      radial-gradient(ellipse 70% 50% at 95% 75%, rgba(74,140,63,0.14), transparent 60%),
-      radial-gradient(ellipse 50% 40% at 20% 100%, rgba(106,173,94,0.10), transparent 60%),
-      linear-gradient(180deg, #fbfdfa 0%, #f5f9f3 50%, #fbfdfa 100%);
+      radial-gradient(ellipse 70% 50% at 90% 5%, rgba(74,140,63,0.28), transparent 60%),
+      radial-gradient(ellipse 60% 45% at 5% 40%, rgba(184,150,12,0.14), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 95% 75%, rgba(30,61,24,0.22), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 20% 100%, rgba(106,173,94,0.18), transparent 60%),
+      linear-gradient(180deg, #e8f1e4 0%, #dfebdb 50%, #e4efe0 100%);
     background-attachment: fixed;
     min-height: 100vh;
     color: var(--color-text);
