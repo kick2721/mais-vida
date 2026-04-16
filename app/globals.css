@@ -28,7 +28,7 @@
     --radius: 0.75rem;
 
     --color-primary: #4A8C3F;
-    --color-primary-dark: #1e3d18;
+    --color-primary-dark: #2d6020;
     --color-primary-light: #6aad5e;
     --color-accent: #8B1A1A;
     --color-gold: #B8960C;
@@ -53,8 +53,8 @@
       radial-gradient(ellipse 70% 50% at 90% 5%, rgba(106,173,94,0.20), transparent 60%),
       radial-gradient(ellipse 60% 45% at 5% 40%, rgba(184,150,12,0.12), transparent 60%),
       radial-gradient(ellipse 70% 50% at 95% 75%, rgba(74,140,63,0.18), transparent 60%),
-      radial-gradient(ellipse 50% 40% at 20% 100%, rgba(30,61,24,0.30), transparent 60%),
-      linear-gradient(180deg, #0f2008 0%, #1a350f 50%, #0f2008 100%);
+      radial-gradient(ellipse 50% 40% at 20% 100%, rgba(50,96,34,0.30), transparent 60%),
+      linear-gradient(180deg, #2a5a1c 0%, #2d6020 50%, #2a5a1c 100%);
     background-attachment: fixed;
     min-height: 100vh;
     color: var(--color-text);

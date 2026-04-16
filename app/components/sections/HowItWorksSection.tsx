@@ -34,8 +34,8 @@ export default function HowItWorksSection() {
     <section id="como-funciona" className="section-dark" style={{ paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}>
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         <Image src="/stock/consult-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.28 }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(17,34,9,0.90) 0%, rgba(30,61,24,0.82) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #1a350f 0%, transparent 30%, transparent 70%, #0f2008 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(35,70,18,0.82) 0%, rgba(50,96,34,0.68) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #2d6020 0%, transparent 30%, transparent 70%, #2a5a1c 100%)' }} />
       </div>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 
@@ -97,7 +97,7 @@ export default function HowItWorksSection() {
                     background: 'var(--color-primary-dark)',
                     color: '#fff', fontSize: '11px', fontWeight: 700,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '2px solid rgba(17,34,9,0.9)',
+                    border: '2px solid rgba(35,70,18,0.9)',
                   }}>
                     {i + 1}
                   </div>

@@ -23,8 +23,8 @@ export default function BenefitsSection() {
     <section id="beneficios" className="section-dark py-24" style={{ position: 'relative', overflow: 'hidden' }}>
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         <Image src="/stock/doctor-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.30 }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(200deg, rgba(17,34,9,0.88) 0%, rgba(30,61,24,0.78) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #0f2008 0%, transparent 28%, transparent 65%, #f5f9f3 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(200deg, rgba(35,70,18,0.80) 0%, rgba(50,96,34,0.65) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #2a5a1c 0%, transparent 28%, transparent 65%, #f5f9f3 100%)' }} />
       </div>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 

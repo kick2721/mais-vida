@@ -17,7 +17,7 @@ export default function HeroSection() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   return (
-    <section className="section-dark" style={{ background: '#112209', overflow: 'hidden', position: 'relative' }}>
+    <section className="section-dark" style={{ background: '#1e4a14', overflow: 'hidden', position: 'relative' }}>
       {/* Clinic photo bg with strong green/white overlay */}
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         <Image
@@ -29,9 +29,9 @@ export default function HeroSection() {
         />
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(110deg, rgba(17,34,9,0.88) 0%, rgba(30,61,24,0.72) 50%, rgba(30,61,24,0.35) 100%)',
+          background: 'linear-gradient(110deg, rgba(35,70,18,0.80) 0%, rgba(50,96,34,0.60) 50%, rgba(50,96,34,0.30) 100%)',
         }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, #0f2008 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, #2a5a1c 100%)' }} />
         {/* Heartbeat ECG line */}
         <svg
           style={{ position: 'absolute', bottom: 90, left: 0, width: '100%', opacity: 0.18 }}
