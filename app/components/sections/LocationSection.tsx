@@ -112,7 +112,16 @@ export default function LocationSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
           >
-            <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3942.0!2d13.2!3d-8.9!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x9c5815d98dc97f48!2s%2BVida%20Centro%20de%20Diagn%C3%B3stico%20e%20Especialidades!5e0!3m2!1spt!2sao!4v1700000000000!5m2!1spt!2sao"
+              width="100%"
+              height="100%"
+              style={{ border: 0, display: 'block' }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Localização +Vida Centro de Diagnóstico e Especialidades"
+            />
           </motion.div>
 
           {/* Contacts */}
