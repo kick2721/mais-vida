@@ -71,7 +71,7 @@ export default function LocationSection() {
             transition={{ duration: 0.7 }}
           >
             <iframe
-              src="https://maps.google.com/maps?q=%2BVida%20Centro%20de%20Diagn%C3%B3stico%20e%20Especialidades%20Luanda&t=&z=16&ie=UTF8&iwloc=&output=embed"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=13.2810%2C-8.9490%2C13.2950%2C-8.9400&layer=mapnik&marker=-8.9447%2C13.2880"
               width="100%"
               height="100%"
               style={{ border: 0, display: 'block' }}
