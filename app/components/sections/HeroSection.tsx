@@ -31,6 +31,7 @@ export default function HeroSection() {
           position: 'absolute', inset: 0,
           background: 'linear-gradient(110deg, rgba(17,34,9,0.88) 0%, rgba(30,61,24,0.72) 50%, rgba(30,61,24,0.35) 100%)',
         }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, #0f2008 100%)' }} />
         {/* Heartbeat ECG line */}
         <svg
           style={{ position: 'absolute', bottom: 90, left: 0, width: '100%', opacity: 0.18 }}
@@ -233,12 +234,6 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Bottom wave separator */}
-      <div style={{ marginTop: '4rem', lineHeight: 0 }}>
-        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
-          <path d="M0 30 C360 60 1080 0 1440 30 L1440 60 L0 60 Z" fill="#112209" />
-        </svg>
-      </div>
     </section>
   )
 }
