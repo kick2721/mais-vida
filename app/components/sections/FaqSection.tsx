@@ -13,7 +13,7 @@ const FAQS = [
   },
   {
     q: 'Como recebo o cartão?',
-    a: 'Após o pagamento e validação do comprovativo (normalmente em menos de 24h), o cartão digital é enviado para o seu e-mail.',
+    a: 'Após o pagamento e validação do comprovativo (normalmente em menos de 48 horas), o cartão digital é enviado pelo WhatsApp.',
   },
   {
     q: 'Posso usar o cartão para toda a família?',
