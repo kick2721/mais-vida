@@ -1,9 +1,58 @@
 // app/components/sections/LocationSection.tsx
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, Phone, MessageCircle, Mail, Instagram } from 'lucide-react'
 import { BUSINESS } from '@/lib/constants'
+
+const MAP_LAT = -8.9447
+const MAP_LNG = 13.2880
+
+function useLeafletMap(ref: React.RefObject<HTMLDivElement>) {
+  useEffect(() => {
+    if (!ref.current) return
+    let map: any
+    let cancelled = false
+
+    const ensureCss = () => {
+      if (document.getElementById('leaflet-css')) return
+      const link = document.createElement('link')
+      link.id = 'leaflet-css'
+      link.rel = 'stylesheet'
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+      document.head.appendChild(link)
+    }
+
+    const ensureJs = (): Promise<any> => {
+      const w = window as any
+      if (w.L) return Promise.resolve(w.L)
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script')
+        s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+        s.onload = () => resolve((window as any).L)
+        s.onerror = reject
+        document.head.appendChild(s)
+      })
+    }
+
+    ensureCss()
+    ensureJs().then((L) => {
+      if (cancelled || !ref.current) return
+      map = L.map(ref.current, { scrollWheelZoom: false }).setView([MAP_LAT, MAP_LNG], 16)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19,
+      }).addTo(map)
+      L.marker([MAP_LAT, MAP_LNG]).addTo(map).bindPopup('+Vida — Centro de Diagnóstico').openPopup()
+    }).catch(() => {})
+
+    return () => {
+      cancelled = true
+      if (map) map.remove()
+    }
+  }, [ref])
+}
 
 const CONTACTS = [
   {
@@ -39,6 +88,8 @@ const CONTACTS = [
 ]
 
 export default function LocationSection() {
+  const mapRef = useRef<HTMLDivElement>(null)
+  useLeafletMap(mapRef)
   return (
     <section id="localizacao" style={{ background: '#fff', paddingTop: '5rem', paddingBottom: '5rem' }}>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
@@ -70,16 +121,7 @@ export default function LocationSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
           >
-            <iframe
-              src="https://www.openstreetmap.org/export/embed.html?bbox=13.2810%2C-8.9490%2C13.2950%2C-8.9400&layer=mapnik&marker=-8.9447%2C13.2880"
-              width="100%"
-              height="100%"
-              style={{ border: 0, display: 'block' }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Localização +Vida"
-            />
+            <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
           </motion.div>
 
           {/* Contacts */}
