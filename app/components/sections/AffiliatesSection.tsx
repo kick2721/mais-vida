@@ -36,7 +36,7 @@ export default function AffiliatesSection() {
       style={{ background: 'var(--color-primary-dark)', paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}
     >
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <Image src="/stock/family-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.50 }} />
+        <Image src="/stock/family-c.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.50 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(115deg, rgba(30,61,24,0.85) 0%, rgba(30,61,24,0.62) 55%, rgba(30,61,24,0.35) 100%)' }} />
       </div>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
@@ -74,25 +74,27 @@ export default function AffiliatesSection() {
 
             {/* CTA card */}
             <div style={{
-              background: '#fff',
+              background: 'rgba(255,255,255,0.12)',
               borderRadius: '16px',
-              padding: '1.5rem',
-              boxShadow: '0 8px 40px rgba(0,0,0,0.20)',
-              display: 'inline-block',
-              maxWidth: '380px',
-              width: '100%',
+              padding: '1rem 1.25rem',
+              border: '1px solid rgba(255,255,255,0.20)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '12px',
+              flexWrap: 'wrap',
             }}>
-              <p className="font-bold text-lg mb-1" style={{ color: 'var(--color-primary-dark)' }}>
-                Pronto para começar?
-              </p>
-              <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
-                Candidate-se agora. Aprovação em 24–48h.
-              </p>
+              <span className="font-semibold text-sm" style={{ color: '#fff' }}>
+                Aprovação em 24–48h.
+              </span>
               <div className="flex gap-3 flex-wrap">
                 <Link href="/afiliado-candidatura" className="btn-primary text-sm">
                   Candidatar-me
                 </Link>
-                <Link href="/candidatura-estado" className="btn-outline text-sm" style={{ borderColor: 'var(--color-primary)' }}>
+                <Link href="/candidatura-estado" style={{
+                  display: 'inline-flex', alignItems: 'center',
+                  padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: 600,
+                  border: '2px solid rgba(255,255,255,0.5)', color: '#fff',
+                }}>
                   Ver candidatura
                 </Link>
               </div>
