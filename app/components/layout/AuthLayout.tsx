@@ -52,7 +52,7 @@ export default function AuthLayout({ children, backHref = '/', backLabel = 'Volt
 
         {/* Logo top */}
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <Logo size="md" href="/" className="brightness-200" />
+          <Logo size="md" href="/" />
         </div>
 
         {/* Quote bottom */}

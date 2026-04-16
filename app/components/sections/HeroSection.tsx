@@ -7,12 +7,6 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronDown, ShoppingCart, Search, Sparkles } from 'lucide-react'
 
-const STATS = [
-  { value: '+10.000', label: 'Clientes activos' },
-  { value: '70%', label: 'Descuento máximo' },
-  { value: '10+', label: 'Especialidades' },
-]
-
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 28 },
   animate: { opacity: 1, y: 0 },
@@ -54,7 +48,7 @@ export default function HeroSection() {
               style={{ color: 'var(--color-text-muted)', maxWidth: '460px' }}
             >
               Aceda a consultas, exames e tratamentos na Clínica Mais Vida com descontos
-              de até <strong style={{ color: 'var(--color-primary)' }}>70%</strong>.
+              de até <strong style={{ color: 'var(--color-primary)' }}>15%</strong>.
               Um cartão, toda a família protegida.
             </motion.p>
 
@@ -117,27 +111,6 @@ export default function HeroSection() {
               </Link>
             </motion.div>
 
-            {/* Stats strip */}
-            <motion.div
-              {...fadeUp(0.45)}
-              className="flex items-center gap-6 flex-wrap"
-              style={{
-                paddingTop: '2rem',
-                borderTop: '1px solid rgba(74,140,63,0.15)',
-              }}
-            >
-              {STATS.map((s, i) => (
-                <div key={i} className="flex items-center gap-6">
-                  <div>
-                    <div className="font-serif font-bold text-2xl" style={{ color: 'var(--color-primary)' }}>
-                      {s.value}
-                    </div>
-                    <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{s.label}</div>
-                  </div>
-                  {i < STATS.length - 1 && <div className="stat-divider" />}
-                </div>
-              ))}
-            </motion.div>
           </div>
 
           {/* ── Right: Cards ───────────────────────────────── */}

@@ -35,7 +35,7 @@ export default function Footer() {
 
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Logo size="md" className="mb-4 brightness-200" />
+            <Logo size="md" className="mb-4" />
             <p className="text-sm leading-relaxed mb-6" style={{ color: 'rgba(255,255,255,0.55)', maxWidth: '240px' }}>
               {BUSINESS.tagline}. Saúde acessível para toda a família angolana.
             </p>

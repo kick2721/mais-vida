@@ -24,7 +24,7 @@ const STEPS = [
   {
     icon: CheckCircle2,
     title: 'Receba o cartão',
-    description: 'Após validação, o cartão digital chega ao seu e-mail em minutos.',
+    description: 'Após validação, o cartão digital é enviado pelo WhatsApp.',
   },
 ]
 
@@ -43,7 +43,7 @@ export default function HowItWorksSection() {
         >
           <span className="badge-primary mb-4">Simples e rápido</span>
           <h2 className="section-title">Como obter o seu cartão</h2>
-          <p className="section-desc">Processo 100% online. Em menos de 24h o cartão é seu.</p>
+          <p className="section-desc">Processo 100% online. Em menos de 48 horas o cartão é seu.</p>
         </motion.div>
 
         {/* Steps */}
