@@ -29,7 +29,7 @@ export default function Logo({ size = 'md', width, href = '/', clickable = true,
       height={dimensions.height}
       priority
       className="object-contain"
-      style={{ width: dimensions.width, height: 'auto' }}
+      style={{ width: dimensions.width, height: 'auto', mixBlendMode: variant === 'on-dark' ? 'normal' : 'multiply' }}
     />
   )
 
