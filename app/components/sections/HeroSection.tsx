@@ -61,7 +61,7 @@ export default function HeroSection() {
               style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', color: '#fff' }}
             >
               O seu cartão de{' '}
-              <span style={{ color: 'var(--color-primary-light)', fontStyle: 'italic' }}>
+              <span style={{ color: '#8fd45f', fontStyle: 'italic' }}>
                 saúde privada
               </span>{' '}
               a preço justo
@@ -73,7 +73,7 @@ export default function HeroSection() {
               style={{ color: 'rgba(255,255,255,0.78)', maxWidth: '460px' }}
             >
               Aceda a consultas, exames e tratamentos na Clínica Mais Vida com descontos
-              de até <strong style={{ color: 'var(--color-primary-light)' }}>15%</strong>.
+              de até <strong style={{ color: '#8fd45f' }}>15%</strong>.
               Um cartão, toda a família protegida.
             </motion.p>
 
