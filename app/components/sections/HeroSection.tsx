@@ -17,8 +17,49 @@ export default function HeroSection() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   return (
-    <section style={{ background: 'linear-gradient(160deg, #f8faf7 0%, #ffffff 60%, #f0f7ef 100%)', overflow: 'hidden' }}>
-      <div className="section-container" style={{ paddingTop: '5rem', paddingBottom: '0' }}>
+    <section style={{ background: 'linear-gradient(160deg, rgba(248,250,247,0.55) 0%, rgba(255,255,255,0.30) 60%, rgba(240,247,239,0.55) 100%)', overflow: 'hidden', position: 'relative' }}>
+      {/* Decorative scattered shapes */}
+      <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+        {/* Big soft blob top-left */}
+        <div style={{
+          position: 'absolute', top: '-80px', left: '-100px',
+          width: 380, height: 380, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(74,140,63,0.18), transparent 70%)',
+          filter: 'blur(40px)',
+        }} />
+        {/* Plus signs */}
+        <svg style={{ position: 'absolute', top: '15%', left: '8%', opacity: 0.35 }} width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <path d="M12 4v16M4 12h16" stroke="#4A8C3F" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+        <svg style={{ position: 'absolute', top: '60%', left: '4%', opacity: 0.30 }} width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 4v16M4 12h16" stroke="#B8960C" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+        <svg style={{ position: 'absolute', top: '78%', left: '38%', opacity: 0.25 }} width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 4v16M4 12h16" stroke="#4A8C3F" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+        <svg style={{ position: 'absolute', top: '8%', right: '38%', opacity: 0.20 }} width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M12 4v16M4 12h16" stroke="#4A8C3F" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+        {/* Dots cluster */}
+        <div style={{ position: 'absolute', top: '40%', left: '18%', opacity: 0.4 }}>
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            {[...Array(16)].map((_, i) => (
+              <circle key={i} cx={(i % 4) * 20 + 6} cy={Math.floor(i / 4) * 20 + 6} r="2" fill="#4A8C3F" />
+            ))}
+          </svg>
+        </div>
+        {/* Outline circle */}
+        <div style={{
+          position: 'absolute', top: '25%', left: '32%',
+          width: 120, height: 120, borderRadius: '50%',
+          border: '1.5px dashed rgba(74,140,63,0.25)',
+        }} />
+        {/* Leaf SVG */}
+        <svg style={{ position: 'absolute', bottom: '12%', left: '12%', opacity: 0.35 }} width="44" height="44" viewBox="0 0 24 24" fill="none">
+          <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z" stroke="#4A8C3F" strokeWidth="1.5" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <div className="section-container" style={{ paddingTop: '5rem', paddingBottom: '0', position: 'relative', zIndex: 1 }}>
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
           {/* ── Left: Text ─────────────────────────────────── */}
