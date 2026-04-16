@@ -120,7 +120,7 @@ export default function LocationSection() {
               aria-label="Abrir localização no Google Maps"
             >
               <img
-                src="https://staticmap.openstreetmap.de/staticmap.php?center=-8.9447,13.288&zoom=16&size=900x420&maptype=mapnik&markers=-8.9447,13.288,red-pushpin"
+                src="/mapa.webp"
                 alt="Mapa +Vida — Bairro Patriota, Luanda"
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 loading="lazy"
