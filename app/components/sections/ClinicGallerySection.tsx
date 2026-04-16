@@ -34,7 +34,7 @@ export default function ClinicGallerySection() {
   }, [paused, next])
 
   return (
-    <section className="section-dark" style={{ background: '#1a350f', paddingTop: '5rem', paddingBottom: '5rem' }}>
+    <section style={{ background: '#f5f9f3', paddingTop: '5rem', paddingBottom: '5rem' }}>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
 
         {/* Header */}
@@ -121,7 +121,7 @@ export default function ClinicGallerySection() {
                 style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
                 aria-label="Anterior"
               >
-                <ChevronLeft size={20} style={{ color: '#fff' }} />
+                <ChevronLeft size={20} style={{ color: 'var(--color-primary-dark)' }} />
               </button>
               <button
                 onClick={next}
@@ -129,7 +129,7 @@ export default function ClinicGallerySection() {
                 style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
                 aria-label="Próximo"
               >
-                <ChevronRight size={20} style={{ color: '#fff' }} />
+                <ChevronRight size={20} style={{ color: 'var(--color-primary-dark)' }} />
               </button>
             </div>
           </div>

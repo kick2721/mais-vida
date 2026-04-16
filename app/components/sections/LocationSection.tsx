@@ -82,7 +82,7 @@ export default function LocationSection() {
   const mapRef = useRef<HTMLDivElement>(null)
   useLeafletMap(mapRef)
   return (
-    <section id="localizacao" className="section-dark" style={{ background: '#112209', paddingTop: '5rem', paddingBottom: '5rem' }}>
+    <section id="localizacao" style={{ background: '#f5f9f3', paddingTop: '5rem', paddingBottom: '5rem' }}>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
 
         {/* Header */}
@@ -153,12 +153,9 @@ export default function LocationSection() {
                   href={c.href}
                   target={c.href.startsWith('http') ? '_blank' : undefined}
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 no-underline group"
+                  className="card flex items-center gap-3 no-underline group"
                   style={{
                     padding: '0.875rem 1rem',
-                    borderRadius: '16px',
-                    background: 'rgba(255,255,255,0.07)',
-                    border: '1px solid rgba(255,255,255,0.12)',
                     transition: 'box-shadow 0.2s, transform 0.2s',
                     textDecoration: 'none',
                   }}
@@ -180,10 +177,10 @@ export default function LocationSection() {
                     <Icon size={17} style={{ color: 'var(--color-primary)' }} />
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1px' }}>
                       {c.label}
                     </div>
-                    <div style={{ fontSize: '13px', fontWeight: 500, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-primary-dark)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {c.value}
                     </div>
                   </div>
