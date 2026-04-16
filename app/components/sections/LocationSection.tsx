@@ -112,16 +112,29 @@ export default function LocationSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
           >
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3942.0!2d13.2!3d-8.9!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x9c5815d98dc97f48!2s%2BVida%20Centro%20de%20Diagn%C3%B3stico%20e%20Especialidades!5e0!3m2!1spt!2sao!4v1700000000000!5m2!1spt!2sao"
-              width="100%"
-              height="100%"
-              style={{ border: 0, display: 'block' }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Localização +Vida Centro de Diagnóstico e Especialidades"
-            />
+            <a
+              href="https://www.google.com/maps/place/%2BVida+Centro+de+Diagn%C3%B3stico+e+Especialidades/data=!4m2!3m1!1s0x0:0x9c5815d98dc97f48"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'block', width: '100%', height: '100%', position: 'relative' }}
+              aria-label="Abrir localização no Google Maps"
+            >
+              <img
+                src="https://staticmap.openstreetmap.de/staticmap.php?center=-8.9447,13.288&zoom=16&size=900x420&maptype=mapnik&markers=-8.9447,13.288,red-pushpin"
+                alt="Mapa +Vida — Bairro Patriota, Luanda"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                loading="lazy"
+              />
+              <div style={{
+                position: 'absolute', bottom: 16, right: 16,
+                background: 'rgba(255,255,255,0.95)', padding: '8px 14px',
+                borderRadius: 10, fontSize: 13, fontWeight: 600,
+                color: 'var(--color-primary-dark)', boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <MapPin size={14} /> Abrir no Google Maps
+              </div>
+            </a>
           </motion.div>
 
           {/* Contacts */}
