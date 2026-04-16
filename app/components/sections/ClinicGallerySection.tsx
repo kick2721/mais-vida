@@ -34,7 +34,7 @@ export default function ClinicGallerySection() {
   }, [paused, next])
 
   return (
-    <section style={{ background: 'linear-gradient(to bottom, rgba(15,32,8,0.55) 0%, #f5f9f3 18%, #f5f9f3 82%, rgba(15,32,8,0.55) 100%)', paddingTop: '5rem', paddingBottom: '5rem' }}>
+    <section style={{ background: 'linear-gradient(to bottom, #f5f9f3 0%, #f5f9f3 80%, #1a350f 100%)', paddingTop: '5rem', paddingBottom: '5rem' }}>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
 
         {/* Header */}

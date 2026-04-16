@@ -42,7 +42,7 @@ export default function FaqSection() {
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         <Image src="/stock/nurse-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.28 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg, rgba(17,34,9,0.90) 0%, rgba(30,61,24,0.82) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #0f2008 0%, transparent 28%, transparent 72%, #0f2008 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #0f2008 0%, transparent 28%, transparent 65%, #f5f9f3 100%)' }} />
       </div>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 

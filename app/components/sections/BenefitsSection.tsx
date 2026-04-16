@@ -24,7 +24,7 @@ export default function BenefitsSection() {
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         <Image src="/stock/doctor-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.30 }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(200deg, rgba(17,34,9,0.88) 0%, rgba(30,61,24,0.78) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #0f2008 0%, transparent 30%, transparent 70%, #0f2008 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, #0f2008 0%, transparent 28%, transparent 65%, #f5f9f3 100%)' }} />
       </div>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 

@@ -194,7 +194,7 @@ export default function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full transition-all duration-300" style={{
-        background: scrolled ? 'rgba(255,255,255,0.98)' : 'rgba(255,255,255,0.92)',
+        background: '#ffffff',
         backdropFilter: 'blur(12px)',
         borderBottom: scrolled ? '1px solid rgba(74,140,63,0.15)' : '1px solid transparent',
         boxShadow: scrolled ? '0 2px 20px rgba(0,0,0,0.08)' : 'none',
