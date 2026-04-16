@@ -4,7 +4,7 @@ import { useState, useTransition, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase-client'
-import Logo from '@/app/components/ui/Logo'
+import FlowLayout from '@/app/components/layout/FlowLayout'
 import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import { MEMBERSHIP, BANK, REFERRAL, BUSINESS } from '@/lib/constants'
@@ -186,9 +186,8 @@ function ComprarForm() {
   // ── SUCCESS ──────────────────────────────────────────────────────────────
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--color-surface)' }}>
-        <div className="w-full max-w-md text-center">
-          <div className="flex justify-center mb-8"><Logo size="lg" href="/" /></div>
+      <FlowLayout imageIndex={1} maxWidth="md">
+        <div className="text-center">
           <div className="card-premium p-10">
             <div style={{
               width: '72px', height: '72px', borderRadius: '24px',
@@ -210,26 +209,17 @@ function ComprarForm() {
             <Link href="/" className="btn-outline text-sm" style={{ display: 'block', marginTop: '12px' }}>Voltar ao início</Link>
           </div>
         </div>
-      </div>
+      </FlowLayout>
     )
   }
 
   // ── FORM ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen px-4 py-10" style={{ background: 'var(--color-surface)' }}>
+    <FlowLayout imageIndex={1} maxWidth="lg">
 
       {isPending && <LoadingOverlay message="A enviar pedido…" />}
 
-      <div className="w-full max-w-lg mx-auto">
-        <Link href="/" className="btn-back mb-6 inline-flex">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Voltar ao início
-        </Link>
-
-        <div className="flex justify-center mb-6"><Logo size="lg" href="/" /></div>
-
+      <div>
         <div className="text-center mb-8">
           <h1 className="font-serif text-3xl font-bold mb-2" style={{ color: 'var(--color-primary-dark)' }}>
             Obter Cartão +Vida
@@ -498,7 +488,7 @@ function ComprarForm() {
           </p>
         </div>
       </div>
-    </div>
+    </FlowLayout>
   )
 }
 

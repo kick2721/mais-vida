@@ -6,7 +6,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import Logo from '@/app/components/ui/Logo'
+import AuthLayout from '@/app/components/layout/AuthLayout'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
 import { consultarCandidatura } from '@/lib/actions'
@@ -76,22 +76,11 @@ export default function CandidaturaEstadoPage() {
   }
 
   return (
-    <div className="min-h-screen px-4 py-10" style={{ background: 'rgba(240,247,239,0.6)' }}>
+    <AuthLayout imageIndex={3}>
 
       {isPending && <LoadingOverlay message="A verificar candidatura…" />}
 
-      <div className="w-full max-w-md mx-auto">
-
-        <Link href="/" className="btn-back mb-6 inline-flex">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Voltar ao início
-        </Link>
-
-        <div className="flex justify-center mb-8">
-          <Logo size="lg" href="/" />
-        </div>
+      <div>
 
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
@@ -255,7 +244,7 @@ export default function CandidaturaEstadoPage() {
         )}
 
       </div>
-    </div>
+    </AuthLayout>
   )
 }
 

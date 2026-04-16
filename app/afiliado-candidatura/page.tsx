@@ -4,7 +4,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import Logo from '@/app/components/ui/Logo'
+import FlowLayout from '@/app/components/layout/FlowLayout'
 import LoadingOverlay from '@/app/components/ui/LoadingOverlay'
 import BtnSpinner from '@/app/components/ui/BtnSpinner'
 import { createBrowserSupabaseClient } from '@/lib/supabase-client'
@@ -108,10 +108,8 @@ export default function AffiliateCandidaturePage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4"
-        style={{ background: 'rgba(240,247,239,0.6)' }}>
-        <div className="w-full max-w-md">
-          <div className="flex justify-center mb-8"><Logo size="lg" href="/" /></div>
+      <FlowLayout imageIndex={2} maxWidth="md">
+        <div>
           <div className="card text-center py-10">
             <div className="text-6xl mb-4">🎉</div>
             <h2 className="font-display text-2xl font-bold text-gray-900 mb-3">
@@ -131,25 +129,16 @@ export default function AffiliateCandidaturePage() {
             </Link>
           </div>
         </div>
-      </div>
+      </FlowLayout>
     )
   }
 
   return (
-    <div className="min-h-screen px-4 py-10" style={{ background: 'rgba(240,247,239,0.6)' }}>
+    <FlowLayout imageIndex={2} maxWidth="xl">
 
       {isPending && <LoadingOverlay message="A enviar candidatura…" />}
 
-      <div className="w-full max-w-xl mx-auto">
-
-        <Link href="/" className="btn-back mb-6 inline-flex">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Voltar ao início
-        </Link>
-
-        <div className="flex justify-center mb-8"><Logo size="lg" href="/" /></div>
+      <div>
 
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
@@ -354,6 +343,6 @@ export default function AffiliateCandidaturePage() {
         </div>
 
       </div>
-    </div>
+    </FlowLayout>
   )
 }

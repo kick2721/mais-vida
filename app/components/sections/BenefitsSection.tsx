@@ -19,7 +19,7 @@ const item = {
 
 export default function BenefitsSection() {
   return (
-    <section id="beneficios" className="py-24" style={{ background: '#fff' }}>
+    <section id="beneficios" className="py-24 bg-pattern-dots" style={{ background: 'transparent' }}>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
 
         {/* Header */}
