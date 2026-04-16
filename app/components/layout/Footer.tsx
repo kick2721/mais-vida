@@ -1,3 +1,5 @@
+'use client'
+
 import Logo from '@/app/components/ui/Logo'
 import Link from 'next/link'
 import { MapPin, Phone, Mail, Instagram, MessageCircle } from 'lucide-react'
