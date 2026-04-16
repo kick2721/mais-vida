@@ -50,11 +50,11 @@
   body {
     @apply text-foreground font-sans antialiased;
     background:
-      radial-gradient(ellipse 70% 50% at 90% 5%, rgba(74,140,63,0.28), transparent 60%),
-      radial-gradient(ellipse 60% 45% at 5% 40%, rgba(184,150,12,0.14), transparent 60%),
-      radial-gradient(ellipse 70% 50% at 95% 75%, rgba(30,61,24,0.22), transparent 60%),
-      radial-gradient(ellipse 50% 40% at 20% 100%, rgba(106,173,94,0.18), transparent 60%),
-      linear-gradient(180deg, #e8f1e4 0%, #dfebdb 50%, #e4efe0 100%);
+      radial-gradient(ellipse 70% 50% at 90% 5%, rgba(106,173,94,0.20), transparent 60%),
+      radial-gradient(ellipse 60% 45% at 5% 40%, rgba(184,150,12,0.12), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 95% 75%, rgba(74,140,63,0.18), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 20% 100%, rgba(30,61,24,0.30), transparent 60%),
+      linear-gradient(180deg, #0f2008 0%, #1a350f 50%, #0f2008 100%);
     background-attachment: fixed;
     min-height: 100vh;
     color: var(--color-text);
@@ -180,6 +180,32 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.6);
+  }
+
+  /* ─── Dark section overrides ─────────────────────────── */
+  .section-dark .section-title { color: #fff; }
+  .section-dark .section-desc { color: rgba(255,255,255,0.75); }
+  .section-dark .badge-primary {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.92);
+    border: 1px solid rgba(255,255,255,0.18);
+  }
+  .section-dark .btn-primary {
+    background-color: var(--color-primary-light);
+    box-shadow: 0 2px 16px rgba(106,173,94,0.45);
+  }
+  .section-dark .btn-primary:hover:not(:disabled) {
+    background-color: #7ec870;
+    box-shadow: 0 6px 24px rgba(106,173,94,0.55);
+  }
+  .section-dark .btn-outline {
+    border-color: rgba(255,255,255,0.55);
+    color: #fff;
+  }
+  .section-dark .btn-outline:hover {
+    background-color: rgba(255,255,255,0.12);
+    border-color: #fff;
+    box-shadow: none;
   }
 
   /* ─── Stat divider ────────────────────────────────────── */

@@ -20,10 +20,10 @@ const item = {
 
 export default function BenefitsSection() {
   return (
-    <section id="beneficios" className="py-24" style={{ position: 'relative', overflow: 'hidden' }}>
+    <section id="beneficios" className="section-dark py-24" style={{ position: 'relative', overflow: 'hidden' }}>
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <Image src="/stock/doctor-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.42 }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(200deg, rgba(251,253,250,0.78) 0%, rgba(232,243,228,0.65) 100%)' }} />
+        <Image src="/stock/doctor-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.30 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(200deg, rgba(17,34,9,0.88) 0%, rgba(30,61,24,0.78) 100%)' }} />
       </div>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 

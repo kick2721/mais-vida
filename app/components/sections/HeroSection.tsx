@@ -17,7 +17,7 @@ export default function HeroSection() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   return (
-    <section style={{ background: '#eef6eb', overflow: 'hidden', position: 'relative' }}>
+    <section className="section-dark" style={{ background: '#112209', overflow: 'hidden', position: 'relative' }}>
       {/* Clinic photo bg with strong green/white overlay */}
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         <Image
@@ -25,11 +25,11 @@ export default function HeroSection() {
           alt=""
           fill
           priority
-          style={{ objectFit: 'cover', opacity: 0.55 }}
+          style={{ objectFit: 'cover', opacity: 0.45 }}
         />
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(110deg, rgba(251,253,250,0.78) 0%, rgba(236,246,233,0.55) 50%, rgba(210,232,205,0.30) 100%)',
+          background: 'linear-gradient(110deg, rgba(17,34,9,0.88) 0%, rgba(30,61,24,0.72) 50%, rgba(30,61,24,0.35) 100%)',
         }} />
         {/* Heartbeat ECG line */}
         <svg
@@ -57,10 +57,10 @@ export default function HeroSection() {
             <motion.h1
               {...fadeUp(0.15)}
               className="font-serif font-bold leading-tight mb-6"
-              style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', color: 'var(--color-primary-dark)' }}
+              style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', color: '#fff' }}
             >
               O seu cartão de{' '}
-              <span style={{ color: 'var(--color-primary)', fontStyle: 'italic' }}>
+              <span style={{ color: 'var(--color-primary-light)', fontStyle: 'italic' }}>
                 saúde privada
               </span>{' '}
               a preço justo
@@ -69,10 +69,10 @@ export default function HeroSection() {
             <motion.p
               {...fadeUp(0.25)}
               className="text-lg mb-10 leading-relaxed"
-              style={{ color: 'var(--color-text-muted)', maxWidth: '460px' }}
+              style={{ color: 'rgba(255,255,255,0.78)', maxWidth: '460px' }}
             >
               Aceda a consultas, exames e tratamentos na Clínica Mais Vida com descontos
-              de até <strong style={{ color: 'var(--color-primary)' }}>15%</strong>.
+              de até <strong style={{ color: 'var(--color-primary-light)' }}>15%</strong>.
               Um cartão, toda a família protegida.
             </motion.p>
 
@@ -224,7 +224,7 @@ export default function HeroSection() {
                 <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-primary-dark)' }}>
                   Válido em Angola
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                <div style={{ fontSize: '11px', color: '#6b7280' }}>
                   Clínica Mais Vida
                 </div>
               </div>
@@ -236,7 +236,7 @@ export default function HeroSection() {
       {/* Bottom wave separator */}
       <div style={{ marginTop: '4rem', lineHeight: 0 }}>
         <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block', width: '100%' }}>
-          <path d="M0 30 C360 60 1080 0 1440 30 L1440 60 L0 60 Z" fill="#ffffff" />
+          <path d="M0 30 C360 60 1080 0 1440 30 L1440 60 L0 60 Z" fill="#112209" />
         </svg>
       </div>
     </section>

@@ -38,10 +38,10 @@ export default function FaqSection() {
   const [open, setOpen] = useState<number | null>(null)
 
   return (
-    <section id="faq" style={{ paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}>
+    <section id="faq" className="section-dark" style={{ paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}>
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <Image src="/stock/nurse-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.40 }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg, rgba(251,253,250,0.80) 0%, rgba(232,243,228,0.68) 100%)' }} />
+        <Image src="/stock/nurse-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.28 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(160deg, rgba(17,34,9,0.90) 0%, rgba(30,61,24,0.82) 100%)' }} />
       </div>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 
@@ -76,8 +76,8 @@ export default function FaqSection() {
                 key={i}
                 style={{
                   borderRadius: '16px',
-                  border: `1.5px solid ${isOpen ? 'rgba(74,140,63,0.30)' : 'var(--color-border)'}`,
-                  background: isOpen ? 'rgba(248,250,247,0.8)' : '#fff',
+                  border: `1.5px solid ${isOpen ? 'rgba(106,173,94,0.45)' : 'rgba(255,255,255,0.12)'}`,
+                  background: isOpen ? 'rgba(106,173,94,0.12)' : 'rgba(255,255,255,0.07)',
                   overflow: 'hidden',
                   transition: 'border-color 0.2s, background 0.2s',
                   boxShadow: isOpen ? '0 4px 20px rgba(74,140,63,0.08)' : 'none',
@@ -95,7 +95,7 @@ export default function FaqSection() {
                 >
                   <span style={{
                     fontSize: '15px', fontWeight: 600,
-                    color: isOpen ? 'var(--color-primary-dark)' : 'var(--color-text)',
+                    color: isOpen ? 'var(--color-primary-light)' : '#fff',
                     transition: 'color 0.2s',
                   }}>
                     {faq.q}
@@ -107,7 +107,7 @@ export default function FaqSection() {
                   >
                     <ChevronDown
                       size={18}
-                      style={{ color: isOpen ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                      style={{ color: isOpen ? 'var(--color-primary-light)' : 'rgba(255,255,255,0.55)' }}
                     />
                   </motion.div>
                 </button>
@@ -125,8 +125,8 @@ export default function FaqSection() {
                       <div style={{
                         padding: '0 1.25rem 1.25rem',
                         fontSize: '14px', lineHeight: 1.7,
-                        color: 'var(--color-text-muted)',
-                        borderTop: '1px solid rgba(74,140,63,0.10)',
+                        color: 'rgba(255,255,255,0.70)',
+                        borderTop: '1px solid rgba(255,255,255,0.10)',
                         paddingTop: '0.875rem',
                       }}>
                         {faq.a}

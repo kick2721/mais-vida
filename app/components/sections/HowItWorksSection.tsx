@@ -31,10 +31,10 @@ const STEPS = [
 
 export default function HowItWorksSection() {
   return (
-    <section id="como-funciona" style={{ paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}>
+    <section id="como-funciona" className="section-dark" style={{ paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}>
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <Image src="/stock/consult-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.45 }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(245,250,243,0.80) 0%, rgba(232,243,228,0.68) 100%)' }} />
+        <Image src="/stock/consult-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.28 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(17,34,9,0.90) 0%, rgba(30,61,24,0.82) 100%)' }} />
       </div>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 
@@ -96,16 +96,16 @@ export default function HowItWorksSection() {
                     background: 'var(--color-primary-dark)',
                     color: '#fff', fontSize: '11px', fontWeight: 700,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '2px solid var(--color-surface)',
+                    border: '2px solid rgba(17,34,9,0.9)',
                   }}>
                     {i + 1}
                   </div>
                 </div>
 
-                <h3 className="font-serif font-bold text-lg mb-2" style={{ color: 'var(--color-primary-dark)' }}>
+                <h3 className="font-serif font-bold text-lg mb-2" style={{ color: '#fff' }}>
                   {step.title}
                 </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)', maxWidth: '200px' }}>
+                <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.70)', maxWidth: '200px' }}>
                   {step.description}
                 </p>
               </motion.div>
@@ -124,7 +124,7 @@ export default function HowItWorksSection() {
           <Link href="/comprar" className="btn-primary text-base">
             Começar agora
           </Link>
-          <p className="text-xs mt-3" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.55)' }}>
             Cartão válido por 12 meses a partir da data de emissão
           </p>
         </motion.div>

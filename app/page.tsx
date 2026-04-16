@@ -18,19 +18,16 @@ export default function HomePage() {
     <>
       <Suspense><RefCapture /></Suspense>
       <div className="deco-orbs" aria-hidden>
-        <div className="deco-orb" style={{ width: 480, height: 480, top: '-120px', right: '-100px', background: 'radial-gradient(circle, rgba(74,140,63,0.45), transparent 70%)' }} />
-        <div className="deco-orb" style={{ width: 380, height: 380, top: '40%', left: '-120px', background: 'radial-gradient(circle, rgba(184,150,12,0.35), transparent 70%)', animationDelay: '-6s' }} />
-        <div className="deco-orb" style={{ width: 520, height: 520, bottom: '-180px', right: '20%', background: 'radial-gradient(circle, rgba(106,173,94,0.40), transparent 70%)', animationDelay: '-12s' }} />
-        <div className="deco-orb" style={{ width: 320, height: 320, top: '20%', right: '30%', background: 'radial-gradient(circle, rgba(74,140,63,0.25), transparent 70%)', animationDelay: '-3s' }} />
+        <div className="deco-orb" style={{ width: 500, height: 500, top: '-120px', right: '-100px', background: 'radial-gradient(circle, rgba(106,173,94,0.30), transparent 70%)' }} />
+        <div className="deco-orb" style={{ width: 380, height: 380, top: '40%', left: '-120px', background: 'radial-gradient(circle, rgba(184,150,12,0.20), transparent 70%)', animationDelay: '-6s' }} />
+        <div className="deco-orb" style={{ width: 520, height: 520, bottom: '-180px', right: '20%', background: 'radial-gradient(circle, rgba(74,140,63,0.25), transparent 70%)', animationDelay: '-12s' }} />
       </div>
       <Navbar />
       <main style={{ position: 'relative', zIndex: 1 }}>
         <HeroSection />
         <BenefitsSection />
-        <SectionDivider variant="up" />
         <ClinicGallerySection />
         <HowItWorksSection />
-        <SectionDivider variant="down" />
         <AffiliatesSection />
         <FaqSection />
         <LocationSection />
