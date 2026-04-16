@@ -192,11 +192,11 @@
   }
   .section-dark .btn-primary {
     background-color: var(--color-primary-light);
-    box-shadow: 0 2px 16px rgba(106,173,94,0.45);
+    box-shadow: 0 2px 8px rgba(106,173,94,0.20);
   }
   .section-dark .btn-primary:hover:not(:disabled) {
     background-color: #7ec870;
-    box-shadow: 0 6px 24px rgba(106,173,94,0.55);
+    box-shadow: 0 4px 14px rgba(106,173,94,0.28);
   }
   .section-dark .btn-outline {
     border-color: rgba(255,255,255,0.55);

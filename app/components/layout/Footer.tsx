@@ -173,7 +173,7 @@ export default function Footer() {
             © {year} {BUSINESS.fullName}. Todos os direitos reservados.
           </p>
           <div className="flex gap-5">
-            <Link href="/login" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', transition: 'color 0.15s' }}
+            <Link href="/comprar" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.35)', textDecoration: 'none', transition: 'color 0.15s' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}
             >
