@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { MapPin, Phone, MessageCircle, Mail, Instagram } from 'lucide-react'
 import { BUSINESS } from '@/lib/constants'
+import 'leaflet/dist/leaflet.css'
 
 const MAP_LAT = -8.9447
 const MAP_LNG = 13.2880
@@ -15,37 +16,27 @@ function useLeafletMap(ref: React.RefObject<HTMLDivElement>) {
     let map: any
     let cancelled = false
 
-    const ensureCss = () => {
-      if (document.getElementById('leaflet-css')) return
-      const link = document.createElement('link')
-      link.id = 'leaflet-css'
-      link.rel = 'stylesheet'
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
-      document.head.appendChild(link)
-    }
-
-    const ensureJs = (): Promise<any> => {
-      const w = window as any
-      if (w.L) return Promise.resolve(w.L)
-      return new Promise((resolve, reject) => {
-        const s = document.createElement('script')
-        s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
-        s.onload = () => resolve((window as any).L)
-        s.onerror = reject
-        document.head.appendChild(s)
-      })
-    }
-
-    ensureCss()
-    ensureJs().then((L) => {
+    ;(async () => {
+      const L = (await import('leaflet')).default
       if (cancelled || !ref.current) return
+
+      // Fix default marker icon paths (Leaflet bug with bundlers)
+      delete (L.Icon.Default.prototype as any)._getIconUrl
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      })
+
       map = L.map(ref.current, { scrollWheelZoom: false }).setView([MAP_LAT, MAP_LNG], 16)
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap',
         maxZoom: 19,
       }).addTo(map)
       L.marker([MAP_LAT, MAP_LNG]).addTo(map).bindPopup('+Vida — Centro de Diagnóstico').openPopup()
-    }).catch(() => {})
+
+      setTimeout(() => map && map.invalidateSize(), 200)
+    })()
 
     return () => {
       cancelled = true
