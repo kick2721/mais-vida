@@ -26,16 +26,11 @@ export default function HomePage() {
       <main style={{ position: 'relative', zIndex: 1 }}>
         <HeroSection />
         <BenefitsSection />
-        <div aria-hidden style={{ height: 120, background: 'linear-gradient(to bottom, #0f2008 0%, #f5f9f3 100%)' }} />
         <ClinicGallerySection />
-        <div aria-hidden style={{ height: 120, background: 'linear-gradient(to bottom, #f5f9f3 0%, #0f2008 100%)' }} />
         <HowItWorksSection />
         <AffiliatesSection />
         <FaqSection />
-        <div aria-hidden style={{ height: 120, background: 'linear-gradient(to bottom, #0f2008 0%, #f5f9f3 100%)' }} />
         <LocationSection />
-        {/* light → dark footer */}
-        <div aria-hidden style={{ height: 60, background: 'linear-gradient(to bottom, #f5f9f3 0%, #1a1a1a 100%)', marginTop: '-2px' }} />
       </main>
       <Footer />
     </>

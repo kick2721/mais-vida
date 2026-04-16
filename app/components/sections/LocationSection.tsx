@@ -82,7 +82,7 @@ export default function LocationSection() {
   const mapRef = useRef<HTMLDivElement>(null)
   useLeafletMap(mapRef)
   return (
-    <section id="localizacao" style={{ background: '#f5f9f3', paddingTop: '5rem', paddingBottom: '5rem' }}>
+    <section id="localizacao" style={{ background: 'linear-gradient(to bottom, #0f2008 0%, #f5f9f3 12%, #f5f9f3 88%, #1a1a1a 100%)', paddingTop: '5rem', paddingBottom: '5rem' }}>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0 }}>
 
         {/* Header */}
