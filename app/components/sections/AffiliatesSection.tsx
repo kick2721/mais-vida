@@ -36,8 +36,8 @@ export default function AffiliatesSection() {
       style={{ background: 'var(--color-primary-dark)', paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}
     >
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <Image src="/stock/family.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.22 }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(115deg, rgba(30,61,24,0.92) 0%, rgba(30,61,24,0.78) 50%, rgba(30,61,24,0.55) 100%)' }} />
+        <Image src="/stock/family-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.50 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(115deg, rgba(30,61,24,0.85) 0%, rgba(30,61,24,0.62) 55%, rgba(30,61,24,0.35) 100%)' }} />
       </div>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
         <div className="grid lg:grid-cols-2 gap-14 items-center">

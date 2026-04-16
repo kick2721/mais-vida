@@ -33,8 +33,8 @@ export default function HowItWorksSection() {
   return (
     <section id="como-funciona" style={{ paddingTop: '5rem', paddingBottom: '5rem', position: 'relative', overflow: 'hidden' }}>
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <Image src="/stock/consultation.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.18 }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(245,250,243,0.94) 0%, rgba(232,243,228,0.90) 100%)' }} />
+        <Image src="/stock/consult-a.jpg" alt="" fill style={{ objectFit: 'cover', opacity: 0.45 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(245,250,243,0.80) 0%, rgba(232,243,228,0.68) 100%)' }} />
       </div>
       <div className="section-container" style={{ paddingTop: 0, paddingBottom: 0, position: 'relative', zIndex: 1 }}>
 

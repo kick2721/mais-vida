@@ -21,15 +21,15 @@ export default function HeroSection() {
       {/* Clinic photo bg with strong green/white overlay */}
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         <Image
-          src="/stock/team.jpg"
+          src="/stock/doctor-d.jpg"
           alt=""
           fill
           priority
-          style={{ objectFit: 'cover', opacity: 0.32 }}
+          style={{ objectFit: 'cover', opacity: 0.55 }}
         />
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(110deg, rgba(251,253,250,0.88) 0%, rgba(236,246,233,0.78) 45%, rgba(210,232,205,0.55) 100%)',
+          background: 'linear-gradient(110deg, rgba(251,253,250,0.78) 0%, rgba(236,246,233,0.55) 50%, rgba(210,232,205,0.30) 100%)',
         }} />
         {/* Heartbeat ECG line */}
         <svg
