@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "+Vida | Cartão de Membresía",
   description: "Adquira o seu cartão de membresía e tenha acesso a benefícios exclusivos na clínica.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://mais-vida.com"),
+  viewport: { width: 'device-width', initialScale: 1, maximumScale: 1 },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

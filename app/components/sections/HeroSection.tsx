@@ -144,7 +144,7 @@ export default function HeroSection() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
             className="relative flex justify-center items-center"
-            style={{ minHeight: '520px' }}
+            style={{ minHeight: 'clamp(340px, 55vw, 520px)' }}
           >
             {/* Back card — CSS float animation */}
             <div
@@ -157,8 +157,7 @@ export default function HeroSection() {
                 borderRadius: '18px',
                 overflow: 'hidden',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.22)',
-                width: '380px',
-                maxWidth: '85vw',
+                width: 'min(380px, 78vw)',
                 animation: 'floatB 4.5s ease-in-out infinite',
               }}
             >
@@ -180,8 +179,7 @@ export default function HeroSection() {
                 borderRadius: '18px',
                 overflow: 'hidden',
                 boxShadow: '0 30px 80px rgba(0,0,0,0.28)',
-                width: '400px',
-                maxWidth: '90vw',
+                width: 'min(400px, 82vw)',
                 marginTop: '60px',
                 animation: 'floatF 4s ease-in-out infinite',
               }}

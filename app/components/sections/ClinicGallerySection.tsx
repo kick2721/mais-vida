@@ -117,7 +117,7 @@ export default function ClinicGallerySection() {
               {/* Nav buttons */}
               <button
                 onClick={prev}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all hover:scale-110"
                 style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
                 aria-label="Anterior"
               >
@@ -125,7 +125,7 @@ export default function ClinicGallerySection() {
               </button>
               <button
                 onClick={next}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all hover:scale-110"
                 style={{ background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}
                 aria-label="Próximo"
               >
@@ -135,7 +135,7 @@ export default function ClinicGallerySection() {
           </div>
 
           {/* Thumbnails */}
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-1 justify-center flex-wrap">
+          <div className="flex gap-2 mt-4 overflow-x-auto pb-2 justify-start sm:justify-center" style={{ scrollbarWidth: 'none' }}>
             {PHOTOS.map((photo, i) => (
               <button
                 key={photo.src}

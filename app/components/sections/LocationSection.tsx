@@ -106,7 +106,7 @@ export default function LocationSection() {
           {/* Map */}
           <motion.div
             className="lg:col-span-2 rounded-3xl overflow-hidden"
-            style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.12)', height: 420 }}
+            style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.12)', height: 'clamp(240px, 55vw, 420px)' }}
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}

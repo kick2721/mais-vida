@@ -126,7 +126,7 @@
   .input-label { @apply block text-sm font-medium mb-1.5; color: #374151; }
 
   /* ─── Layout ──────────────────────────────────────────── */
-  .section-container { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20; }
+  .section-container { @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20; }
 
   /* ─── Navigation ──────────────────────────────────────── */
   .nav-link {
